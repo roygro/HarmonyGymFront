@@ -1,0 +1,59 @@
+.card {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card .display-4 {
+  font-size: 2.5rem;
+  font-weight: 300;
+  line-height: 1.2;
+}
+
+.table th {
+  font-weight: 600;
+  border-top: none;
+}
+
+.badge {
+  font-size: 0.875em;
+}
+
+.btn-group-sm > .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* Estilos para la tabla responsive */
+.table-responsive {
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+/* Loading spinner */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Mejoras visuales para los botones de acción */
+.btn-outline-primary:hover {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.btn-outline-warning:hover {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #000;
+}
+
+.btn-outline-success:hover {
+  background-color: #198754;
+  border-color: #198754;
+}
+
+/* Estilos para el input de búsqueda */
+.input-group .form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
