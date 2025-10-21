@@ -1,0 +1,561 @@
+<div class="actividades-container">
+  <!-- Header Mejorado con Tema Gimnasio -->
+  <div class="header">
+    <div class="header-content">
+      <h1><i class="fas fa-dumbbell"></i> Mis Actividades</h1>
+      <p class="header-subtitle">Gestiona y organiza tus actividades deportivas</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="mostrarFormularioNuevo()">
+        <i class="fas fa-plus-circle"></i> Nueva Actividad
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Spinner Mejorado -->
+  <div *ngIf="isLoading" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Cargando actividades...</p>
+    <div class="loading-dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+
+  <!-- Barra de búsqueda y botón de calendario -->
+  <div class="search-bar">
+    <div class="search-container">
+      <i class="fas fa-search search-icon"></i>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (input)="buscarActividades()"
+        placeholder="Buscar actividades por nombre o lugar..."
+        class="search-input"
+      >
+      <button *ngIf="searchTerm" class="btn btn-clear" (click)="limpiarBusqueda()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="filters">
+      <!-- Botón para mostrar/ocultar calendario -->
+      <button class="btn btn-secondary" (click)="toggleCalendario()">
+        <i class="fas fa-calendar-alt"></i> 
+        {{ mostrarCalendario ? 'Ocultar Calendario' : 'Ver Calendario' }}
+      </button>
+      
+      <button class="btn btn-secondary" (click)="cargarActividadesInstructor()">
+        <i class="fas fa-user"></i> Mis Actividades
+      </button>
+      <button class="btn btn-secondary" (click)="cargarTodasActividades()">
+        <i class="fas fa-list"></i> Todas
+      </button>
+    </div>
+  </div>
+
+  <!-- Calendario Desplegable -->
+  <div *ngIf="mostrarCalendario" class="calendar-dropdown">
+    <div class="calendar-container-expandable">
+      <div class="calendar-header">
+        <button class="btn btn-calendar-nav" (click)="mesAnterior()" title="Mes anterior">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        
+        <div class="calendar-title">
+          <h3>{{ mesActual | date:'MMMM yyyy':'es-ES' | titlecase }}</h3>
+          <div class="calendar-actions">
+            <button class="btn btn-sm btn-secondary" (click)="irAHoy()" title="Ir a hoy">
+              <i class="fas fa-calendar-day"></i> Hoy
+            </button>
+            <button class="btn btn-sm btn-secondary" (click)="mostrarSelectorMeses()" title="Seleccionar mes">
+              <i class="fas fa-calendar-alt"></i>
+            </button>
+          </div>
+        </div>
+        
+        <button class="btn btn-calendar-nav" (click)="mesSiguiente()" title="Mes siguiente">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Selector rápido de meses -->
+      <div *ngIf="mostrarSelectorRapido" class="month-selector-quick">
+        <select [(ngModel)]="mesSeleccionadoRapido" (change)="cambiarMesRapido()" class="month-quick-select">
+          <option *ngFor="let mes of mesesDisponibles" [value]="mes.value">
+            {{ mes.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Grid del Calendario -->
+      <div class="calendar-grid">
+        <!-- Días de la semana -->
+        <div class="calendar-weekdays">
+          <div *ngFor="let dia of diasSemana" class="weekday-header">
+            {{ dia }}
+          </div>
+        </div>
+
+        <!-- Días del mes -->
+        <div class="calendar-days">
+          <div 
+            *ngFor="let dia of diasDelMes" 
+            [class]="getClaseDia(dia)"
+            (click)="seleccionarDia(dia)"
+            [title]="getTooltipDia(dia)"
+          >
+            <div class="day-number">{{ dia?.fecha | date:'d' }}</div>
+            <div class="day-activities" *ngIf="dia && dia.actividades > 0">
+              <span class="activity-count" [class]="getClaseContador(dia.actividades)">
+                {{ dia.actividades }}
+              </span>
+            </div>
+            <div class="day-today" *ngIf="dia?.esHoy">●</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Información del día seleccionado -->
+      <div *ngIf="diaSeleccionado" class="selected-day-info">
+        <div class="selected-day-header">
+          <i class="fas fa-calendar-check"></i>
+          <h4>{{ diaSeleccionado | date:'fullDate':'es-ES' | titlecase }}</h4>
+        </div>
+        <p *ngIf="contarActividadesPorDia(diaSeleccionado) > 0" class="selected-day-activities">
+          {{ contarActividadesPorDia(diaSeleccionado) }} actividad{{ contarActividadesPorDia(diaSeleccionado) !== 1 ? 'es' : '' }} programada{{ contarActividadesPorDia(diaSeleccionado) !== 1 ? 's' : '' }}
+        </p>
+        <p *ngIf="contarActividadesPorDia(diaSeleccionado) === 0" class="selected-day-no-activities">
+          No hay actividades programadas para este día
+        </p>
+      </div>
+
+      <!-- Leyenda del calendario -->
+      <div class="calendar-legend">
+        <div class="legend-item">
+          <span class="legend-color today"></span>
+          <span>Hoy</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color selected"></span>
+          <span>Seleccionado</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color has-activities"></span>
+          <span>Con actividades</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario de Actividad Mejorado -->
+  <div *ngIf="showForm" class="form-container">
+    <div class="form-card">
+      <div class="form-header">
+        <h3><i class="fas fa-edit"></i> {{ isEditing ? 'Editar Actividad' : 'Nueva Actividad' }}</h3>
+        <button class="btn-close" (click)="cancelarEdicion()" title="Cerrar formulario">
+          <span class="close-icon">×</span>
+        </button>
+      </div>
+      
+      <form [formGroup]="actividadForm" (ngSubmit)="guardarActividad()">
+        <!-- ID solo visible en edición -->
+        <div *ngIf="isEditing" class="form-group full-width">
+          <label>
+            <i class="fas fa-id-card"></i> ID de Actividad
+          </label>
+          <input>
+          <small class="help-text">ID generado automáticamente por el sistema</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label>
+              <i class="fas fa-tag"></i> Nombre Actividad *
+            </label>
+            <input
+              type="text"
+              formControlName="nombreActividad"
+              class="form-control"
+              placeholder="Yoga Matutino, Spinning Avanzado, etc."
+            >
+            <small *ngIf="isFieldInvalid('nombreActividad')" class="error-text">
+              {{ getFieldError('nombreActividad') }}
+            </small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>
+              <i class="fas fa-calendar-alt"></i> Fecha Actividad *
+            </label>
+            <input
+              type="date"
+              formControlName="fechaActividad"
+              [min]="getFechaActual()"
+              class="form-control"
+              (change)="onFechaSeleccionada($event)"
+            >
+            <small *ngIf="isFieldInvalid('fechaActividad')" class="error-text">
+              {{ getFieldError('fechaActividad') }}
+            </small>
+          </div>
+          
+          <div class="form-group">
+            <label>
+              <i class="fas fa-map-marker-alt"></i> Lugar / Espacio *
+            </label>
+            
+            <!-- Selector de lugar mejorado -->
+            <div class="lugar-selector">
+              <select 
+                class="form-control"
+                (change)="onLugarSeleccionado($event)"
+                [value]="lugarSeleccionado"
+              >
+                <option value="">-- Selecciona un lugar --</option>
+                <option 
+                  *ngFor="let lugar of lugaresPredefinidos" 
+                  [value]="lugar"
+                  [selected]="lugar === lugarSeleccionado && !mostrarCampoPersonalizado"
+                >
+                  {{ lugar }}
+                </option>
+                <option value="personalizado" [selected]="mostrarCampoPersonalizado">
+                  <i class="fas fa-edit"></i> Escribir lugar personalizado
+                </option>
+              </select>
+              
+              <!-- Campo de texto para lugar personalizado -->
+              <div *ngIf="mostrarCampoPersonalizado" class="lugar-personalizado">
+                <input
+                  type="text"
+                  formControlName="lugar"
+                  class="form-control"
+                  placeholder="Escribe el nombre del lugar o espacio..."
+                  (input)="onLugarPersonalizadoChange($event)"
+                >
+                <small class="help-text">Escribe el nombre del lugar o espacio específico</small>
+              </div>
+              
+              <!-- Mostrar lugar seleccionado cuando no es personalizado -->
+              <div *ngIf="!mostrarCampoPersonalizado && lugarSeleccionado && lugarSeleccionado !== 'personalizado'" class="lugar-seleccionado">
+                <div class="lugar-badge">
+                  <i class="fas fa-map-marker-alt"></i>
+                  <span class="lugar-texto">{{ lugarSeleccionado }}</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-clear" (click)="limpiarLugarSeleccionado()">
+                  <i class="fas fa-times"></i> Cambiar
+                </button>
+              </div>
+
+              <!-- Mensaje cuando no hay lugar seleccionado -->
+              <div *ngIf="!lugarSeleccionado && !mostrarCampoPersonalizado" class="lugar-vacio">
+                <small class="help-text">Selecciona un lugar de la lista o escribe uno personalizado</small>
+              </div>
+            </div>
+            
+            <small *ngIf="isFieldInvalid('lugar')" class="error-text">
+              {{ getFieldError('lugar') }}
+            </small>
+          </div>
+        </div>
+
+        <!-- Calendario de Horarios Mejorado -->
+        <div *ngIf="showCalendar && selectedDate" class="calendar-container">
+          <div class="calendar-header">
+            <div class="calendar-title">
+              <h3><i class="fas fa-clock"></i> Horarios Disponibles</h3>
+              <p class="selected-date">{{ selectedDate | date:'fullDate':'es-ES' | titlecase }}</p>
+            </div>
+            <div class="duracion-selector">
+              <label><i class="fas fa-stopwatch"></i> Duración:</label>
+              <div class="duracion-buttons">
+                <button 
+                  type="button"
+                  class="btn btn-sm" 
+                  [class.btn-primary]="duracionSeleccionada === 60"
+                  [class.btn-secondary]="duracionSeleccionada !== 60"
+                  (click)="cambiarDuracion(60)">
+                  <i class="fas fa-hourglass-start"></i> 1h
+                </button>
+                <button 
+                  type="button"
+                  class="btn btn-sm" 
+                  [class.btn-primary]="duracionSeleccionada === 90"
+                  [class.btn-secondary]="duracionSeleccionada !== 90"
+                  (click)="cambiarDuracion(90)">
+                  <i class="fas fa-hourglass-half"></i> 1.5h
+                </button>
+                <button 
+                  type="button"
+                  class="btn btn-sm" 
+                  [class.btn-primary]="duracionSeleccionada === 120"
+                  [class.btn-secondary]="duracionSeleccionada !== 120"
+                  (click)="cambiarDuracion(120)">
+                  <i class="fas fa-hourglass-end"></i> 2h
+                </button>
+                <button 
+                  type="button"
+                  class="btn btn-sm" 
+                  [class.btn-primary]="duracionSeleccionada === 150"
+                  [class.btn-secondary]="duracionSeleccionada !== 150"
+                  (click)="cambiarDuracion(150)">
+                  <i class="fas fa-hourglass"></i> 2.5h
+                </button>
+              </div>
+            </div>
+            <small class="help-text">
+              <i class="fas fa-circle available-dot"></i> Disponible 
+              <i class="fas fa-circle occupied-dot"></i> Ocupado 
+              • Duración: {{ getDuracionTexto(duracionSeleccionada) }}
+            </small>
+          </div>
+          
+          <!-- Horario seleccionado mejorado -->
+          <div *ngIf="horarioSeleccionado" class="selected-schedule">
+            <div class="selected-info">
+              <i class="fas fa-check-circle"></i>
+              <div>
+                <strong>Horario seleccionado</strong>
+                <span>{{ horarioSeleccionado.horaInicio }} - {{ horarioSeleccionado.horaFin }}</span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-clear" (click)="limpiarHorarioSeleccionado()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <!-- Mensaje de advertencia mejorado -->
+          <div *ngIf="!horarioSeleccionado" class="warning-message">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Por favor selecciona un horario del calendario</span>
+          </div>
+          
+          <div class="hours-grid">
+            <div *ngFor="let hora of horasDisponibles" 
+                 [class]="getHourSlotClass(hora)"
+                 (click)="seleccionarHorario(hora)">
+              <span class="hour-time">{{ hora }}</span>
+              <span class="hour-duration">a {{ calcularHoraFin(hora, duracionSeleccionada) }}</span>
+              <span class="hour-status">
+                <i [class]="getHourStatusIcon(hora)"></i>
+                {{ esHoraOcupada(hora) ? 'Ocupado' : 'Disponible' }}
+              </span>
+              <span *ngIf="esHorarioSeleccionado(hora)" class="hour-selected">
+                <i class="fas fa-check"></i> Seleccionado
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>
+              <i class="fas fa-users"></i> Cupo *
+            </label>
+            <input
+              type="number"
+              formControlName="cupo"
+              min="1"
+              max="50"
+              class="form-control"
+            >
+            <small *ngIf="isFieldInvalid('cupo')" class="error-text">
+              {{ getFieldError('cupo') }}
+            </small>
+          </div>
+          
+          <div class="form-group">
+            <label>
+              <i class="fas fa-image"></i> URL de Imagen
+            </label>
+            <input
+              type="url"
+              formControlName="imagenUrl"
+              placeholder="https://ejemplo.com/imagen.jpg"
+              class="form-control"
+            >
+            <small class="help-text">Deja vacío para usar una imagen por defecto</small>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-align-left"></i> Descripción
+          </label>
+          <textarea
+            formControlName="descripcion"
+            rows="4"
+            class="form-control"
+            placeholder="Describe la actividad, requisitos, nivel de dificultad, etc."
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="!actividadForm.valid || !horarioSeleccionado || isLoading">
+            <i class="fas fa-save"></i> {{ isEditing ? 'Actualizar Actividad' : 'Crear Actividad' }}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="cancelarEdicion()" [disabled]="isLoading">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lista de Actividades Mejorada -->
+  <div class="actividades-section">
+    <div class="section-header">
+      <h2><i class="fas fa-clipboard-list"></i> Lista de Actividades</h2>
+      <span class="activities-count">{{ actividadesFiltradasParaMostrar.length }} actividad{{ actividadesFiltradasParaMostrar.length !== 1 ? 'es' : '' }}</span>
+    </div>
+
+    <div class="actividades-list" [class.scrollable]="actividadesFiltradasParaMostrar.length > 3">
+      <div *ngIf="actividadesFiltradasParaMostrar.length === 0 && !isLoading" class="no-activities">
+        <div class="no-activities-icon">
+          <i class="fas fa-dumbbell"></i>
+        </div>
+        <h3>No se encontraron actividades</h3>
+        <p>No hay actividades disponibles para el instructor {{ instructorFijo }} en este momento.</p>
+        <button class="btn btn-primary" (click)="mostrarFormularioNuevo()">
+          <i class="fas fa-plus-circle"></i> Crear Primera Actividad
+        </button>
+      </div>
+
+      <div *ngFor="let actividad of actividadesFiltradasParaMostrar; let i = index" class="actividad-card" [style.animation-delay]="i * 0.1 + 's'">
+        <div class="actividad-image">
+          <img [src]="getImagenActividad(actividad)" [alt]="actividad.nombreActividad" (error)="actividad.imagenUrl = getRandomDefaultImage()">
+          
+          <div class="image-overlay">
+            <span class="actividad-id"></span>
+          </div>
+        </div>
+        <div class="actividad-content">
+          <div class="actividad-header">
+            <h4>{{ actividad.nombreActividad }}</h4>
+            <span [class]="'estatus-badge ' + getEstatusBadgeClass(actividad.estatus)">
+              <i class="fas fa-circle"></i> {{ actividad.estatus }}
+            </span>
+          </div>
+          
+          <div class="actividad-info">
+            <div class="info-grid">
+              <div class="info-item">
+                <i class="fas fa-calendar-day"></i>
+                <div class="info-content">
+                  <span class="info-label">Fecha</span>
+                  <span class="info-value">{{ formatearFecha(actividad.fechaActividad) }}</span>
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <i class="fas fa-clock"></i>
+                <div class="info-content">
+                  <span class="info-label">Horario</span>
+                  <span class="info-value">{{ formatearHora(actividad.horaInicio) }} - {{ formatearHora(actividad.horaFin) }}</span>
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <div class="info-content">
+                  <span class="info-label">Lugar</span>
+                  <span class="info-value">{{ actividad.lugar }}</span>
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <i class="fas fa-user-friends"></i>
+                <div class="info-content">
+                  <span class="info-label">Cupo</span>
+                  <span class="info-value">{{ actividad.cupo }} personas</span>
+                </div>
+              </div>
+            </div>
+            
+            <div *ngIf="actividad.descripcion" class="info-item descripcion">
+              <i class="fas fa-info-circle"></i>
+              <div class="info-content">
+                <span class="info-label">Descripción</span>
+                <span class="info-value">{{ actividad.descripcion }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="actividad-actions">
+            <button 
+              class="btn btn-sm btn-warning" 
+              (click)="mostrarFormularioEditar(actividad)"
+              [disabled]="isLoading"
+            >
+              <i class="fas fa-edit"></i> Editar
+            </button>
+            
+            <button 
+              class="btn btn-sm btn-info" 
+              (click)="verificarCupo(actividad.idActividad)"
+              [disabled]="isLoading"
+            >
+              <i class="fas fa-check-circle"></i> Cupo
+            </button>
+            
+            <button 
+              *ngIf="actividad.estatus === 'Activa'"
+              class="btn btn-sm btn-danger" 
+              (click)="desactivarActividad(actividad.idActividad)"
+              [disabled]="isLoading"
+            >
+              <i class="fas fa-trash-alt"></i> Eliminar
+            </button>
+
+            <button 
+              *ngIf="actividad.estatus === 'Inactiva'"
+              class="btn btn-sm btn-success" 
+              (click)="activarActividad(actividad.idActividad)"
+              [disabled]="isLoading"
+            >
+              <i class="fas fa-play-circle"></i> Activar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estadísticas Mejoradas -->
+  <div class="stats-section" *ngIf="actividadesFiltradasParaMostrar.length > 0">
+    <h3><i class="fas fa-chart-line"></i> Resumen de Actividades</h3>
+    <div class="stats-container">
+      <div class="stats-card">
+        <div class="stats-icon total">
+          <i class="fas fa-dumbbell"></i>
+        </div>
+        <div class="stats-info">
+          <h4>Total de Actividades</h4>
+          <p class="stats-number">{{ totalActividades }}</p>
+        </div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-icon active">
+          <i class="fas fa-running"></i>
+        </div>
+        <div class="stats-info">
+          <h4>Activas</h4>
+          <p class="stats-number">{{ totalActivas }}</p>
+        </div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-icon inactive">
+          <i class="fas fa-bed"></i>
+        </div>
+        <div class="stats-info">
+          <h4>Inactivas</h4>
+          <p class="stats-number">{{ totalActividades - totalActivas }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
