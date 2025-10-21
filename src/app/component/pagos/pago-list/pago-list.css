@@ -1,0 +1,33 @@
+.card {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+.table th {
+  border-top: none;
+  font-weight: 600;
+}
+
+.badge {
+  font-size: 0.75em;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+}
+
+/* Efectos hover */
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+  
+  .badge {
+    font-size: 0.7em;
+  }
+}
