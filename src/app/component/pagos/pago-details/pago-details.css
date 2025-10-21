@@ -1,0 +1,42 @@
+/* Estilos para el comprobante */
+.comprobante {
+  border: 2px solid #e9ecef;
+}
+
+/* Estilos para impresión */
+@media print {
+  .btn, .card:not(.comprobante) {
+    display: none !important;
+  }
+  
+  .comprobante {
+    border: none !important;
+    box-shadow: none !important;
+  }
+  
+  .container {
+    max-width: 100% !important;
+  }
+}
+
+/* Mejoras visuales */
+.card {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+.table th {
+  border-top: none;
+  font-weight: 600;
+}
+
+.badge {
+  font-size: 0.75em;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+}
