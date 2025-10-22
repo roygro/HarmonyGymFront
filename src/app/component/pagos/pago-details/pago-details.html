@@ -1,0 +1,170 @@
+<div class="container mt-4">
+  <!-- Botón volver -->
+  <div class="mb-4">
+    <button class="btn btn-outline-secondary" (click)="volverALista()">
+      <i class="fas fa-arrow-left me-2"></i> Volver al Listado
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="cargando" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p class="mt-2">Cargando detalles del pago...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !cargando" class="alert alert-danger">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    {{ error }}
+    <button class="btn btn-sm btn-outline-danger ms-2" (click)="recargar()">Reintentar</button>
+  </div>
+
+  <!-- Detalles del pago -->
+  <div *ngIf="pago && !cargando" class="row">
+    <div class="col-lg-8">
+      <!-- Comprobante -->
+      <div class="card comprobante">
+        <div class="card-header bg-primary text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">
+              <i class="fas fa-receipt me-2"></i>
+              Comprobante de Pago
+            </h4>
+            <span class="badge bg-light text-dark">{{ folioComprobante }}</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Información del gimnasio -->
+          <div class="text-center mb-4">
+            <h3 class="text-primary">Harmony Gym</h3>
+            <p class="text-muted mb-0">Sistema de Gestión Deportiva</p>
+            <small class="text-muted">Comprobante de venta</small>
+          </div>
+
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <h6 class="text-muted">INFORMACIÓN DEL PAGO</h6>
+              <p class="mb-1"><strong>ID Venta:</strong> #{{ pago.idVenta }}</p>
+              <p class="mb-1"><strong>Fecha:</strong> {{ formatearFecha(pago.fechaVenta!) }}</p>
+              <p class="mb-0"><strong>Folio:</strong> {{ folioComprobante }}</p>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-muted">INFORMACIÓN DEL CLIENTE</h6>
+              <p class="mb-1"><strong>Cliente:</strong> {{ pago.folioCliente }}</p>
+              <p class="mb-0"><strong>ID Recepcionista:</strong> {{ pago.idRecepcionista }}</p>
+            </div>
+          </div>
+
+          <!-- Detalles del producto -->
+          <div class="table-responsive mb-4">
+            <table class="table table-bordered">
+              <thead class="table-light">
+                <tr>
+                  <th>Producto/Membresía</th>
+                  <th class="text-center">Cantidad</th>
+                  <th class="text-end">Precio Unitario</th>
+                  <th class="text-end">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div>
+                      <span class="badge me-2" [ngClass]="getBadgeClass(pago.codigoProducto)">
+                        {{ getTipoProducto(pago.codigoProducto) }}
+                      </span>
+                      {{ pago.codigoProducto }}
+                    </div>
+                  </td>
+                  <td class="text-center">{{ pago.cantidad }}</td>
+                  <td class="text-end">{{ formatearMoneda(pago.precioUnitario) }}</td>
+                  <td class="text-end fw-bold">{{ formatearMoneda(pago.total) }}</td>
+                </tr>
+              </tbody>
+              <tfoot class="table-light">
+                <tr>
+                  <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                  <td class="text-end fw-bold fs-5 text-success">
+                    {{ formatearMoneda(pago.total) }}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Información adicional -->
+          <div class="row text-muted">
+            <div class="col-12">
+              <small>
+                <i class="fas fa-info-circle me-1"></i>
+                Este comprobante es generado automáticamente por el sistema Harmony Gym.
+                Para aclaraciones, presentar este documento en recepción.
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <!-- Acciones -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h6 class="mb-0"><i class="fas fa-cog me-2"></i>Acciones</h6>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <button class="btn btn-outline-primary" (click)="imprimirComprobante()">
+              <i class="fas fa-print me-2"></i> Imprimir Comprobante
+            </button>
+            <button class="btn btn-outline-secondary" (click)="volverALista()">
+              <i class="fas fa-list me-2"></i> Ver Todos los Pagos
+            </button>
+            <button class="btn btn-outline-info" (click)="recargar()">
+              <i class="fas fa-sync me-2"></i> Actualizar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen -->
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Resumen</h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <small class="text-muted">Estado del Pago</small>
+            <div class="d-flex align-items-center mt-1">
+              <i class="fas fa-check-circle text-success me-2"></i>
+              <span class="fw-bold text-success">COMPLETADO</span>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <small class="text-muted">Tipo de Transacción</small>
+            <div class="mt-1">
+              <span class="badge" [ngClass]="getBadgeClass(pago.codigoProducto)">
+                {{ getTipoProducto(pago.codigoProducto) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <small class="text-muted">Fecha de Registro</small>
+            <div class="mt-1 fw-bold">{{ formatearFecha(pago.fechaVenta!) }}</div>
+          </div>
+
+          <div>
+            <small class="text-muted">Registrado por</small>
+            <div class="mt-1">
+              <span class="badge bg-info">{{ pago.idRecepcionista }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
