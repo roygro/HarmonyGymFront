@@ -1,123 +1,179 @@
-<div class="container mt-4">
-  <div class="row">
-    <div class="col-12">
-      <h2>Gestión de Membresías</h2>
-      
-      <!-- Estadísticas -->
-      <div class="row mb-4">
-        <div class="col-md-4">
-          <div class="card text-white bg-primary">
-            <div class="card-body text-center">
-              <h5 class="card-title">Total</h5>
-              <p class="card-text display-4">{{ estadisticas.totalMembresias || 0 }}</p>
-            </div>
-          </div>
+<div class="membresias-container">
+  <!-- Header Mejorado con Tema Gimnasio -->
+  <div class="header">
+    <div class="header-content">
+      <h1><i class="fas fa-id-card"></i> Gestión de Membresías</h1>
+      <p class="header-subtitle">Administra y controla las membresías del gimnasio</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" routerLink="/membresias/nueva">
+        <i class="fas fa-plus-circle"></i> Nueva Membresía
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Spinner Mejorado -->
+  <div *ngIf="loading" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Cargando membresías...</p>
+    <div class="loading-dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+
+  <!-- Estadísticas Mejoradas -->
+  <div *ngIf="!loading" class="stats-section">
+    <div class="stats-container">
+      <div class="stats-card">
+        <div class="stats-icon total">
+          <i class="fas fa-id-card-alt"></i>
         </div>
-        <div class="col-md-4">
-          <div class="card text-white bg-success">
-            <div class="card-body text-center">
-              <h5 class="card-title">Activas</h5>
-              <p class="card-text display-4">{{ estadisticas.membresiasActivas || 0 }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card text-white bg-warning">
-            <div class="card-body text-center">
-              <h5 class="card-title">Inactivas</h5>
-              <p class="card-text display-4">{{ estadisticas.membresiasInactivas || 0 }}</p>
-            </div>
-          </div>
+        <div class="stats-info">
+          <h4>Total de Membresías</h4>
+          <p class="stats-number">{{ estadisticas.totalMembresias || 0 }}</p>
         </div>
       </div>
+      <div class="stats-card">
+        <div class="stats-icon active">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stats-info">
+          <h4>Activas</h4>
+          <p class="stats-number">{{ estadisticas.membresiasActivas || 0 }}</p>
+        </div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-icon inactive">
+          <i class="fas fa-pause-circle"></i>
+        </div>
+        <div class="stats-info">
+          <h4>Inactivas</h4>
+          <p class="stats-number">{{ estadisticas.membresiasInactivas || 0 }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      <!-- Filtros y Acciones -->
-      <div class="row mb-3">
-        <div class="col-md-6">
-          <div class="input-group">
-            <input type="text" class="form-control" placeholder="Buscar por tipo, descripción, estado o ID..." 
-                   [(ngModel)]="filtro" (input)="aplicarFiltro()">
-            <button *ngIf="filtro" class="btn btn-outline-secondary" type="button" (click)="limpiarFiltro()">
-              ✕
-            </button>
+  <!-- Barra de búsqueda y filtros -->
+  <div *ngIf="!loading" class="search-bar">
+    <div class="search-container">
+      <i class="fas fa-search search-icon"></i>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Buscar por tipo, descripción, estado o ID..."
+        [(ngModel)]="filtro"
+        (input)="aplicarFiltro()"
+      >
+      <button *ngIf="filtro" class="btn btn-clear" type="button" (click)="limpiarFiltro()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Lista de Membresías Mejorada -->
+  <div *ngIf="!loading" class="membresias-section">
+    <div class="section-header">
+      <h2><i class="fas fa-list"></i> Lista de Membresías</h2>
+      <span class="membresias-count">{{ membresiasFiltradas.length }} membresía{{ membresiasFiltradas.length !== 1 ? 's' : '' }}</span>
+    </div>
+
+    <div class="membresias-list" [class.scrollable]="membresiasFiltradas.length > 3">
+      <div *ngIf="membresiasFiltradas.length === 0 && membresias.length > 0" class="no-membresias">
+        <div class="no-membresias-icon">
+          <i class="fas fa-search"></i>
+        </div>
+        <h3>No se encontraron membresías</h3>
+        <p>No hay membresías que coincidan con "{{ filtro }}"</p>
+        <button class="btn btn-primary" (click)="limpiarFiltro()">
+          <i class="fas fa-times"></i> Limpiar filtro
+        </button>
+      </div>
+
+      <div *ngIf="membresias.length === 0" class="no-membresias">
+        <div class="no-membresias-icon">
+          <i class="fas fa-id-card"></i>
+        </div>
+        <h3>No hay membresías registradas</h3>
+        <p>Crea la primera membresía para comenzar</p>
+        <button class="btn btn-primary" routerLink="/membresias/nueva">
+          <i class="fas fa-plus-circle"></i> Crear Primera Membresía
+        </button>
+      </div>
+
+      <div *ngFor="let membresia of membresiasFiltradas; let i = index" class="membresia-card" [style.animation-delay]="i * 0.1 + 's'">
+        <div class="membresia-header">
+          <div class="membresia-title">
+            <h4>{{ membresia.tipo }}</h4>
+            <span [class]="'estatus-badge ' + getEstatusBadgeClass(membresia.estatus)">
+              <i class="fas fa-circle"></i> {{ membresia.estatus }}
+            </span>
+          </div>
+          <div class="membresia-id">
+            <span class="id-label">ID:</span>
+            <span class="id-value">{{ membresia.idMembresia }}</span>
           </div>
         </div>
-        <div class="col-md-6 text-end">
-          <button class="btn btn-success" routerLink="/membresias/nueva">
-            ➕ Nueva Membresía
+        
+        <div class="membresia-content">
+          <div class="info-grid">
+            <div class="info-item">
+              <i class="fas fa-dollar-sign"></i>
+              <div class="info-content">
+                <span class="info-label">Precio</span>
+                <span class="info-value">${{ membresia.precio | number:'1.2-2' }}</span>
+              </div>
+            </div>
+            
+            <div class="info-item">
+              <i class="fas fa-calendar-alt"></i>
+              <div class="info-content">
+                <span class="info-label">Duración</span>
+                <span class="info-value">{{ membresia.duracion }} días</span>
+              </div>
+            </div>
+            
+            <div class="info-item full-width">
+              <i class="fas fa-align-left"></i>
+              <div class="info-content">
+                <span class="info-label">Descripción</span>
+                <span class="info-value">{{ membresia.descripcion }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="membresia-actions">
+          <button 
+            class="btn btn-sm btn-warning" 
+            [routerLink]="['/membresias/editar', membresia.idMembresia]"
+            [disabled]="loading"
+          >
+            <i class="fas fa-edit"></i> Editar
+          </button>
+          
+          <button 
+            *ngIf="membresia.estatus === 'Activa'"
+            class="btn btn-sm btn-danger" 
+            (click)="desactivarMembresia(membresia.idMembresia)"
+            [disabled]="loading"
+            title="Desactivar membresía"
+          >
+            <i class="fas fa-pause-circle"></i> Desactivar
+          </button>
+
+          <button 
+            *ngIf="membresia.estatus === 'Inactiva'"
+            class="btn btn-sm btn-success" 
+            (click)="activarMembresia(membresia.idMembresia)"
+            [disabled]="loading"
+            title="Activar membresía"
+          >
+            <i class="fas fa-play-circle"></i> Activar
           </button>
         </div>
-      </div>
-
-      <!-- Loading -->
-      <div *ngIf="loading" class="text-center">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Cargando...</span>
-        </div>
-        <p class="mt-2">Cargando membresías...</p>
-      </div>
-
-      <!-- Tabla de membresías -->
-      <div *ngIf="!loading" class="table-responsive">
-        <table class="table table-striped table-hover">
-          <thead class="table-dark">
-            <tr>
-              <th>ID</th>
-              <th>Tipo</th>
-              <th>Precio</th>
-              <th>Duración</th>
-              <th>Descripción</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let membresia of membresiasFiltradas">
-              <td><strong>{{ membresia.idMembresia }}</strong></td>
-              <td>{{ membresia.tipo }}</td>
-              <td>${{ membresia.precio | number:'1.2-2' }}</td>
-              <td>{{ membresia.duracion }} días</td>
-              <td>{{ membresia.descripcion }}</td>
-              <td>
-                <span [class]="membresia.estatus === 'Activa' ? 'badge bg-success' : 'badge bg-warning'">
-                  {{ membresia.estatus }}
-                </span>
-              </td>
-              <td>
-                <div class="btn-group btn-group-sm">
-                  <button class="btn btn-outline-primary" 
-                          [routerLink]="['/membresias/editar', membresia.idMembresia]">
-                    ✏️ Editar
-                  </button>
-                  <button *ngIf="membresia.estatus === 'Activa'" 
-                          class="btn btn-outline-warning" 
-                          (click)="desactivarMembresia(membresia.idMembresia)"
-                          title="Desactivar membresía">
-                    ⏸️ Desactivar
-                  </button>
-                  <button *ngIf="membresia.estatus === 'Inactiva'" 
-                          class="btn btn-outline-success" 
-                          (click)="activarMembresia(membresia.idMembresia)"
-                          title="Activar membresía">
-                    ▶️ Activar
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Mensajes de estado -->
-      <div *ngIf="!loading && membresiasFiltradas.length === 0 && membresias.length > 0" 
-           class="alert alert-warning text-center">
-        No se encontraron membresías que coincidan con "{{ filtro }}"
-      </div>
-
-      <div *ngIf="!loading && membresias.length === 0" 
-           class="alert alert-info text-center">
-        No hay membresías registradas. 
-        <a routerLink="/membresias/nueva" class="alert-link">Crea la primera membresía</a>
       </div>
     </div>
   </div>
