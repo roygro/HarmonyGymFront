@@ -1,107 +1,173 @@
-<div class="container mt-4">
-  <div class="row justify-content-center">
-    <div class="col-md-8">
-      <!-- Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>{{ tituloFormulario }}</h2>
-        <button class="btn btn-outline-secondary" routerLink="/membresias">
-          <i class="fas fa-arrow-left"></i> Volver a la lista
-        </button>
-      </div>
+<div class="membresias-container">
+  <!-- Header Mejorado -->
+  <div class="header">
+    <div class="header-content">
+      <h1><i class="fas fa-edit"></i> {{ tituloFormulario }}</h1>
+      <p class="header-subtitle">{{ modoEdicion ? 'Editar información de la membresía' : 'Crear nueva membresía' }}</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" routerLink="/membresias">
+        <i class="fas fa-arrow-left"></i> Volver a la lista
+      </button>
+    </div>
+  </div>
 
-      <!-- Loading -->
-      <div *ngIf="loading" class="text-center">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Cargando...</span>
+  <!-- Loading Spinner Mejorado -->
+  <div *ngIf="loading" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Cargando {{ modoEdicion ? 'membresía' : 'formulario' }}...</p>
+    <div class="loading-dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+
+  <!-- Formulario Mejorado -->
+  <div *ngIf="!loading" class="form-container">
+    <div class="form-card">
+      <div class="form-header">
+        <h3><i class="fas fa-id-card"></i> Información de la Membresía</h3>
+      </div>
+      
+      <form (ngSubmit)="guardarMembresia()" #membresiaForm="ngForm">
+        <!-- ID (solo en edición) -->
+        <div *ngIf="modoEdicion" class="form-group">
+          <label>
+            <i class="fas fa-fingerprint"></i> ID de Membresía
+          </label>
+          <input 
+            type="text" 
+            class="form-control" 
+            [value]="membresia.idMembresia" 
+            readonly
+          >
+          <small class="help-text">ID generado automáticamente por el sistema</small>
         </div>
-        <p class="mt-2">Cargando...</p>
-      </div>
 
-      <!-- Formulario -->
-      <form *ngIf="!loading" (ngSubmit)="guardarMembresia()" #membresiaForm="ngForm">
-        <div class="card">
-          <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Información de la Membresía</h5>
+        <div class="form-row">
+          <!-- Tipo de Membresía -->
+          <div class="form-group">
+            <label>
+              <i class="fas fa-tag"></i> Tipo de Membresía *
+            </label>
+            <select 
+              class="form-control"
+              [(ngModel)]="membresia.tipo" 
+              name="tipo" 
+              required
+            >
+              <option value="">-- Selecciona un tipo --</option>
+              <option *ngFor="let tipo of tiposMembresia" [value]="tipo">
+                {{ tipo }}
+              </option>
+            </select>
+            <small *ngIf="membresiaForm.submitted && !membresia.tipo" class="error-text">
+              El tipo de membresía es requerido
+            </small>
           </div>
-          <div class="card-body">
-            
-            <!-- ID (solo en edición) -->
-            <div *ngIf="modoEdicion" class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label">ID de Membresía</label>
-                <input type="text" class="form-control" [value]="membresia.idMembresia" readonly>
-                <div class="form-text">ID generado automáticamente</div>
-              </div>
-            </div>
 
-            <!-- Tipo y Precio -->
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="tipo" class="form-label">Tipo de Membresía *</label>
-                <select id="tipo" class="form-select" [(ngModel)]="membresia.tipo" name="tipo" required>
-                  <option *ngFor="let tipo of tiposMembresia" [value]="tipo">{{ tipo }}</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label for="precio" class="form-label">Precio ($) *</label>
-                <input type="number" id="precio" class="form-control" 
-                       [(ngModel)]="membresia.precio" name="precio" 
-                       min="0" step="0.01" required>
-              </div>
-            </div>
-
-            <!-- Duración y Estado -->
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="duracion" class="form-label">Duración (días) *</label>
-                <input type="number" id="duracion" class="form-control" 
-                       [(ngModel)]="membresia.duracion" name="duracion" 
-                       min="1" required>
-              </div>
-              <div class="col-md-6">
-                <label for="estatus" class="form-label">Estado</label>
-                <select id="estatus" class="form-select" [(ngModel)]="membresia.estatus" name="estatus">
-                  <option value="Activa">Activa</option>
-                  <option value="Inactiva">Inactiva</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Descripción -->
-            <div class="row mb-3">
-              <div class="col-12">
-                <label for="descripcion" class="form-label">Descripción *</label>
-                <textarea id="descripcion" class="form-control" rows="3"
-                          [(ngModel)]="membresia.descripcion" name="descripcion" 
-                          placeholder="Describe los beneficios y características de esta membresía..."
-                          required></textarea>
-                <div class="form-text">Describe qué incluye esta membresía</div>
-              </div>
-            </div>
-
-            <!-- Beneficios -->
-            <div class="row mb-3">
-              <div class="col-12">
-                <label for="beneficios" class="form-label">Beneficios Adicionales</label>
-                <textarea id="beneficios" class="form-control" rows="2"
-                          [(ngModel)]="membresia.beneficios" name="beneficios"
-                          placeholder="Beneficios extra, promociones, etc. (opcional)"></textarea>
-                <div class="form-text">Beneficios especiales o promociones (opcional)</div>
-              </div>
-            </div>
-
+          <!-- Precio -->
+          <div class="form-group">
+            <label>
+              <i class="fas fa-dollar-sign"></i> Precio ($) *
+            </label>
+            <input 
+              type="number" 
+              class="form-control" 
+              [(ngModel)]="membresia.precio" 
+              name="precio" 
+              min="0" 
+              step="0.01" 
+              placeholder="0.00"
+              required
+            >
+            <small *ngIf="membresiaForm.submitted && !membresia.precio" class="error-text">
+              El precio es requerido
+            </small>
           </div>
-          <div class="card-footer bg-light">
-            <div class="d-flex gap-2 justify-content-end">
-              <button type="button" class="btn btn-secondary" (click)="cancelar()">
-                <i class="fas fa-times"></i> Cancelar
-              </button>
-              <button type="submit" class="btn btn-primary" [disabled]="loading">
-                <i class="fas fa-save"></i> 
-                {{ loading ? 'Guardando...' : textoBotonGuardar }}
-              </button>
-            </div>
+        </div>
+
+        <div class="form-row">
+          <!-- Duración -->
+          <div class="form-group">
+            <label>
+              <i class="fas fa-calendar-alt"></i> Duración (días) *
+            </label>
+            <input 
+              type="number" 
+              class="form-control" 
+              [(ngModel)]="membresia.duracion" 
+              name="duracion" 
+              min="1" 
+              placeholder="30"
+              required
+            >
+            <small *ngIf="membresiaForm.submitted && !membresia.duracion" class="error-text">
+              La duración es requerida
+            </small>
           </div>
+
+          <!-- Estado -->
+          <div class="form-group">
+            <label>
+              <i class="fas fa-toggle-on"></i> Estado
+            </label>
+            <select 
+              class="form-control"
+              [(ngModel)]="membresia.estatus" 
+              name="estatus"
+            >
+              <option value="Activa">Activa</option>
+              <option value="Inactiva">Inactiva</option>
+            </select>
+            <small class="help-text">Estado actual de la membresía</small>
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-align-left"></i> Descripción *
+          </label>
+          <textarea 
+            class="form-control" 
+            rows="4"
+            [(ngModel)]="membresia.descripcion" 
+            name="descripcion" 
+            placeholder="Describe los beneficios y características de esta membresía..."
+            required
+          ></textarea>
+          <small *ngIf="membresiaForm.submitted && !membresia.descripcion" class="error-text">
+            La descripción es requerida
+          </small>
+          <small class="help-text">Describe qué incluye esta membresía y sus características principales</small>
+        </div>
+
+        <!-- Beneficios -->
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-gift"></i> Beneficios Adicionales
+          </label>
+          <textarea 
+            class="form-control" 
+            rows="3"
+            [(ngModel)]="membresia.beneficios" 
+            name="beneficios"
+            placeholder="Beneficios extra, promociones, acceso especial, etc. (opcional)"
+          ></textarea>
+          <small class="help-text">Beneficios especiales o promociones exclusivas (opcional)</small>
+        </div>
+
+        <!-- Acciones del Formulario -->
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="cancelar()" [disabled]="loading">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="loading || membresiaForm.invalid">
+            <i class="fas fa-save"></i> 
+            {{ loading ? 'Guardando...' : textoBotonGuardar }}
+          </button>
         </div>
       </form>
     </div>

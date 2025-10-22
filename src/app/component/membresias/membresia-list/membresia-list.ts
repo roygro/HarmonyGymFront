@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { MembresiaService,Membresia } from '../../../services/membresia/membresia';
+import { MembresiaService, Membresia } from '../../../services/membresia/membresia';
 
 @Component({
   selector: 'app-membresia-list',
@@ -62,7 +62,7 @@ export class MembresiaList implements OnInit {
       membresia.tipo.toLowerCase().includes(filtroLower) ||
       membresia.descripcion.toLowerCase().includes(filtroLower) ||
       membresia.estatus.toLowerCase().includes(filtroLower) ||
-      membresia.idMembresia.toLowerCase().includes(filtroLower)
+      membresia.idMembresia.toString().toLowerCase().includes(filtroLower)
     );
   }
 
@@ -99,5 +99,10 @@ export class MembresiaList implements OnInit {
   limpiarFiltro(): void {
     this.filtro = '';
     this.membresiasFiltradas = this.membresias;
+  }
+
+  // Método faltante para las clases de los badges
+  getEstatusBadgeClass(estatus: string): string {
+    return estatus === 'Activa' ? 'badge-activa' : 'badge-inactiva';
   }
 }
