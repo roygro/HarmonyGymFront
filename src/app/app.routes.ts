@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { Recepcionista } from './component/recepcionista/recepcionista';
 import { InstructorComponent } from './component/instructor/instructor-component/instructor-component';
+import { RutinaComponent } from './component/instructor/rutina/rutina-component/rutina-component';
+import { ClienteComponent } from './component/Cliente/cliente-component/cliente-component';
 
 export const routes: Routes = [
   // Ruta para actividades PRIMERO - usando loadComponent
@@ -13,8 +15,12 @@ export const routes: Routes = [
     path: 'recepcionista', 
     loadComponent: () => import('./component/recepcionista/recepcionista').then(m => m.Recepcionista)
   },
+  
 // Ruta para instructor
   { path: 'instructores', component: InstructorComponent },
+  { path: 'rutinas', component: RutinaComponent },
+
+    { path: 'cliente', component: ClienteComponent },
   // Ruta por defecto
   { 
     path: '', 
