@@ -1,0 +1,1001 @@
+<!-- rutina-component.html -->
+<div class="rutina-container">
+  <!-- Mensajes de estado -->
+  <div *ngIf="mensaje" class="alert alert-{{tipoMensaje}}">
+    <div class="alert-content">
+      <i class="fas" [class.fa-check-circle]="tipoMensaje === 'success'" 
+         [class.fa-exclamation-triangle]="tipoMensaje === 'warning'"
+         [class.fa-info-circle]="tipoMensaje === 'info'"
+         [class.fa-times-circle]="tipoMensaje === 'error'"></i>
+      <span>{{mensaje}}</span>
+      <button class="alert-close" (click)="mensaje = ''">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Vista de lista de rutinas -->
+  <div *ngIf="vistaActual === 'lista'" class="vista-lista">
+    <div class="header-actions">
+      <div class="header-title">
+        <div class="title-icon">
+          <i class="fas fa-dumbbell"></i>
+        </div>
+        <h2>Gestión de Rutinas</h2>
+      </div>
+      <div class="action-buttons">
+        <button class="btn btn-primary" (click)="vistaActual = 'crear'; nuevaRutina = inicializarRutina()">
+          <i class="fas fa-plus"></i> 
+          <span>Crear Nueva Rutina</span>
+        </button>
+        <button class="btn btn-secondary" (click)="verTodosLosEjercicios()">
+          <i class="fas fa-list"></i> 
+          <span>Ver Todos los Ejercicios</span>
+        </button>
+        <button class="btn btn-info" (click)="verTodosLosClientes()">
+          <i class="fas fa-users"></i> 
+          <span>Ver Clientes</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filtros y búsqueda -->
+    <div class="filtros-container">
+      <div class="filtro-group">
+        <div class="input-icon">
+          <i class="fas fa-search"></i>
+          <input type="text" id="filtroNombre" [(ngModel)]="filtroNombre" 
+                 (input)="buscarRutinas()" placeholder="Buscar por nombre..." class="form-control">
+        </div>
+      </div>
+      
+      <div class="filtro-group">
+        <select id="filtroNivel" [(ngModel)]="filtroNivel" (change)="filtrarRutinasPorNivel()" class="form-control">
+          <option value="">Todos los niveles</option>
+          <option *ngFor="let nivel of niveles" [value]="nivel">{{nivel}}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="estadisticas">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-clipboard-list"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{rutinas.length}}</h3>
+          <p>Total Rutinas</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-play-circle"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{rutinasActivasCount}}</h3>
+          <p>Rutinas Activas</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-pause-circle"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{rutinasInactivasCount}}</h3>
+          <p>Rutinas Inactivas</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de rutinas -->
+    <div *ngIf="cargando" class="loading">
+      <div class="spinner"></div>
+      <p>Cargando rutinas...</p>
+    </div>
+
+    <div *ngIf="!cargando" class="rutinas-grid">
+      <div *ngFor="let rutina of rutinasFiltradas" class="rutina-card">
+        <div class="rutina-header">
+          <h3>{{rutina.nombre}}</h3>
+          <span class="estatus-badge estatus-{{rutina.estatus.toLowerCase()}}">
+            <i class="fas" [class.fa-check-circle]="rutina.estatus === 'Activa'" 
+               [class.fa-pause-circle]="rutina.estatus === 'Inactiva'"></i>
+            {{rutina.estatus}}
+          </span>
+        </div>
+        
+        <div class="rutina-info">
+          <div class="info-item">
+            <i class="fas fa-chart-line"></i>
+            <span><strong>Nivel:</strong> {{rutina.nivel}}</span>
+          </div>
+          <div class="info-item">
+            <i class="fas fa-bullseye"></i>
+            <span><strong>Objetivo:</strong> {{rutina.objetivo}}</span>
+          </div>
+          <div class="info-item">
+            <i class="fas fa-clock"></i>
+            <span><strong>Duración:</strong> {{formatearDuracion(rutina.duracionEstimada)}}</span>
+          </div>
+          <div class="info-item">
+            <i class="fas fa-calendar"></i>
+            <span><strong>Creada:</strong> {{rutina.fechaCreacion | date:'dd/MM/yyyy'}}</span>
+          </div>
+        </div>
+
+        <div class="rutina-description" *ngIf="rutina.descripcion">
+          <p>{{rutina.descripcion}}</p>
+        </div>
+
+        <div class="rutina-actions">
+          <button class="btn-action btn-info" (click)="verDetalles(rutina)" title="Ver detalles">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn-action btn-warning" (click)="editarRutina(rutina)" title="Editar rutina">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn-action btn-secondary" (click)="gestionarEjercicios(rutina)" title="Gestionar ejercicios">
+            <i class="fas fa-dumbbell"></i>
+          </button>
+          <button class="btn-action btn-success" (click)="gestionarAsignaciones(rutina)" title="Asignar a clientes">
+            <i class="fas fa-users"></i>
+          </button>
+          
+          <div class="status-actions">
+            <button *ngIf="rutina.estatus === 'Activa'" 
+                    class="btn-action btn-danger" 
+                    (click)="cambiarEstatusRutina(rutina, 'Inactiva')"
+                    title="Desactivar rutina">
+              <i class="fas fa-pause"></i>
+            </button>
+            <button *ngIf="rutina.estatus === 'Inactiva'" 
+                    class="btn-action btn-success" 
+                    (click)="cambiarEstatusRutina(rutina, 'Activa')"
+                    title="Activar rutina">
+              <i class="fas fa-play"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="rutinasFiltradas.length === 0 && !cargando" class="no-results">
+      <div class="no-results-icon">
+        <i class="fas fa-search"></i>
+      </div>
+      <h3>No se encontraron rutinas</h3>
+      <p>Intenta ajustar los filtros o crear una nueva rutina</p>
+      <button class="btn btn-primary" (click)="vistaActual = 'crear'; nuevaRutina = inicializarRutina()">
+        <i class="fas fa-plus"></i> Crear Nueva Rutina
+      </button>
+    </div>
+  </div>
+
+  <!-- Vista de detalles de rutina -->
+  <div *ngIf="vistaActual === 'detalle' && rutinaSeleccionada" class="vista-detalle">
+    <div class="detalle-header">
+      <button class="btn btn-back" (click)="volverALista()">
+        <i class="fas fa-arrow-left"></i> Volver a la lista
+      </button>
+      <div class="detalle-title">
+        <h2>{{rutinaSeleccionada.nombre}}</h2>
+        <span class="estatus-badge estatus-{{rutinaSeleccionada.estatus.toLowerCase()}}">
+          <i class="fas" [class.fa-check-circle]="rutinaSeleccionada.estatus === 'Activa'" 
+             [class.fa-pause-circle]="rutinaSeleccionada.estatus === 'Inactiva'"></i>
+          {{rutinaSeleccionada.estatus}}
+        </span>
+      </div>
+    </div>
+
+    <div class="detalle-content">
+      <div class="rutina-info-detalle">
+        <div class="info-group">
+          <label>Descripción:</label>
+          <p>{{rutinaSeleccionada.descripcion || 'Sin descripción'}}</p>
+        </div>
+        
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="info-content">
+              <label>Nivel:</label>
+              <span>{{rutinaSeleccionada.nivel}}</span>
+            </div>
+          </div>
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="fas fa-bullseye"></i>
+            </div>
+            <div class="info-content">
+              <label>Objetivo:</label>
+              <span>{{rutinaSeleccionada.objetivo}}</span>
+            </div>
+          </div>
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="info-content">
+              <label>Duración:</label>
+              <span>{{formatearDuracion(rutinaSeleccionada.duracionEstimada)}}</span>
+            </div>
+          </div>
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="fas fa-calendar"></i>
+            </div>
+            <div class="info-content">
+              <label>Creada:</label>
+              <span>{{rutinaSeleccionada.fechaCreacion | date:'dd/MM/yyyy'}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ejercicios de la rutina -->
+      <div class="ejercicios-section" *ngIf="ejerciciosRutina.length > 0">
+        <h3><i class="fas fa-dumbbell"></i> Ejercicios en esta rutina ({{ejerciciosRutina.length}})</h3>
+        <div class="ejercicios-mini-list">
+          <div *ngFor="let ejercicio of ejerciciosRutina" class="ejercicio-mini-card">
+            <div class="ejercicio-mini-info">
+              <h4>{{getEjercicioPorId(ejercicio.idEjercicio)?.nombre || 'Ejercicio'}}</h4>
+              <div class="ejercicio-params">
+                <span>{{ejercicio.seriesEjercicio || getEjercicioPorId(ejercicio.idEjercicio)?.series}}x{{ejercicio.repeticionesEjercicio || getEjercicioPorId(ejercicio.idEjercicio)?.repeticiones}}</span>
+                <span>Descanso: {{(ejercicio.descansoEjercicio || getEjercicioPorId(ejercicio.idEjercicio)?.descanso)}}s</span>
+              </div>
+            </div>
+            <span class="orden">#{{ejercicio.orden}}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-buttons-detalle">
+        <button class="btn btn-warning" (click)="editarRutina(rutinaSeleccionada)">
+          <i class="fas fa-edit"></i> Editar Rutina
+        </button>
+        <button class="btn btn-secondary" (click)="gestionarEjercicios(rutinaSeleccionada)">
+          <i class="fas fa-dumbbell"></i> Gestionar Ejercicios
+        </button>
+        <button class="btn btn-success" (click)="gestionarAsignaciones(rutinaSeleccionada)">
+          <i class="fas fa-users"></i> Asignar a Clientes
+        </button>
+        <button *ngIf="rutinaSeleccionada.estatus === 'Activa'" 
+                class="btn btn-danger" 
+                (click)="cambiarEstatusRutina(rutinaSeleccionada, 'Inactiva')">
+          <i class="fas fa-pause"></i> Desactivar Rutina
+        </button>
+        <button *ngIf="rutinaSeleccionada.estatus === 'Inactiva'" 
+                class="btn btn-success" 
+                (click)="cambiarEstatusRutina(rutinaSeleccionada, 'Activa')">
+          <i class="fas fa-play"></i> Activar Rutina
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista de crear/editar rutina - MEJORADO -->
+  <div *ngIf="vistaActual === 'crear' || vistaActual === 'editar'" class="vista-formulario">
+    <div class="form-header">
+      <button class="btn btn-back" (click)="volverALista()">
+        <i class="fas fa-arrow-left"></i> Volver
+      </button>
+      <div class="form-title">
+        <h2>{{vistaActual === 'crear' ? 'Crear Nueva Rutina' : 'Editar Rutina'}}</h2>
+        <p class="form-subtitle">{{vistaActual === 'crear' ? 'Completa los datos para crear una nueva rutina' : 'Modifica los datos de la rutina existente'}}</p>
+      </div>
+    </div>
+
+    <form (ngSubmit)="vistaActual === 'crear' ? crearRutina() : actualizarRutina()" class="rutina-form" #rutinaForm="ngForm">
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="fas fa-info-circle"></i>
+          Información Básica
+        </h3>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="folioRutina" class="form-label">
+              <i class="fas fa-hashtag"></i>
+              Folio de Rutina *
+            </label>
+            <div class="input-container">
+              <input type="text" id="folioRutina" [(ngModel)]="nuevaRutina.folioRutina" 
+                     name="folioRutina" required class="form-control" placeholder="Ej: RUT-001"
+                     [readonly]="vistaActual === 'editar'">
+            </div>
+            <small class="help-text">Identificador único de la rutina</small>
+          </div>
+
+          <div class="form-group">
+            <label for="nombre" class="form-label">
+              <i class="fas fa-heading"></i>
+              Nombre de la Rutina *
+            </label>
+            <div class="input-container">
+              <input type="text" id="nombre" [(ngModel)]="nuevaRutina.nombre" 
+                     name="nombre" required class="form-control" placeholder="Ej: Rutina de Fuerza Básica">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="descripcion" class="form-label">
+            <i class="fas fa-align-left"></i>
+            Descripción
+          </label>
+          <div class="input-container">
+            <textarea id="descripcion" [(ngModel)]="nuevaRutina.descripcion" 
+                      name="descripcion" rows="3" class="form-control" 
+                      placeholder="Describe los objetivos y características de esta rutina..."></textarea>
+          </div>
+          <small class="help-text">Opcional: incluye objetivos específicos y notas importantes</small>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="fas fa-cogs"></i>
+          Configuración de la Rutina
+        </h3>
+        
+        <div class="form-row triple">
+          <div class="form-group">
+            <label for="nivel" class="form-label">
+              <i class="fas fa-chart-line"></i>
+              Nivel *
+            </label>
+            <div class="input-container">
+              <select id="nivel" [(ngModel)]="nuevaRutina.nivel" name="nivel" required class="form-control">
+                <option value="">Selecciona un nivel</option>
+                <option *ngFor="let nivel of niveles" [value]="nivel">{{nivel}}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="objetivo" class="form-label">
+              <i class="fas fa-bullseye"></i>
+              Objetivo *
+            </label>
+            <div class="input-container">
+              <input type="text" id="objetivo" [(ngModel)]="nuevaRutina.objetivo" 
+                     name="objetivo" required class="form-control" 
+                     placeholder="Ej: Ganar masa muscular, Perder peso...">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="duracion" class="form-label">
+              <i class="fas fa-clock"></i>
+              Duración Estimada *
+            </label>
+            <div class="input-container">
+              <input type="number" id="duracion" [(ngModel)]="nuevaRutina.duracionEstimada" 
+                     name="duracion" min="1" max="180" required class="form-control"
+                     placeholder="Minutos">
+            </div>
+            <small class="help-text">Duración en minutos</small>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="vistaActual === 'crear'" class="form-section">
+        <h3 class="section-title">
+          <i class="fas fa-user-tie"></i>
+          Información del Instructor
+        </h3>
+        
+        <div class="form-group">
+          <label for="folioInstructor" class="form-label">
+            <i class="fas fa-id-card"></i>
+            Folio del Instructor (Opcional)
+          </label>
+          <div class="input-container">
+            <input type="text" id="folioInstructor" [(ngModel)]="nuevaRutina.folioInstructor" 
+                   name="folioInstructor" class="form-control" 
+                   placeholder="Ej: INST-001">
+          </div>
+          <small class="help-text">Si se deja vacío, se asignará automáticamente</small>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <div class="actions-info">
+          <p><i class="fas fa-info-circle"></i> Los campos marcados con * son obligatorios</p>
+        </div>
+        <div class="actions-buttons">
+          <button type="button" class="btn btn-secondary" (click)="volverALista()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="cargando || !rutinaForm.form.valid">
+            <span *ngIf="cargando" class="spinner"></span>
+            <i class="fas" [class.fa-save]="vistaActual === 'editar'" [class.fa-plus]="vistaActual === 'crear'"></i>
+            {{vistaActual === 'crear' ? 'Crear Rutina' : 'Actualizar Rutina'}}
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Vista de gestión de ejercicios -->
+  <div *ngIf="vistaActual === 'ejercicios' && rutinaSeleccionada" class="vista-ejercicios">
+    <div class="ejercicios-header">
+      <button class="btn btn-back" (click)="volverALista()">
+        <i class="fas fa-arrow-left"></i> Volver
+      </button>
+      <div class="ejercicios-title">
+        <h2>Ejercicios - {{rutinaSeleccionada.nombre}}</h2>
+        <span class="estatus-badge estatus-{{rutinaSeleccionada.estatus.toLowerCase()}}">
+          {{rutinaSeleccionada.estatus}}
+        </span>
+      </div>
+      <button class="btn btn-primary" (click)="abrirFormularioEjercicio()">
+        <i class="fas fa-plus"></i> Agregar Ejercicio
+      </button>
+    </div>
+
+    <!-- Estadísticas de la rutina -->
+    <div class="rutina-stats">
+      <div class="stat-item">
+        <div class="stat-icon">
+          <i class="fas fa-dumbbell"></i>
+        </div>
+        <div class="stat-content">
+          <strong>{{ejerciciosRutina.length}}</strong>
+          <span>Ejercicios</span>
+        </div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-icon">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-content">
+          <strong>{{formatearDuracion(calcularTiempoTotal() / 60)}}</strong>
+          <span>Tiempo total</span>
+        </div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-icon">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stat-content">
+          <strong>{{rutinaSeleccionada.nivel}}</strong>
+          <span>Nivel</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de ejercicios -->
+    <div class="ejercicios-list" *ngIf="ejerciciosRutina.length > 0">
+      <div *ngFor="let ejercicio of ejerciciosRutina; let i = index" class="ejercicio-item">
+        <div class="ejercicio-info">
+          <div class="ejercicio-header">
+            <h4>{{getEjercicioPorId(ejercicio.idEjercicio)?.nombre || 'Ejercicio'}}</h4>
+            <div class="ejercicio-meta">
+              <span class="grupo-muscular">{{getEjercicioPorId(ejercicio.idEjercicio)?.grupoMuscular || 'Sin grupo'}}</span>
+              <span class="orden">#{{ejercicio.orden}}</span>
+            </div>
+          </div>
+          
+          <div class="ejercicio-details">
+            <div class="parametro">
+              <label><i class="fas fa-redo"></i> Series:</label>
+              <span>{{ejercicio.seriesEjercicio || getEjercicioPorId(ejercicio.idEjercicio)?.series || 'N/A'}}</span>
+            </div>
+            <div class="parametro">
+              <label><i class="fas fa-sync"></i> Repeticiones:</label>
+              <span>{{ejercicio.repeticionesEjercicio || getEjercicioPorId(ejercicio.idEjercicio)?.repeticiones || 'N/A'}}</span>
+            </div>
+            <div class="parametro">
+              <label><i class="fas fa-clock"></i> Descanso:</label>
+              <span>{{(ejercicio.descansoEjercicio || getEjercicioPorId(ejercicio.idEjercicio)?.descanso) || 'N/A'}} segundos</span>
+            </div>
+            <div *ngIf="ejercicio.observaciones" class="observaciones">
+              <label><i class="fas fa-sticky-note"></i> Observaciones:</label>
+              <p>{{ejercicio.observaciones}}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ejercicio-actions">
+          <button class="btn-action btn-info" (click)="moverEjercicioArriba(i)" 
+                  [disabled]="i === 0" title="Mover arriba">
+            <i class="fas fa-arrow-up"></i>
+          </button>
+          <button class="btn-action btn-info" (click)="moverEjercicioAbajo(i)" 
+                  [disabled]="i === ejerciciosRutina.length - 1" title="Mover abajo">
+            <i class="fas fa-arrow-down"></i>
+          </button>
+          <button class="btn-action btn-warning" (click)="editarEjercicio(ejercicio)" title="Editar parámetros">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn-action btn-danger" (click)="removerEjercicioDeRutina(ejercicio.idEjercicio)" title="Remover ejercicio">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="ejerciciosRutina.length === 0" class="no-ejercicios">
+      <div class="no-ejercicios-icon">
+        <i class="fas fa-dumbbell"></i>
+      </div>
+      <h3>No hay ejercicios en esta rutina</h3>
+      <p>Comienza agregando el primer ejercicio a tu rutina</p>
+      <button class="btn btn-primary" (click)="abrirFormularioEjercicio()">
+        <i class="fas fa-plus"></i> Agregar Primer Ejercicio
+      </button>
+    </div>
+
+    <!-- Formulario de ejercicio -->
+    <div *ngIf="mostrarFormularioEjercicio" class="ejercicio-form-overlay">
+      <div class="ejercicio-form-container">
+        <div class="form-header">
+          <h3>{{editandoEjercicio ? 'Editar Ejercicio' : 'Agregar Ejercicio a la Rutina'}}</h3>
+          <button class="btn btn-close" (click)="cerrarFormularioEjercicio()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <form (ngSubmit)="editandoEjercicio ? actualizarEjercicioEnRutina() : agregarEjercicioARutina()" 
+              class="ejercicio-form" #ejercicioForm="ngForm">
+          <div class="form-group">
+            <label for="ejercicioSelect">Seleccionar Ejercicio *</label>
+            <div class="input-container">
+              <i class="fas fa-dumbbell"></i>
+              <select id="ejercicioSelect" [(ngModel)]="ejercicioSeleccionado.idEjercicio" 
+                      name="ejercicioSelect" required class="form-control"
+                      [disabled]="editandoEjercicio">
+                <option value="">Seleccionar ejercicio</option>
+                <option *ngFor="let ejercicio of ejercicios" [value]="ejercicio.idEjercicio">
+                  {{ejercicio.nombre}} - {{ejercicio.grupoMuscular}} 
+                  ({{ejercicio.series || '?'}}x{{ejercicio.repeticiones || '?'}})
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="orden">Orden en la rutina</label>
+              <div class="input-container">
+                <i class="fas fa-sort-numeric-down"></i>
+                <input type="number" id="orden" [(ngModel)]="ejercicioSeleccionado.orden" 
+                       name="orden" min="1" [max]="ejerciciosRutina.length + 1" class="form-control"
+                       placeholder="Posición en la rutina">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="series">Series</label>
+              <div class="input-container">
+                <i class="fas fa-redo"></i>
+                <input type="number" id="series" [(ngModel)]="ejercicioSeleccionado.seriesEjercicio" 
+                       name="series" min="1" max="10" class="form-control"
+                       placeholder="Número de series">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="repeticiones">Repeticiones</label>
+              <div class="input-container">
+                <i class="fas fa-sync"></i>
+                <input type="number" id="repeticiones" [(ngModel)]="ejercicioSeleccionado.repeticionesEjercicio" 
+                       name="repeticiones" min="1" max="50" class="form-control"
+                       placeholder="Repeticiones por serie">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="descanso">Descanso (segundos)</label>
+              <div class="input-container">
+                <i class="fas fa-clock"></i>
+                <input type="number" id="descanso" [(ngModel)]="ejercicioSeleccionado.descansoEjercicio" 
+                       name="descanso" min="0" max="300" class="form-control"
+                       placeholder="Tiempo de descanso entre series">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="observaciones">Observaciones y notas</label>
+            <div class="input-container">
+              <i class="fas fa-sticky-note"></i>
+              <textarea id="observaciones" [(ngModel)]="ejercicioSeleccionado.observaciones" 
+                        name="observaciones" rows="3" class="form-control"
+                        placeholder="Instrucciones especiales, variaciones, precauciones..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="cerrarFormularioEjercicio()">
+              <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="cargando || !ejercicioForm.form.valid">
+              <span *ngIf="cargando" class="spinner"></span>
+              <i class="fas" [class.fa-save]="editandoEjercicio" [class.fa-plus]="!editandoEjercicio"></i>
+              {{editandoEjercicio ? 'Actualizar Ejercicio' : 'Agregar Ejercicio'}}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista de asignación a clientes - MEJORADO -->
+  <div *ngIf="vistaActual === 'asignar' && rutinaSeleccionada" class="vista-asignar">
+    <div class="asignar-header">
+      <button class="btn btn-back" (click)="volverALista()">
+        <i class="fas fa-arrow-left"></i> Volver
+      </button>
+      <div class="asignar-title">
+        <h2>Asignar Rutina - {{rutinaSeleccionada.nombre}}</h2>
+        <div class="header-meta">
+          <span class="estatus-badge estatus-{{rutinaSeleccionada.estatus.toLowerCase()}}">
+            <i class="fas" [class.fa-check-circle]="rutinaSeleccionada.estatus === 'Activa'" 
+               [class.fa-pause-circle]="rutinaSeleccionada.estatus === 'Inactiva'"></i>
+            {{rutinaSeleccionada.estatus}}
+          </span>
+          <span class="meta-info">
+            <i class="fas fa-clock"></i> {{formatearDuracion(rutinaSeleccionada.duracionEstimada)}}
+          </span>
+          <span class="meta-info">
+            <i class="fas fa-chart-line"></i> {{rutinaSeleccionada.nivel}}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="asignar-content">
+      <!-- Panel de asignación -->
+      <div class="asignacion-panel">
+        <div class="panel-header">
+          <h3><i class="fas fa-user-plus"></i> Asignar a Nuevos Clientes</h3>
+          <div class="panel-actions">
+            <div class="search-container">
+              <div class="input-icon">
+                <i class="fas fa-search"></i>
+                <input type="text" [(ngModel)]="filtroCliente" 
+                       (input)="filtrarClientesDisponibles()"
+                       placeholder="Buscar cliente por nombre..." class="form-control">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-content">
+          <div class="clientes-disponibles-container">
+            <div *ngIf="clientesDisponiblesFiltrados.length === 0" class="empty-state">
+              <div class="empty-icon">
+                <i class="fas fa-users"></i>
+              </div>
+              <h4>No hay clientes disponibles</h4>
+              <p>No se encontraron clientes que coincidan con tu búsqueda</p>
+            </div>
+            
+            <div *ngFor="let cliente of clientesDisponiblesFiltrados" 
+                 class="cliente-selector-card"
+                 [class.selected]="estaClienteSeleccionado(cliente)"
+                 (click)="seleccionarCliente(cliente)">
+              <div class="cliente-avatar">
+                <i class="fas fa-user"></i>
+              </div>
+              <div class="cliente-info">
+                <h4>{{cliente.nombre}}</h4>
+                <div class="cliente-details">
+                  <div class="detail-item">
+                    <i class="fas fa-phone"></i>
+                    <span>{{cliente.telefono || 'Sin teléfono'}}</span>
+                  </div>
+                  <div class="detail-item">
+                    <i class="fas fa-envelope"></i>
+                    <span>{{cliente.email || 'Sin email'}}</span>
+                  </div>
+                  <div class="detail-item">
+                    <i class="fas fa-birthday-cake"></i>
+                    <span>{{cliente.edad || 'N/A'}} años</span>
+                  </div>
+                </div>
+              </div>
+              <div class="selection-indicator">
+                <div class="indicator-circle" [class.selected]="estaClienteSeleccionado(cliente)">
+                  <i class="fas fa-check" *ngIf="estaClienteSeleccionado(cliente)"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="clientesSeleccionados.length > 0" class="panel-footer">
+          <div class="selection-summary">
+            <div class="summary-info">
+              <i class="fas fa-users"></i>
+              <span><strong>{{clientesSeleccionados.length}}</strong> cliente(s) seleccionado(s)</span>
+            </div>
+            <button class="btn btn-primary" (click)="asignarRutinaAClientes()" [disabled]="cargando">
+              <i class="fas fa-user-plus"></i> Asignar a Clientes Seleccionados
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel de clientes asignados -->
+      <div class="asignados-panel">
+        <div class="panel-header">
+          <h3><i class="fas fa-list-check"></i> Clientes Asignados ({{clientes.length}})</h3>
+          <div class="panel-stats">
+            <span class="stat-item">
+              <i class="fas fa-user-check"></i>
+              {{clientes.length}} asignados
+            </span>
+          </div>
+        </div>
+
+        <div class="panel-content">
+          <div *ngIf="cargando" class="loading-state">
+            <div class="spinner"></div>
+            <p>Cargando clientes asignados...</p>
+          </div>
+
+          <div *ngIf="!cargando" class="clientes-asignados-list">
+            <div *ngIf="clientes.length === 0" class="empty-state">
+              <div class="empty-icon">
+                <i class="fas fa-user-slash"></i>
+              </div>
+              <h4>No hay clientes asignados</h4>
+              <p>Esta rutina no ha sido asignada a ningún cliente aún</p>
+              <p class="empty-hint">Selecciona clientes del panel izquierdo para comenzar</p>
+            </div>
+
+            <div *ngFor="let cliente of clientes" class="cliente-asignado-card">
+              <div class="cliente-main">
+                <div class="cliente-avatar">
+                  <i class="fas fa-user"></i>
+                </div>
+                <div class="cliente-info">
+                  <h4>{{cliente.nombre}}</h4>
+                  <div class="cliente-meta">
+                    <span class="meta-item">
+                      <i class="fas fa-phone"></i>
+                      {{cliente.telefono || 'Sin teléfono'}}
+                    </span>
+                    <span class="meta-item">
+                      <i class="fas fa-envelope"></i>
+                      {{cliente.email || 'Sin email'}}
+                    </span>
+                    <span class="estatus-badge estatus-{{cliente.estatus.toLowerCase()}}">
+                      <i class="fas" [class.fa-check-circle]="cliente.estatus === 'Activo'" 
+                         [class.fa-pause-circle]="cliente.estatus === 'Inactivo'"></i>
+                      {{cliente.estatus}}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="cliente-actions">
+                <button class="btn btn-danger btn-sm" 
+                        (click)="removerAsignacionCliente(cliente)"
+                        title="Remover asignación">
+                  <i class="fas fa-trash"></i> Remover
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista de lista de ejercicios -->
+  <div *ngIf="vistaActual === 'ejercicios-lista'" class="vista-ejercicios-lista">
+    <div class="ejercicios-lista-header">
+      <button class="btn btn-back" (click)="volverALista()">
+        <i class="fas fa-arrow-left"></i> Volver
+      </button>
+      <div class="header-title">
+        <div class="title-icon">
+          <i class="fas fa-dumbbell"></i>
+        </div>
+        <h2>Todos los Ejercicios</h2>
+      </div>
+    </div>
+
+    <!-- Filtros de ejercicios -->
+    <div class="filtros-container">
+      <div class="filtro-group">
+        <div class="input-icon">
+          <i class="fas fa-search"></i>
+          <input type="text" id="filtroEjercicio" [(ngModel)]="filtroEjercicio" 
+                 (input)="filtrarEjercicios()"
+                 placeholder="Buscar ejercicio..." class="form-control">
+        </div>
+      </div>
+      
+      <div class="filtro-group">
+        <select id="filtroGrupoMuscular" [(ngModel)]="filtroGrupoMuscular" (change)="filtrarEjercicios()" class="form-control">
+          <option value="">Todos los grupos</option>
+          <option *ngFor="let grupo of gruposMusculares" [value]="grupo">{{grupo}}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Lista de ejercicios -->
+    <div class="ejercicios-grid">
+      <div *ngFor="let ejercicio of ejerciciosFiltrados" class="ejercicio-card" (click)="verDetalleEjercicio(ejercicio)">
+        <div class="ejercicio-card-header">
+          <h4>{{ejercicio.nombre}}</h4>
+          <span class="grupo-muscular-badge">{{ejercicio.grupoMuscular || 'Sin grupo'}}</span>
+        </div>
+        
+        <div class="ejercicio-card-body">
+          <div class="ejercicio-params">
+            <div class="param">
+              <label><i class="fas fa-redo"></i> Series:</label>
+              <span>{{ejercicio.series || 'N/A'}}</span>
+            </div>
+            <div class="param">
+              <label><i class="fas fa-sync"></i> Repeticiones:</label>
+              <span>{{ejercicio.repeticiones || 'N/A'}}</span>
+            </div>
+            <div class="param">
+              <label><i class="fas fa-clock"></i> Descanso:</label>
+              <span>{{ejercicio.descanso || 'N/A'}}s</span>
+            </div>
+          </div>
+          
+          <div class="ejercicio-equipo" *ngIf="ejercicio.equipoNecesario">
+            <label><i class="fas fa-tools"></i> Equipo:</label>
+            <span>{{ejercicio.equipoNecesario}}</span>
+          </div>
+
+          <div class="ejercicio-descripcion" *ngIf="ejercicio.instrucciones">
+            <p>{{(ejercicio.instrucciones | slice:0:100) + (ejercicio.instrucciones.length > 100 ? '...' : '')}}</p>
+          </div>
+        </div>
+        
+        <div class="ejercicio-card-footer">
+          <button class="btn btn-sm btn-info">
+            <i class="fas fa-info-circle"></i> Ver detalles
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="ejerciciosFiltrados.length === 0" class="no-results">
+      <div class="no-results-icon">
+        <i class="fas fa-search"></i>
+      </div>
+      <h3>No se encontraron ejercicios</h3>
+      <p>Intenta ajustar los filtros de búsqueda</p>
+    </div>
+  </div>
+
+  <!-- Vista de detalle de ejercicio -->
+  <div *ngIf="vistaActual === 'ejercicio-detalle' && ejercicioDetalle" class="vista-ejercicio-detalle">
+    <div class="ejercicio-detalle-header">
+      <button class="btn btn-back" (click)="vistaActual = 'ejercicios-lista'">
+        <i class="fas fa-arrow-left"></i> Volver a ejercicios
+      </button>
+      <div class="detalle-title">
+        <h2>{{ejercicioDetalle.nombre}}</h2>
+        <span class="grupo-muscular-badge">{{ejercicioDetalle.grupoMuscular || 'Sin grupo'}}</span>
+      </div>
+    </div>
+
+    <div class="ejercicio-detalle-content">
+      <div class="ejercicio-params-detalle">
+        <div class="param-card">
+          <div class="param-icon">
+            <i class="fas fa-redo"></i>
+          </div>
+          <h3>{{ejercicioDetalle.series || 'N/A'}}</h3>
+          <p>Series</p>
+        </div>
+        <div class="param-card">
+          <div class="param-icon">
+            <i class="fas fa-sync"></i>
+          </div>
+          <h3>{{ejercicioDetalle.repeticiones || 'N/A'}}</h3>
+          <p>Repeticiones</p>
+        </div>
+        <div class="param-card">
+          <div class="param-icon">
+            <i class="fas fa-clock"></i>
+          </div>
+          <h3>{{ejercicioDetalle.descanso || 'N/A'}}</h3>
+          <p>Segundos de descanso</p>
+        </div>
+        <div class="param-card">
+          <div class="param-icon">
+            <i class="fas fa-stopwatch"></i>
+          </div>
+          <h3>{{ejercicioDetalle.tiempo || 'N/A'}}</h3>
+          <p>Segundos por ejercicio</p>
+        </div>
+      </div>
+
+      <div class="ejercicio-info-detalle">
+        <div class="info-section" *ngIf="ejercicioDetalle.equipoNecesario">
+          <h4><i class="fas fa-tools"></i> Equipo Necesario</h4>
+          <p>{{ejercicioDetalle.equipoNecesario}}</p>
+        </div>
+
+        <div class="info-section" *ngIf="ejercicioDetalle.instrucciones">
+          <h4><i class="fas fa-list-ol"></i> Instrucciones</h4>
+          <p>{{ejercicioDetalle.instrucciones}}</p>
+        </div>
+
+        <div class="info-section" *ngIf="!ejercicioDetalle.equipoNecesario && !ejercicioDetalle.instrucciones">
+          <h4><i class="fas fa-info-circle"></i> Información</h4>
+          <p>No hay información adicional disponible para este ejercicio.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista de lista de clientes -->
+  <div *ngIf="vistaActual === 'cliente-lista'" class="vista-clientes-lista">
+    <div class="clientes-lista-header">
+      <button class="btn btn-back" (click)="volverALista()">
+        <i class="fas fa-arrow-left"></i> Volver
+      </button>
+      <div class="header-title">
+        <div class="title-icon">
+          <i class="fas fa-users"></i>
+        </div>
+        <h2>Todos los Clientes</h2>
+      </div>
+    </div>
+
+    <!-- Filtros de clientes -->
+    <div class="filtros-container">
+      <div class="filtro-group">
+        <div class="input-icon">
+          <i class="fas fa-search"></i>
+          <input type="text" id="filtroCliente" [(ngModel)]="filtroCliente" 
+                 (input)="cargarTodosLosClientes()" 
+                 placeholder="Buscar cliente..." class="form-control">
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="cargando" class="loading">
+      <div class="spinner"></div>
+      <p>Cargando clientes...</p>
+    </div>
+
+    <!-- Lista de clientes -->
+    <div *ngIf="!cargando" class="clientes-grid">
+      <div *ngFor="let cliente of clientesFiltrados" class="cliente-card">
+        <div class="cliente-card-header">
+          <h4>{{cliente.nombre}}</h4>
+          <span class="estatus-badge estatus-{{cliente.estatus.toLowerCase()}}">
+            <i class="fas" [class.fa-check-circle]="cliente.estatus === 'Activo'" 
+               [class.fa-pause-circle]="cliente.estatus === 'Inactivo'"></i>
+            {{cliente.estatus}}
+          </span>
+        </div>
+        
+        <div class="cliente-card-body">
+          <div class="cliente-info">
+            <p><i class="fas fa-phone"></i> {{cliente.telefono || 'Sin teléfono'}}</p>
+            <p><i class="fas fa-envelope"></i> {{cliente.email || 'Sin email'}}</p>
+            <p><i class="fas fa-birthday-cake"></i> {{cliente.edad || 'N/A'}} años</p>
+            <p><i class="fas fa-calendar"></i> Registro: {{cliente.fechaRegistro | date:'dd/MM/yyyy'}}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="clientesFiltrados.length === 0 && !cargando" class="no-results">
+      <div class="no-results-icon">
+        <i class="fas fa-search"></i>
+      </div>
+      <h3>No se encontraron clientes</h3>
+      <p>Intenta ajustar los filtros de búsqueda</p>
+    </div>
+  </div>
+</div>

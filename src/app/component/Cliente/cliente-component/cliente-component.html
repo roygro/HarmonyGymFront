@@ -1,0 +1,297 @@
+<div class="cliente-container">
+  <!-- Mensajes -->
+  <div *ngIf="mensaje" [class]="'alert alert-' + tipoMensaje">
+    {{ mensaje }}
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="cargando" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando...</p>
+  </div>
+
+  <!-- VISTA LISTA DE CLIENTES -->
+  <div *ngIf="vistaActual === 'lista'" class="vista-lista">
+    <div class="header">
+      <h1>👥 Gestión de Clientes</h1>
+      <button class="btn btn-primary" (click)="vistaActual = 'crear'">
+        ➕ Nuevo Cliente
+      </button>
+    </div>
+
+    <!-- Estadísticas Rápidas -->
+    <div class="estadisticas-rapidas">
+      <div class="estadistica-card">
+        <h3>Total</h3>
+        <span class="numero">{{ totalClientes }}</span>
+      </div>
+      <div class="estadistica-card activos">
+        <h3>Activos</h3>
+        <span class="numero">{{ clientesActivos }}</span>
+      </div>
+      <div class="estadistica-card inactivos">
+        <h3>Inactivos</h3>
+        <span class="numero">{{ clientesInactivos }}</span>
+      </div>
+    </div>
+
+    <!-- Filtros y Búsqueda -->
+    <div class="filtros-busqueda">
+      <div class="busqueda-group">
+        <input type="text" [(ngModel)]="terminoBusqueda" 
+               placeholder="Buscar cliente por nombre..." 
+               (keyup.enter)="buscarClientes()" class="form-input">
+        <button class="btn btn-info" (click)="buscarClientes()">🔍 Buscar</button>
+      </div>
+      
+      <div class="filtros-group">
+        <select [(ngModel)]="filtroEstatus" (change)="aplicarFiltros()" class="form-select">
+          <option value="">Todos los estatus</option>
+          <option value="Activo">Activos</option>
+          <option value="Inactivo">Inactivos</option>
+        </select>
+        
+        <input type="text" [(ngModel)]="filtroNombre" 
+               placeholder="Filtrar por nombre..." 
+               (input)="aplicarFiltros()" class="form-input">
+        
+        <button class="btn btn-secondary" (click)="limpiarFiltros()">🔄 Limpiar</button>
+        <button class="btn btn-success" (click)="exportarClientesCSV()">📊 Exportar CSV</button>
+      </div>
+    </div>
+
+    <!-- Lista de Clientes -->
+    <div class="clientes-grid">
+      <div *ngFor="let cliente of clientesFiltrados" class="cliente-card">
+        <div class="cliente-header">
+          <h3>{{ cliente.nombre }}</h3>
+          <span class="badge" [class.badge-success]="cliente.estatus === 'Activo'" 
+                [class.badge-secondary]="cliente.estatus === 'Inactivo'">
+            {{ cliente.estatus }}
+          </span>
+        </div>
+        
+        <div class="cliente-info">
+          <p><strong>Folio:</strong> {{ cliente.folioCliente }}</p>
+          <p><strong>Email:</strong> {{ cliente.email || 'No especificado' }}</p>
+          <p><strong>Teléfono:</strong> {{ cliente.telefono || 'No especificado' }}</p>
+          <p><strong>Género:</strong> {{ cliente.genero || 'No especificado' }}</p>
+          <p *ngIf="cliente.fechaNacimiento">
+            <strong>Edad:</strong> {{ clienteService.calcularEdad(cliente.fechaNacimiento) }} años
+          </p>
+          <p><strong>Registro:</strong> {{ clienteService.formatearFecha(cliente.fechaRegistro) }}</p>
+        </div>
+
+        <div class="cliente-actions">
+          <button class="btn btn-info btn-sm" (click)="verDetalles(cliente)">
+            👁️ Ver
+          </button>
+          <button class="btn btn-warning btn-sm" (click)="editarCliente(cliente)">
+            ✏️ Editar
+          </button>
+          
+          <button *ngIf="cliente.estatus === 'Activo'" 
+                  class="btn btn-danger btn-sm" 
+                  (click)="darDeBajaCliente(cliente.folioCliente)">
+            🚫 Dar de Baja
+          </button>
+          
+          <button *ngIf="cliente.estatus === 'Inactivo'" 
+                  class="btn btn-success btn-sm" 
+                  (click)="activarCliente(cliente.folioCliente)">
+            ✅ Activar
+          </button>
+          
+          <button class="btn btn-dark btn-sm" 
+                  (click)="eliminarCliente(cliente.folioCliente)">
+            🗑️ Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="clientesFiltrados.length === 0" class="no-data">
+      <p>No se encontraron clientes</p>
+    </div>
+  </div>
+
+  <!-- VISTA CREAR CLIENTE -->
+  <div *ngIf="vistaActual === 'crear'" class="vista-form">
+    <h2>➕ Crear Nuevo Cliente</h2>
+    
+    <form (ngSubmit)="crearCliente()" class="form">
+      <div class="form-group">
+        <label>Folio de Cliente *:</label>
+        <input type="text" [(ngModel)]="nuevoCliente.folioCliente" name="folioCliente" 
+               required class="form-input" placeholder="Ej: CLI-001">
+        <div *ngIf="erroresValidacion['folioCliente']" class="error-message">
+          {{ erroresValidacion['folioCliente'] }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Nombre Completo *:</label>
+        <input type="text" [(ngModel)]="nuevoCliente.nombre" name="nombre" 
+               required class="form-input" placeholder="Ej: Juan Pérez García">
+        <div *ngIf="erroresValidacion['nombre']" class="error-message">
+          {{ erroresValidacion['nombre'] }}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email:</label>
+          <input type="email" [(ngModel)]="nuevoCliente.email" name="email" 
+                 class="form-input" placeholder="ejemplo@correo.com">
+          <div *ngIf="erroresValidacion['email']" class="error-message">
+            {{ erroresValidacion['email'] }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Teléfono:</label>
+          <input type="tel" [(ngModel)]="nuevoCliente.telefono" name="telefono" 
+                 class="form-input" placeholder="10 dígitos">
+          <div *ngIf="erroresValidacion['telefono']" class="error-message">
+            {{ erroresValidacion['telefono'] }}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha de Nacimiento:</label>
+          <input type="date" [(ngModel)]="nuevoCliente.fechaNacimiento" name="fechaNacimiento" 
+                 class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label>Género:</label>
+          <select [(ngModel)]="nuevoCliente.genero" name="genero" class="form-select">
+            <option value="">Seleccionar...</option>
+            <option *ngFor="let genero of generos" [value]="genero">{{ genero }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="cargando">
+          {{ cargando ? 'Creando...' : 'Crear Cliente' }}
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="volverALista()">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- VISTA DETALLE DE CLIENTE -->
+  <div *ngIf="vistaActual === 'detalle' && clienteSeleccionado" class="vista-detalle">
+    <div class="detalle-header">
+      <h2>👤 {{ clienteSeleccionado.nombre }}</h2>
+      <button class="btn btn-secondary" (click)="volverALista()">← Volver</button>
+    </div>
+
+    <div class="detalle-info">
+      <div class="info-card">
+        <h3>Información Personal</h3>
+        <p><strong>Folio:</strong> {{ clienteSeleccionado.folioCliente }}</p>
+        <p><strong>Estatus:</strong> 
+          <span class="badge" [class.badge-success]="clienteSeleccionado.estatus === 'Activo'" 
+                [class.badge-secondary]="clienteSeleccionado.estatus === 'Inactivo'">
+            {{ clienteSeleccionado.estatus }}
+          </span>
+        </p>
+        <p><strong>Email:</strong> {{ clienteSeleccionado.email || 'No especificado' }}</p>
+        <p><strong>Teléfono:</strong> {{ clienteSeleccionado.telefono || 'No especificado' }}</p>
+        <p><strong>Género:</strong> {{ clienteSeleccionado.genero || 'No especificado' }}</p>
+        
+        <p *ngIf="clienteSeleccionado.fechaNacimiento">
+          <strong>Fecha Nacimiento:</strong> {{ clienteService.formatearFecha(clienteSeleccionado.fechaNacimiento) }}
+          ({{ clienteService.calcularEdad(clienteSeleccionado.fechaNacimiento) }} años)
+        </p>
+        
+        <p><strong>Fecha Registro:</strong> {{ clienteService.formatearFecha(clienteSeleccionado.fechaRegistro) }}</p>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-warning" (click)="editarCliente(clienteSeleccionado)">
+          ✏️ Editar Cliente
+        </button>
+        
+        <button *ngIf="clienteSeleccionado.estatus === 'Activo'" 
+                class="btn btn-danger" 
+                (click)="darDeBajaCliente(clienteSeleccionado.folioCliente)">
+          🚫 Dar de Baja
+        </button>
+        
+        <button *ngIf="clienteSeleccionado.estatus === 'Inactivo'" 
+                class="btn btn-success" 
+                (click)="activarCliente(clienteSeleccionado.folioCliente)">
+          ✅ Activar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA EDITAR CLIENTE -->
+  <div *ngIf="vistaActual === 'editar' && clienteSeleccionado" class="vista-form">
+    <h2>✏️ Editar Cliente - {{ clienteSeleccionado.nombre }}</h2>
+    
+    <form (ngSubmit)="actualizarCliente()" class="form">
+      <div class="form-group">
+        <label>Nombre Completo *:</label>
+        <input type="text" [(ngModel)]="clienteEditado.nombre" name="nombre" 
+               required class="form-input">
+        <div *ngIf="erroresValidacion['nombre']" class="error-message">
+          {{ erroresValidacion['nombre'] }}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email:</label>
+          <input type="email" [(ngModel)]="clienteEditado.email" name="email" 
+                 class="form-input">
+          <div *ngIf="erroresValidacion['email']" class="error-message">
+            {{ erroresValidacion['email'] }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Teléfono:</label>
+          <input type="tel" [(ngModel)]="clienteEditado.telefono" name="telefono" 
+                 class="form-input">
+          <div *ngIf="erroresValidacion['telefono']" class="error-message">
+            {{ erroresValidacion['telefono'] }}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha de Nacimiento:</label>
+          <input type="date" [(ngModel)]="clienteEditado.fechaNacimiento" name="fechaNacimiento" 
+                 class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label>Género:</label>
+          <select [(ngModel)]="clienteEditado.genero" name="genero" class="form-select">
+            <option value="">Seleccionar...</option>
+            <option *ngFor="let genero of generos" [value]="genero">{{ genero }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="cargando">
+          {{ cargando ? 'Actualizando...' : 'Actualizar Cliente' }}
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="volverALista()">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
