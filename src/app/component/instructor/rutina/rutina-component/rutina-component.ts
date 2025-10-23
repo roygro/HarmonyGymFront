@@ -1,531 +1,162 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, DatePipe, SlicePipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Cliente, ClienteService } from '../../../../services/cliente/ClienteService';
-import { Rutina, EjercicioSimple, EjercicioRutina, RutinaService } from '../../../../services/instructor/RutinaService';
-
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
+import { Rutina, Ejercicio, EjercicioRutina, RutinaService, Cliente, CrearEjercicioRequest } from '../../../../services/instructor/RutinaService';
 
 @Component({
   selector: 'app-rutina',
-  templateUrl: './rutina-component.html',
-  styleUrls: ['./rutina-component.css'],
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    DatePipe,
-    SlicePipe
-  ],
-  providers: [DatePipe, SlicePipe]
+  imports: [CommonModule, ReactiveFormsModule, HttpClientModule],
+  templateUrl: './rutina-component.html',
+  styleUrls: ['./rutina-component.css']
 })
-
 export class RutinaComponent implements OnInit {
-  // Estados de la aplicación
-  vistaActual: 'lista' | 'detalle' | 'crear' | 'editar' | 'ejercicios' | 'asignar' | 'ejercicios-lista' | 'ejercicio-detalle' | 'cliente-lista' = 'lista';
-  cargando: boolean = false;
-   rutinasActivasCount: number = 0;
-  rutinasInactivasCount: number = 0;
-  
-  // Mensajes y alertas
-  mensaje: string = '';
-  tipoMensaje: 'success' | 'error' | 'info' | 'warning' = 'info';
-  
-  // Datos principales
+  // Estados del componente
   rutinas: Rutina[] = [];
-  rutinasFiltradas: Rutina[] = [];
-  rutinaSeleccionada: Rutina | null = null;
-  nuevaRutina: Rutina = this.inicializarRutina();
+  filteredRutinas: Rutina[] = [];
+  selectedRutina: Rutina | null = null;
+  isCreating = false;
+  isEditing = false;
+  clientesDisponibles: Cliente[] = [];
+  clientesSeleccionados: string[] = [];
+  clientesFiltrados: Cliente[] = [];
+  filtroCliente: string = '';
+  asignando = false;
+  clientesAsignados: Cliente[] = [];
+  clientesNoAsignados: Cliente[] = [];
+  mostrarClientesAsignados = false;
+  
+  // Búsqueda y filtros
+  searchTerm = '';
+  filterStatus = '';
   
   // Ejercicios
-  ejercicios: EjercicioSimple[] = [];
-  ejerciciosRutina: EjercicioRutina[] = [];
-  ejerciciosFiltrados: EjercicioSimple[] = [];
-  ejercicioDetalle: EjercicioSimple | null = null;
+  ejerciciosDisponibles: Ejercicio[] = [];
+  ejerciciosFiltrados: Ejercicio[] = [];
+  ejercicioSeleccionado: string = '';
+  nuevoEjercicio: Partial<EjercicioRutina> = {
+    seriesEjercicio: 3,
+    repeticionesEjercicio: 10,
+    descansoEjercicio: 60,
+    instrucciones: ''
+  };
   
-  // Clientes
-  clientes: Cliente[] = [];
-  clientesFiltrados: Cliente[] = [];
-  clientesDisponibles: Cliente[] = [];
-  clientesDisponiblesFiltrados: Cliente[] = [];
-  clientesSeleccionados: string[] = [];
-  
-  // Filtros y búsquedas
-  filtroNombre: string = '';
-  filtroNivel: string = '';
-  filtroEjercicio: string = '';
+  // Filtros para ejercicios
+  filtroEjercicioNombre: string = '';
   filtroGrupoMuscular: string = '';
-  filtroCliente: string = '';
   
-  // Listas de opciones
-  niveles: string[] = ['Principiante', 'Intermedio', 'Avanzado'];
-  gruposMusculares: string[] = ['Pecho', 'Espalda', 'Hombros', 'Piernas', 'Brazos', 'Abdomen', 'Full Body'];
+  // Opciones para selects
+  gruposMusculares: string[] = [
+    'Pecho', 'Espalda', 'Hombros', 'Piernas', 'Brazos', 
+    'Abdominales', 'Glúteos', 'Cardio', 'Full Body'
+  ];
   
-  // Estados para formularios de ejercicios
-  mostrarFormularioEjercicio: boolean = false;
-  editandoEjercicio: boolean = false;
-  ejercicioSeleccionado: any = this.inicializarEjercicioRutina();
+  equiposDisponibles: string[] = [
+    'Mancuernas', 'Barra', 'Máquina', 'Peso Corporal', 
+    'Bandas de Resistencia', 'Kettlebell', 'Balón Medicinal',
+    'TRX', 'Polea', 'Press', 'Bicicleta', 'Cinta de Correr',
+    'Elíptica', 'Step', 'Bosu', 'Ninguno', 'Otro'
+  ];
+  
+  // Modales
+  showEjercicioModal = false;
+  showAsignarModal = false;
+  showCrearEjercicioModal = false;
+  creandoEjercicio = false;
+  
+  // Alertas
+  alertMessage = '';
+  alertType = 'alert-success';
+
+  // Instructor temporal para pruebas
+  private instructorTemporal = 'INS003';
+  
+  // Formularios
+  rutinaForm: FormGroup;
+  ejercicioForm: FormGroup;
 
   constructor(
-    private rutinaService: RutinaService,
-     private clienteService: ClienteService,
-    private datePipe: DatePipe
-  ) {}
-
-ngOnInit(): void {
-  this.obtenerRutinas();
-  this.obtenerEjercicios();
-  
-  // Opcional: precargar algunos clientes para debugging
-  this.clienteService.obtenerTodosLosClientes().subscribe({
-    next: (clientes) => {
-      console.log('Clientes cargados:', clientes.length);
-    },
-    error: (error) => {
-      console.error('Error cargando clientes:', error);
-    }
-  });
-}
-  // ===== MÉTODOS DE INICIALIZACIÓN =====
-
-  inicializarRutina(): Rutina {
-    return {
-      folioRutina: '',
-      nombre: '',
-      descripcion: '',
-      nivel: '',
-      objetivo: '',
-      duracionEstimada: 0,
-      estatus: 'Activa',
-      fechaCreacion: '',
-      folioInstructor: ''
-    };
+    private fb: FormBuilder,
+    private http: HttpClient,
+    private rutinaService: RutinaService
+  ) {
+    this.rutinaForm = this.createRutinaForm();
+    this.ejercicioForm = this.createEjercicioForm();
   }
 
-  inicializarEjercicioRutina(): any {
-    return {
-      idEjercicio: '',
-      orden: null,
-      seriesEjercicio: null,
-      repeticionesEjercicio: null,
-      descansoEjercicio: null,
-      observaciones: ''
-    };
+  ngOnInit() {
+    this.cargarRutinas();
+    this.cargarEjerciciosDisponibles();
   }
 
-  // ===== MÉTODOS PRINCIPALES DE RUTINAS =====
-
-  obtenerRutinas(): void {
-    this.cargando = true;
-    this.rutinaService.obtenerTodasLasRutinas().subscribe({
-      next: (rutinas) => {
-        this.rutinas = rutinas;
-        this.rutinasFiltradas = rutinas;
-        this.calcularEstadisticas();
-        this.cargando = false;
-      },
-      error: (error) => {
-        this.mostrarMensaje('Error al cargar las rutinas: ' + error.message, 'error');
-        this.cargando = false;
-      }
+  // FORMULARIOS
+  createRutinaForm(): FormGroup {
+    return this.fb.group({
+      nombre: ['', Validators.required],
+      descripcion: [''],
+      nivel: [''],
+      objetivo: [''],
+      estatus: ['Activa'],
+      folioInstructor: [this.instructorTemporal, Validators.required]
     });
   }
 
-  obtenerRutinaConEjercicios(folioRutina: string): void {
-    this.cargando = true;
-    this.rutinaService.obtenerRutinaConEjercicios(folioRutina).subscribe({
-      next: (rutina) => {
-        this.rutinaSeleccionada = rutina;
-        this.ejerciciosRutina = rutina.ejercicios || [];
-        this.cargando = false;
-      },
-      error: (error) => {
-        this.mostrarMensaje('Error al cargar la rutina: ' + error.message, 'error');
-        this.cargando = false;
-      }
+  createEjercicioForm(): FormGroup {
+    return this.fb.group({
+      nombre: ['', Validators.required],
+      tiempo: [null],
+      series: [null],
+      repeticiones: [null],
+      descanso: [null],
+      equipoNecesario: [[], Validators.required],
+      grupoMuscular: ['', Validators.required],
+      instrucciones: ['', Validators.required],
+      estatus: ['Activo']
     });
   }
 
-  crearRutina(): void {
-    if (!this.validarRutina(this.nuevaRutina)) return;
-
-    this.cargando = true;
-    this.rutinaService.crearRutina(this.nuevaRutina).subscribe({
-      next: (rutinaCreada) => {
-        this.mostrarMensaje('Rutina creada exitosamente', 'success');
-        this.volverALista();
-        this.obtenerRutinas();
-        this.cargando = false;
-      },
-      error: (error) => {
-        this.mostrarMensaje('Error al crear la rutina: ' + error.message, 'error');
-        this.cargando = false;
-      }
-    });
-  }
-
-  actualizarRutina(): void {
-    if (!this.rutinaSeleccionada || !this.validarRutina(this.nuevaRutina)) return;
-
-    this.cargando = true;
-    this.rutinaService.actualizarRutina(this.rutinaSeleccionada.folioRutina, this.nuevaRutina).subscribe({
-      next: (rutinaActualizada) => {
-        this.mostrarMensaje('Rutina actualizada exitosamente', 'success');
-        this.volverALista();
-        this.obtenerRutinas();
-        this.cargando = false;
-      },
-      error: (error) => {
-        this.mostrarMensaje('Error al actualizar la rutina: ' + error.message, 'error');
-        this.cargando = false;
-      }
-    });
-  }
-
-  // ===== MÉTODOS DE ESTATUS (CORREGIDOS) =====
-
-  cambiarEstatusRutina(rutina: Rutina, nuevoEstatus: string): void {
-    const rutinaOriginal = { ...rutina };
-    const estatusOriginal = rutina.estatus;
+  // MÉTODOS PARA EQUIPOS MÚLTIPLES
+  toggleEquipo(equipo: string) {
+    const equiposActuales: string[] = this.ejercicioForm.get('equipoNecesario')?.value || [];
+    const index = equiposActuales.indexOf(equipo);
     
-    // Cambio optimista - actualizar UI inmediatamente
-    rutina.estatus = nuevoEstatus;
-    
-    this.rutinaService.cambiarEstatusRutina(rutina.folioRutina, nuevoEstatus).subscribe({
-      next: (response) => {
-        this.mostrarMensaje(`Rutina ${nuevoEstatus.toLowerCase()} correctamente`, 'success');
-        // Recargar datos para asegurar consistencia
-        this.obtenerRutinas();
-      },
-      error: (error) => {
-        // Error - revertir el cambio optimista
-        rutina.estatus = estatusOriginal;
-        
-        console.error('Error detallado al cambiar estatus:', error);
-        this.mostrarMensaje(error.message || 'Error al cambiar el estatus de la rutina', 'error');
-        
-        // Forzar actualización de la vista
-        this.rutinasFiltradas = [...this.rutinasFiltradas];
-      }
-    });
-  }
-
-  // ===== MÉTODOS DE NAVEGACIÓN =====
-
-  verDetalles(rutina: Rutina): void {
-    this.rutinaSeleccionada = rutina;
-    this.obtenerEjerciciosDeRutina(rutina.folioRutina);
-    this.vistaActual = 'detalle';
-  }
-
-  editarRutina(rutina: Rutina): void {
-    this.rutinaSeleccionada = rutina;
-    this.nuevaRutina = { ...rutina };
-    this.vistaActual = 'editar';
-  }
-
-  volverALista(): void {
-    this.vistaActual = 'lista';
-    this.rutinaSeleccionada = null;
-    this.nuevaRutina = this.inicializarRutina();
-    this.mostrarFormularioEjercicio = false;
-    this.editandoEjercicio = false;
-    this.ejercicioSeleccionado = this.inicializarEjercicioRutina();
-  }
-
-  // ===== MÉTODOS DE EJERCICIOS =====
-
-  obtenerEjercicios(): void {
-    this.rutinaService.obtenerTodosLosEjercicios().subscribe({
-      next: (ejercicios) => {
-        this.ejercicios = ejercicios;
-        this.ejerciciosFiltrados = ejercicios;
-      },
-      error: (error) => {
-        console.error('Error al cargar ejercicios:', error);
-      }
-    });
-  }
-
-  obtenerEjerciciosDeRutina(folioRutina: string): void {
-    this.rutinaService.obtenerEjerciciosDeRutina(folioRutina).subscribe({
-      next: (ejercicios) => {
-        this.ejerciciosRutina = ejercicios;
-      },
-      error: (error) => {
-        console.error('Error al cargar ejercicios de la rutina:', error);
-      }
-    });
-  }
-
-  gestionarEjercicios(rutina: Rutina): void {
-    this.rutinaSeleccionada = rutina;
-    this.obtenerEjerciciosDeRutina(rutina.folioRutina);
-    this.vistaActual = 'ejercicios';
-  }
-
-  abrirFormularioEjercicio(): void {
-    this.mostrarFormularioEjercicio = true;
-    this.editandoEjercicio = false;
-    this.ejercicioSeleccionado = this.inicializarEjercicioRutina();
-    
-    // Establecer orden por defecto
-    if (this.ejerciciosRutina.length > 0) {
-      this.ejercicioSeleccionado.orden = this.ejerciciosRutina.length + 1;
-    } else {
-      this.ejercicioSeleccionado.orden = 1;
-    }
-  }
-
-  cerrarFormularioEjercicio(): void {
-    this.mostrarFormularioEjercicio = false;
-    this.editandoEjercicio = false;
-    this.ejercicioSeleccionado = this.inicializarEjercicioRutina();
-  }
-
-  editarEjercicio(ejercicio: EjercicioRutina): void {
-    this.ejercicioSeleccionado = { ...ejercicio };
-    this.editandoEjercicio = true;
-    this.mostrarFormularioEjercicio = true;
-  }
-
-  agregarEjercicioARutina(): void {
-    if (!this.rutinaSeleccionada || !this.ejercicioSeleccionado.idEjercicio) {
-      this.mostrarMensaje('Selecciona un ejercicio', 'warning');
-      return;
-    }
-
-    this.cargando = true;
-    this.rutinaService.agregarEjercicioARutina(
-      this.rutinaSeleccionada.folioRutina, 
-      this.ejercicioSeleccionado
-    ).subscribe({
-      next: () => {
-        this.mostrarMensaje('Ejercicio agregado a la rutina', 'success');
-        this.obtenerEjerciciosDeRutina(this.rutinaSeleccionada!.folioRutina);
-        this.cerrarFormularioEjercicio();
-        this.cargando = false;
-      },
-      error: (error) => {
-        this.mostrarMensaje('Error al agregar ejercicio: ' + error.message, 'error');
-        this.cargando = false;
-      }
-    });
-  }
-
-  actualizarEjercicioEnRutina(): void {
-    if (!this.rutinaSeleccionada || !this.ejercicioSeleccionado.idEjercicio) return;
-
-    this.cargando = true;
-    const parametros = {
-      series: this.ejercicioSeleccionado.seriesEjercicio,
-      repeticiones: this.ejercicioSeleccionado.repeticionesEjercicio,
-      descanso: this.ejercicioSeleccionado.descansoEjercicio,
-      observaciones: this.ejercicioSeleccionado.observaciones
-    };
-
-    this.rutinaService.actualizarParametrosEjercicio(
-      this.rutinaSeleccionada.folioRutina,
-      this.ejercicioSeleccionado.idEjercicio,
-      parametros
-    ).subscribe({
-      next: () => {
-        this.mostrarMensaje('Ejercicio actualizado', 'success');
-        this.obtenerEjerciciosDeRutina(this.rutinaSeleccionada!.folioRutina);
-        this.cerrarFormularioEjercicio();
-        this.cargando = false;
-      },
-      error: (error) => {
-        this.mostrarMensaje('Error al actualizar ejercicio: ' + error.message, 'error');
-        this.cargando = false;
-      }
-    });
-  }
-
-  removerEjercicioDeRutina(idEjercicio: string): void {
-    if (!this.rutinaSeleccionada || !confirm('¿Estás seguro de remover este ejercicio?')) return;
-
-    this.cargando = true;
-    this.rutinaService.removerEjercicioDeRutina(
-      this.rutinaSeleccionada.folioRutina, 
-      idEjercicio
-    ).subscribe({
-      next: () => {
-        this.mostrarMensaje('Ejercicio removido de la rutina', 'success');
-        this.obtenerEjerciciosDeRutina(this.rutinaSeleccionada!.folioRutina);
-        this.cargando = false;
-      },
-      error: (error) => {
-        this.mostrarMensaje('Error al remover ejercicio: ' + error.message, 'error');
-        this.cargando = false;
-      }
-    });
-  }
-
-  // ===== MÉTODOS DE ASIGNACIÓN A CLIENTES =====
-
-
-  gestionarAsignaciones(rutina: Rutina): void {
-  this.rutinaSeleccionada = rutina;
-  this.clientesSeleccionados = []; // Limpiar selección
-  this.obtenerClientesDeRutina(rutina.folioRutina);
-  this.vistaActual = 'asignar';
-}
-obtenerClientesDeRutina(folioRutina: string): void {
-  this.cargando = true;
-  this.rutinaService.obtenerClientesActivosDeRutina(folioRutina).subscribe({
-    next: (clientes) => {
-      // Calcular edad para cada cliente
-      this.clientes = clientes.map(cliente => ({
-        ...cliente,
-        edad: this.calcularEdad(cliente.fechaNacimiento)
-      }));
-      this.cargando = false;
-      
-      // Una vez cargados los clientes asignados, cargar los disponibles
-      this.obtenerClientesDisponibles();
-    },
-    error: (error) => {
-      this.mostrarMensaje('Error al cargar clientes: ' + error.message, 'error');
-      this.cargando = false;
-    }
-  });
-
-  }
-
- obtenerClientesDisponibles(): void {
-  this.cargando = true;
-  
-  this.clienteService.obtenerClientesActivos().subscribe({
-    next: (clientes) => {
-      // Filtrar clientes que NO están asignados a esta rutina
-      const clientesAsignadosIds = this.clientes.map(c => c.folioCliente);
-      
-      this.clientesDisponibles = clientes
-        .filter(cliente => !clientesAsignadosIds.includes(cliente.folioCliente))
-        .map(cliente => ({
-          ...cliente,
-          edad: this.calcularEdad(cliente.fechaNacimiento)
-        }));
-      
-      this.clientesDisponiblesFiltrados = [...this.clientesDisponibles];
-      this.cargando = false;
-    },
-    error: (error) => {
-      console.error('Error al cargar clientes disponibles:', error);
-      this.mostrarMensaje('Error al cargar clientes disponibles', 'error');
-      this.cargando = false;
-    }
-  });
-}
-
-  seleccionarCliente(cliente: Cliente): void {
-    const index = this.clientesSeleccionados.indexOf(cliente.folioCliente);
     if (index > -1) {
-      this.clientesSeleccionados.splice(index, 1);
+      // Remover equipo
+      equiposActuales.splice(index, 1);
     } else {
-      this.clientesSeleccionados.push(cliente.folioCliente);
-    }
-  }
-calcularEdad(fechaNacimiento: string): number {
-  if (!fechaNacimiento) return 0;
-  
-  try {
-    const nacimiento = new Date(fechaNacimiento);
-    const hoy = new Date();
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    
-    const mes = hoy.getMonth();
-    const dia = hoy.getDate();
-    
-    if (mes < nacimiento.getMonth() || 
-        (mes === nacimiento.getMonth() && dia < nacimiento.getDate())) {
-      edad--;
+      // Agregar equipo
+      equiposActuales.push(equipo);
     }
     
-    return edad;
-  } catch (error) {
-    console.error('Error calculando edad:', error);
-    return 0;
-  }
-}
-  estaClienteSeleccionado(cliente: Cliente): boolean {
-    return this.clientesSeleccionados.includes(cliente.folioCliente);
-  }
-
-  asignarRutinaAClientes(): void {
-    if (!this.rutinaSeleccionada || this.clientesSeleccionados.length === 0) return;
-
-    this.cargando = true;
-    this.rutinaService.asignarRutinaAMultiplesClientes(
-      this.rutinaSeleccionada.folioRutina,
-      this.clientesSeleccionados
-    ).subscribe({
-      next: (response) => {
-        this.mostrarMensaje('Rutina asignada a clientes exitosamente', 'success');
-        this.clientesSeleccionados = [];
-        this.obtenerClientesDeRutina(this.rutinaSeleccionada!.folioRutina);
-        this.cargando = false;
-      },
-      error: (error) => {
-        this.mostrarMensaje('Error al asignar rutina: ' + error.message, 'error');
-        this.cargando = false;
-      }
+    this.ejercicioForm.patchValue({
+      equipoNecesario: [...equiposActuales]
     });
   }
 
-  removerAsignacionCliente(cliente: Cliente): void {
-    if (!this.rutinaSeleccionada || !confirm('¿Estás seguro de remover esta asignación?')) return;
-
-    this.cargando = true;
-    this.rutinaService.removerAsignacionRutina(
-      this.rutinaSeleccionada.folioRutina,
-      cliente.folioCliente
-    ).subscribe({
-      next: () => {
-        this.mostrarMensaje('Asignación removida exitosamente', 'success');
-        this.obtenerClientesDeRutina(this.rutinaSeleccionada!.folioRutina);
-        this.cargando = false;
-      },
-      error: (error) => {
-        this.mostrarMensaje('Error al remover asignación: ' + error.message, 'error');
-        this.cargando = false;
-      }
-    });
+  isEquipoSeleccionado(equipo: string): boolean {
+    const equiposActuales: string[] = this.ejercicioForm.get('equipoNecesario')?.value || [];
+    return equiposActuales.includes(equipo);
   }
 
-  // ===== MÉTODOS DE BÚSQUEDA Y FILTRADO =====
-
-  buscarRutinas(): void {
-    if (!this.filtroNombre) {
-      this.rutinasFiltradas = this.rutinas;
-      return;
-    }
-
-    this.rutinasFiltradas = this.rutinas.filter(rutina =>
-      rutina.nombre.toLowerCase().includes(this.filtroNombre.toLowerCase())
-    );
+  getEquiposSeleccionadosTexto(): string {
+    const equipos: string[] = this.ejercicioForm.get('equipoNecesario')?.value || [];
+    return equipos.length > 0 ? equipos.join(', ') : 'Ningún equipo seleccionado';
   }
 
-  filtrarRutinasPorNivel(): void {
-    if (!this.filtroNivel) {
-      this.rutinasFiltradas = this.rutinas;
-      return;
-    }
+  // FILTRADO DE EJERCICIOS
+  filtrarEjercicios() {
+    let ejerciciosFiltrados = this.ejerciciosDisponibles;
 
-    this.rutinasFiltradas = this.rutinas.filter(rutina =>
-      rutina.nivel === this.filtroNivel
-    );
-  }
-
-  filtrarEjercicios(): void {
-    let ejerciciosFiltrados = this.ejercicios;
-
-    if (this.filtroEjercicio) {
+    // Filtrar por nombre
+    if (this.filtroEjercicioNombre) {
+      const termino = this.filtroEjercicioNombre.toLowerCase();
       ejerciciosFiltrados = ejerciciosFiltrados.filter(ejercicio =>
-        ejercicio.nombre.toLowerCase().includes(this.filtroEjercicio.toLowerCase())
+        ejercicio.nombre.toLowerCase().includes(termino)
       );
     }
 
+    // Filtrar por grupo muscular
     if (this.filtroGrupoMuscular) {
       ejerciciosFiltrados = ejerciciosFiltrados.filter(ejercicio =>
         ejercicio.grupoMuscular === this.filtroGrupoMuscular
@@ -535,149 +166,814 @@ calcularEdad(fechaNacimiento: string): number {
     this.ejerciciosFiltrados = ejerciciosFiltrados;
   }
 
-  filtrarClientesDisponibles(): void {
-    if (!this.filtroCliente) {
-      this.clientesDisponiblesFiltrados = this.clientesDisponibles;
+  onFiltroEjercicioNombreChange(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.filtroEjercicioNombre = value;
+    this.filtrarEjercicios();
+  }
+
+  onFiltroGrupoMuscularChange(event: Event) {
+    const value = (event.target as HTMLSelectElement).value;
+    this.filtroGrupoMuscular = value;
+    this.filtrarEjercicios();
+  }
+
+  limpiarFiltrosEjercicios() {
+    this.filtroEjercicioNombre = '';
+    this.filtroGrupoMuscular = '';
+    this.filtrarEjercicios();
+  }
+
+  // CONVERSIÓN DE TIEMPO
+  convertirMinutosASegundos(minutos: number | null): number | null {
+    return minutos !== null ? minutos * 60 : null;
+  }
+
+  convertirSegundosAMinutos(segundos: number | null): number | null {
+    return segundos !== null ? Math.round(segundos / 60) : null;
+  }
+
+  // CÁLCULO CORREGIDO DEL TIEMPO
+  calcularTiempoEjercicio(): number {
+    if (!this.ejercicioSeleccionado || !this.nuevoEjercicio.seriesEjercicio) return 0;
+    
+    const ejercicio = this.getEjercicioInfo(this.ejercicioSeleccionado);
+    
+    // Obtener tiempo por serie (en segundos)
+    let tiempoPorSerieSegundos = 45; // Valor por defecto: 45 segundos
+    if (ejercicio?.tiempo) {
+      tiempoPorSerieSegundos = ejercicio.tiempo;
+    }
+    
+    // Obtener descanso entre series (en segundos)
+    let descansoPorSerieSegundos = 60; // Valor por defecto: 60 segundos
+    if (this.nuevoEjercicio.descansoEjercicio) {
+      descansoPorSerieSegundos = this.nuevoEjercicio.descansoEjercicio;
+    }
+    
+    const series = this.nuevoEjercicio.seriesEjercicio;
+    
+    // Cálculo correcto: (tiempo por serie * series) + (descanso * (series - 1))
+    const tiempoTotalSegundos = (tiempoPorSerieSegundos * series) + (descansoPorSerieSegundos * (series - 1));
+    
+    // Convertir a minutos
+    const tiempoTotalMinutos = tiempoTotalSegundos / 60;
+    
+    return Math.ceil(tiempoTotalMinutos); // redondear hacia arriba
+  }
+
+  getTiempoEjercicioDesglose(): string {
+    if (!this.ejercicioSeleccionado || !this.nuevoEjercicio.seriesEjercicio) return '';
+    
+    const ejercicio = this.getEjercicioInfo(this.ejercicioSeleccionado);
+    
+    // Obtener valores en segundos
+    const tiempoPorSerieSegundos = ejercicio?.tiempo || 45;
+    const descansoPorSerieSegundos = this.nuevoEjercicio.descansoEjercicio || 60;
+    const series = this.nuevoEjercicio.seriesEjercicio;
+    
+    // Convertir a minutos para mostrar
+    const tiempoPorSerieMinutos = (tiempoPorSerieSegundos / 60).toFixed(2);
+    const descansoPorSerieMinutos = (descansoPorSerieSegundos / 60).toFixed(2);
+    
+    return `${series} series × ${tiempoPorSerieMinutos} min + ${(series - 1)} descansos × ${descansoPorSerieMinutos} min`;
+  }
+
+  // Método para formatear tiempo en formato legible
+  formatearTiempo(minutos: number): string {
+    if (minutos < 60) {
+      return `${minutos} min`;
+    } else {
+      const horas = Math.floor(minutos / 60);
+      const minsRestantes = minutos % 60;
+      if (minsRestantes === 0) {
+        return `${horas} h`;
+      } else {
+        return `${horas} h ${minsRestantes} min`;
+      }
+    }
+  }
+
+  showAsignarClientes() {
+    if (!this.selectedRutina) return;
+    
+    this.showAsignarModal = true;
+    this.clientesSeleccionados = [];
+    this.filtroCliente = '';
+    
+    this.cargarClientesAsignados();
+  }
+
+  cargarClientesAsignados() {
+    if (!this.selectedRutina) return;
+    
+    this.rutinaService.obtenerClientesAsignadosARutina(this.selectedRutina.folioRutina).subscribe({
+      next: (clientes) => {
+        this.clientesAsignados = clientes;
+        this.cargarTodosLosClientesYFiltrar();
+      },
+      error: (error) => {
+        console.error('Error al cargar clientes asignados:', error);
+        this.cargarTodosLosClientesComoDisponibles();
+      }
+    });
+  }
+
+  cargarTodosLosClientesYFiltrar() {
+    this.rutinaService.obtenerTodosLosClientes().subscribe({
+      next: (todosLosClientes) => {
+        this.clientesDisponibles = todosLosClientes.filter(cliente => 
+          !this.clientesAsignados.some(asignado => asignado.folioCliente === cliente.folioCliente)
+        );
+        this.clientesFiltrados = this.clientesDisponibles;
+      },
+      error: (error) => {
+        console.error('Error al cargar todos los clientes:', error);
+        this.showAlert('Error al cargar la lista de clientes: ' + error.message, 'danger');
+      }
+    });
+  }
+
+  cargarTodosLosClientesComoDisponibles() {
+    this.rutinaService.obtenerTodosLosClientes().subscribe({
+      next: (clientes) => {
+        this.clientesDisponibles = clientes;
+        this.clientesFiltrados = clientes;
+      },
+      error: (error) => {
+        console.error('Error al cargar todos los clientes:', error);
+        this.showAlert('Error al cargar la lista de clientes: ' + error.message, 'danger');
+      }
+    });
+  }
+
+  isClienteAsignado(folioCliente: string): boolean {
+    return this.clientesAsignados.some(cliente => cliente.folioCliente === folioCliente);
+  }
+
+  asignarRutinaAClientes() {
+    if (!this.selectedRutina || this.clientesSeleccionados.length === 0) {
+      this.showAlert('Selecciona al menos un cliente para asignar la rutina', 'warning');
       return;
     }
 
-    this.clientesDisponiblesFiltrados = this.clientesDisponibles.filter(cliente =>
-      cliente.nombre.toLowerCase().includes(this.filtroCliente.toLowerCase())
+    this.asignando = true;
+
+    const request = {
+      foliosClientes: this.clientesSeleccionados,
+      folioInstructor: this.instructorTemporal
+    };
+
+    this.rutinaService.asignarRutinaAMultiplesClientes(this.selectedRutina.folioRutina, request)
+      .subscribe({
+        next: (response) => {
+          this.asignando = false;
+          
+          if (response.success) {
+            this.showAlert(`Rutina asignada exitosamente a ${response.resultado?.totalExitosas || 0} clientes`, 'success');
+            
+            if (response.resultado && response.resultado.errores.length > 0) {
+              const errores = response.resultado.errores.join(', ');
+              this.showAlert(`Algunos clientes no pudieron ser asignados: ${errores}`, 'warning');
+            }
+            
+            this.cargarClientesAsignados();
+            this.closeAsignarModal();
+          } else {
+            this.showAlert('Error al asignar la rutina: ' + response.message, 'danger');
+          }
+        },
+        error: (error) => {
+          this.asignando = false;
+          this.showAlert('Error al asignar la rutina: ' + error.message, 'danger');
+        }
+      });
+  }
+
+  desasignarCliente(folioCliente: string) {
+    if (!this.selectedRutina) return;
+
+    if (confirm('¿Estás seguro de que deseas desasignar este cliente de la rutina?')) {
+      this.rutinaService.desasignarRutinaDeCliente(this.selectedRutina.folioRutina, folioCliente)
+        .subscribe({
+          next: (response) => {
+            if (response.success) {
+              this.showAlert('Cliente desasignado exitosamente', 'success');
+              this.cargarClientesAsignados();
+            } else {
+              this.showAlert('Error al desasignar cliente: ' + response.message, 'danger');
+            }
+          },
+          error: (error) => {
+            this.showAlert('Error al desasignar cliente: ' + error.message, 'danger');
+          }
+        });
+    }
+  }
+
+  toggleMostrarClientesAsignados() {
+    this.mostrarClientesAsignados = !this.mostrarClientesAsignados;
+  }
+
+  // MANEJADORES DE EVENTOS PARA FORMULARIOS
+  onSearchTermChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchTerm = value;
+    this.filterRutinas();
+  }
+
+  onFilterStatusChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.filterStatus = value;
+    this.filterRutinas();
+  }
+
+  onEjercicioSeleccionadoChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.ejercicioSeleccionado = value;
+  }
+
+  onSeriesChange(event: Event): void {
+    const value = parseInt((event.target as HTMLInputElement).value) || 3;
+    this.nuevoEjercicio = {
+      ...this.nuevoEjercicio,
+      seriesEjercicio: value
+    };
+  }
+
+  onRepeticionesChange(event: Event): void {
+    const value = parseInt((event.target as HTMLInputElement).value) || 10;
+    this.nuevoEjercicio = {
+      ...this.nuevoEjercicio,
+      repeticionesEjercicio: value
+    };
+  }
+
+  onDescansoChange(event: Event): void {
+    const value = parseInt((event.target as HTMLInputElement).value) || 60;
+    this.nuevoEjercicio = {
+      ...this.nuevoEjercicio,
+      descansoEjercicio: value
+    };
+  }
+
+  onInstruccionesChange(event: Event): void {
+    const value = (event.target as HTMLTextAreaElement).value;
+    this.nuevoEjercicio = {
+      ...this.nuevoEjercicio,
+      instrucciones: value
+    };
+  }
+
+  onOrdenChange(event: Event): void {
+    const value = parseInt((event.target as HTMLInputElement).value) || 1;
+    this.nuevoEjercicio = {
+      ...this.nuevoEjercicio,
+      orden: value
+    };
+  }
+
+  // CARGA DE DATOS
+  cargarRutinas() {
+    this.rutinaService.obtenerTodasLasRutinas().subscribe({
+      next: (rutinas) => {
+        this.rutinas = rutinas;
+        this.filteredRutinas = rutinas;
+      },
+      error: (error) => {
+        this.showAlert('Error al cargar las rutinas: ' + error.message, 'danger');
+      }
+    });
+  }
+
+  cargarEjerciciosDisponibles() {
+    this.rutinaService.obtenerTodosLosEjercicios().subscribe({
+      next: (ejercicios) => {
+        this.ejerciciosDisponibles = ejercicios;
+        this.ejerciciosFiltrados = ejercicios;
+      },
+      error: (error) => {
+        console.error('Error al cargar ejercicios:', error);
+        this.showAlert('Error al cargar ejercicios disponibles: ' + error.message, 'warning');
+      }
+    });
+  }
+
+  // MÉTODOS PARA ASIGNACIÓN DE CLIENTES
+  closeAsignarModal() {
+    this.showAsignarModal = false;
+    this.clientesSeleccionados = [];
+    this.filtroCliente = '';
+  }
+
+  // FILTRADO DE CLIENTES
+  filtrarClientes() {
+    if (!this.filtroCliente) {
+      this.clientesFiltrados = this.clientesDisponibles;
+      return;
+    }
+
+    const termino = this.filtroCliente.toLowerCase();
+    this.clientesFiltrados = this.clientesDisponibles.filter(cliente =>
+      cliente.nombre.toLowerCase().includes(termino) ||
+      cliente.folioCliente.toLowerCase().includes(termino) ||
+      cliente.email.toLowerCase().includes(termino)
     );
   }
 
-  // ===== MÉTODOS DE UTILIDAD =====
-
-  getEjercicioPorId(idEjercicio: string): EjercicioSimple | undefined {
-    return this.ejercicios.find(e => e.idEjercicio === idEjercicio);
+  onFiltroClienteChange(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.filtroCliente = value;
+    this.filtrarClientes();
   }
 
-  formatearDuracion(minutos: number): string {
-    if (!minutos) return 'No especificada';
-    
-    const horas = Math.floor(minutos / 60);
-    const mins = minutos % 60;
-    
-    if (horas > 0) {
-      return `${horas}h ${mins}min`;
+  // SELECCIÓN DE CLIENTES
+  toggleClienteSeleccionado(folioCliente: string) {
+    const index = this.clientesSeleccionados.indexOf(folioCliente);
+    if (index > -1) {
+      this.clientesSeleccionados.splice(index, 1);
     } else {
-      return `${mins} min`;
+      this.clientesSeleccionados.push(folioCliente);
     }
   }
 
-  calcularTiempoTotal(): number {
-    return this.ejerciciosRutina.reduce((total, ejercicio) => {
-      const tiempoEjercicio = ejercicio.tiempo || 
-        (ejercicio.seriesEjercicio * ejercicio.repeticionesEjercicio * 4) + 
-        ((ejercicio.seriesEjercicio - 1) * ejercicio.descansoEjercicio);
-      return total + (tiempoEjercicio || 0);
-    }, 0);
+  isClienteSeleccionado(folioCliente: string): boolean {
+    return this.clientesSeleccionados.includes(folioCliente);
   }
 
-  calcularEstadisticas(): void {
-  this.rutinasActivasCount = this.rutinas.filter(r => r.estatus === 'Activa').length;
-  this.rutinasInactivasCount = this.rutinas.filter(r => r.estatus === 'Inactiva').length;
-
-    
-  }
-
-  validarRutina(rutina: Rutina): boolean {
-    if (!rutina.nombre || !rutina.nivel || !rutina.objetivo || !rutina.duracionEstimada) {
-      this.mostrarMensaje('Completa todos los campos requeridos', 'warning');
-      return false;
+  seleccionarTodosClientes() {
+    if (this.clientesSeleccionados.length === this.clientesFiltrados.length) {
+      this.clientesSeleccionados = [];
+    } else {
+      this.clientesSeleccionados = this.clientesFiltrados.map(cliente => cliente.folioCliente);
     }
-    return true;
   }
 
-  // ===== MÉTODOS DE VISTAS ADICIONALES =====
-
-  verTodosLosEjercicios(): void {
-    this.vistaActual = 'ejercicios-lista';
+  // MÉTODOS DE UTILIDAD PARA CLIENTES
+  getClientesSeleccionadosCount(): number {
+    return this.clientesSeleccionados.length;
   }
 
-  verDetalleEjercicio(ejercicio: EjercicioSimple): void {
-    this.ejercicioDetalle = ejercicio;
-    this.vistaActual = 'ejercicio-detalle';
+  getClienteNombre(folioCliente: string): string {
+    const cliente = this.clientesDisponibles.find(c => c.folioCliente === folioCliente);
+    return cliente ? cliente.nombre : 'Cliente no encontrado';
   }
 
-verTodosLosClientes(): void {
-  this.vistaActual = 'cliente-lista';
-  this.cargarTodosLosClientes();
-}
-cargarTodosLosClientes(): void {
-  this.cargando = true;
-  
-  this.clienteService.obtenerTodosLosClientes().subscribe({
-    next: (clientes) => {
-      // Calcular edad para cada cliente y asignar a clientesFiltrados
-      this.clientesFiltrados = clientes.map(cliente => ({
-        ...cliente,
-        edad: this.calcularEdad(cliente.fechaNacimiento)
-      }));
-      this.cargando = false;
-      console.log('Clientes cargados para vista lista:', this.clientesFiltrados.length);
-    },
-    error: (error) => {
-      console.error('Error al cargar todos los clientes:', error);
-      this.mostrarMensaje('Error al cargar los clientes: ' + error.message, 'error');
-      this.cargando = false;
+  calcularEdad(fechaNacimiento: string): number {
+    if (!fechaNacimiento) return 0;
+    const nacimiento = new Date(fechaNacimiento);
+    const hoy = new Date();
+    let edad = hoy.getFullYear() - nacimiento.getFullYear();
+    const mes = hoy.getMonth();
+    const dia = hoy.getDate();
+    
+    if (mes < nacimiento.getMonth() || 
+        (mes === nacimiento.getMonth() && dia < nacimiento.getDate())) {
+      edad--;
     }
-  });
-}
-
-filtrarClientesEnLista(): void {
-  if (!this.filtroCliente) {
-    this.clientesFiltrados = [...this.clientesFiltrados];
-    return;
+    
+    return edad;
   }
 
-  const termino = this.filtroCliente.toLowerCase();
-  this.clientesFiltrados = this.clientesFiltrados.filter(cliente =>
-    cliente.nombre.toLowerCase().includes(termino) ||
-    cliente.email?.toLowerCase().includes(termino) ||
-    cliente.telefono?.includes(termino)
-  );
-}
-  // ===== MÉTODOS DE INTERFAZ =====
-
-  moverEjercicioArriba(index: number): void {
-    if (index <= 0) return;
-
-    const ejercicios = [...this.ejerciciosRutina];
-    [ejercicios[index], ejercicios[index - 1]] = [ejercicios[index - 1], ejercicios[index]];
-    
-    // Actualizar órdenes
-    ejercicios.forEach((ej, i) => ej.orden = i + 1);
-    this.ejerciciosRutina = ejercicios;
-    
-    // En una implementación real, aquí guardarías el nuevo orden
+  // FILTRADO Y BÚSQUEDA
+  filterRutinas() {
+    this.filteredRutinas = this.rutinas.filter(rutina => {
+      const matchesSearch = rutina.nombre.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                           rutina.descripcion?.toLowerCase().includes(this.searchTerm.toLowerCase());
+      const matchesStatus = !this.filterStatus || rutina.estatus === this.filterStatus;
+      return matchesSearch && matchesStatus;
+    });
   }
 
-  moverEjercicioAbajo(index: number): void {
-    if (index >= this.ejerciciosRutina.length - 1) return;
-
-    const ejercicios = [...this.ejerciciosRutina];
-    [ejercicios[index], ejercicios[index + 1]] = [ejercicios[index + 1], ejercicios[index]];
+  // SELECCIÓN Y NAVEGACIÓN
+  selectRutina(rutina: Rutina) {
+    this.selectedRutina = rutina;
+    this.isCreating = false;
+    this.isEditing = false;
+    this.mostrarClientesAsignados = false;
     
-    // Actualizar órdenes
-    ejercicios.forEach((ej, i) => ej.orden = i + 1);
-    this.ejerciciosRutina = ejercicios;
-    
-    // En una implementación real, aquí guardarías el nuevo orden
+    this.cargarClientesAsignados();
   }
 
-  mostrarMensaje(mensaje: string, tipo: 'success' | 'error' | 'info' | 'warning' = 'info'): void {
-    this.mensaje = mensaje;
-    this.tipoMensaje = tipo;
+  showCreateRutinaForm() {
+    this.selectedRutina = null;
+    this.isCreating = true;
+    this.isEditing = false;
+    this.rutinaForm.reset({
+      estatus: 'Activa',
+      folioInstructor: this.instructorTemporal
+    });
+  }
+
+  editRutina() {
+    if (this.selectedRutina) {
+      this.isEditing = true;
+      this.isCreating = false;
+      this.rutinaForm.patchValue(this.selectedRutina);
+    }
+  }
+
+  cancelEdit() {
+    this.isCreating = false;
+    this.isEditing = false;
+    if (this.selectedRutina) {
+      this.cargarRutinaDetalle(this.selectedRutina.folioRutina);
+    }
+  }
+
+  // OPERACIONES CRUD
+  saveRutina() {
+    if (this.rutinaForm.invalid) return;
+
+    const rutinaData = {
+      ...this.rutinaForm.value,
+      folioInstructor: this.instructorTemporal
+    };
+
+    if (this.isCreating) {
+      this.rutinaService.crearRutina(rutinaData).subscribe({
+        next: (nuevaRutina) => {
+          this.rutinas.push(nuevaRutina);
+          this.selectRutina(nuevaRutina);
+          this.isCreating = false;
+          this.showAlert('Rutina creada exitosamente', 'success');
+          this.filterRutinas();
+        },
+        error: (error) => {
+          this.showAlert('Error al crear la rutina: ' + error.message, 'danger');
+        }
+      });
+    } else if (this.isEditing && this.selectedRutina) {
+      this.rutinaService.actualizarRutina(this.selectedRutina.folioRutina, rutinaData).subscribe({
+        next: (rutinaActualizada) => {
+          const index = this.rutinas.findIndex(r => r.folioRutina === rutinaActualizada.folioRutina);
+          if (index !== -1) {
+            this.rutinas[index] = rutinaActualizada;
+          }
+          this.selectedRutina = rutinaActualizada;
+          this.isEditing = false;
+          this.showAlert('Rutina actualizada exitosamente', 'success');
+          this.filterRutinas();
+        },
+        error: (error) => {
+          this.showAlert('Error al actualizar la rutina: ' + error.message, 'danger');
+        }
+      });
+    }
+  }
+
+  deleteRutina() {
+    if (!this.selectedRutina) return;
+
+    if (confirm(`¿Estás seguro de que deseas eliminar la rutina "${this.selectedRutina.nombre}"?`)) {
+      this.rutinaService.eliminarRutina(this.selectedRutina.folioRutina).subscribe({
+        next: () => {
+          this.rutinas = this.rutinas.filter(r => r.folioRutina !== this.selectedRutina!.folioRutina);
+          this.selectedRutina = null;
+          this.showAlert('Rutina eliminada exitosamente', 'success');
+          this.filterRutinas();
+        },
+        error: (error) => {
+          this.showAlert('Error al eliminar la rutina: ' + error.message, 'danger');
+        }
+      });
+    }
+  }
+
+  // GESTIÓN DE EJERCICIOS
+  showAgregarEjercicio() {
+    if (!this.selectedRutina) return;
+    this.showEjercicioModal = true;
+    this.ejercicioSeleccionado = '';
+    this.nuevoEjercicio = {
+      seriesEjercicio: 3,
+      repeticionesEjercicio: 10,
+      descansoEjercicio: 60,
+      orden: (this.selectedRutina.ejercicios?.length || 0) + 1,
+      instrucciones: ''
+    };
+    // Limpiar filtros al abrir el modal
+    this.filtroEjercicioNombre = '';
+    this.filtroGrupoMuscular = '';
+    this.filtrarEjercicios();
+  }
+
+  closeEjercicioModal() {
+    this.showEjercicioModal = false;
+  }
+
+  // MÉTODOS PARA CREAR NUEVOS EJERCICIOS
+  showCrearEjercicioModalFromAgregar() {
+    this.showEjercicioModal = false;
+    this.showCrearEjercicioModal = true;
+  }
+
+  showCrearEjercicio() {
+    this.showCrearEjercicioModal = true;
+  }
+
+  closeCrearEjercicioModal() {
+    this.showCrearEjercicioModal = false;
+    this.ejercicioForm.reset({
+      estatus: 'Activo',
+      equipoNecesario: []
+    });
+  }
+
+  crearEjercicio() {
+    if (this.ejercicioForm.invalid) return;
+
+    this.creandoEjercicio = true;
     
-    // Auto-ocultar después de 5 segundos
+    // Convertir tiempos de minutos a segundos para el backend
+    const formData = this.ejercicioForm.value;
+    const ejercicioData: CrearEjercicioRequest = {
+      ...formData,
+      tiempo: this.convertirMinutosASegundos(formData.tiempo),
+      descanso: this.convertirMinutosASegundos(formData.descanso),
+      equipoNecesario: Array.isArray(formData.equipoNecesario) ? 
+        formData.equipoNecesario.join(', ') : formData.equipoNecesario
+    };
+
+    this.rutinaService.crearEjercicio(ejercicioData).subscribe({
+      next: (nuevoEjercicio) => {
+        this.creandoEjercicio = false;
+        this.showCrearEjercicioModal = false;
+        
+        // Agregar el nuevo ejercicio a la lista de disponibles
+        this.ejerciciosDisponibles.push(nuevoEjercicio);
+        this.filtrarEjercicios();
+        
+        // Si venimos del modal de agregar ejercicio, seleccionar automáticamente el nuevo ejercicio
+        if (this.showEjercicioModal) {
+          this.ejercicioSeleccionado = nuevoEjercicio.idEjercicio;
+          this.showEjercicioModal = true;
+        }
+        
+        this.showAlert('Ejercicio creado exitosamente', 'success');
+        this.ejercicioForm.reset({
+          estatus: 'Activo',
+          equipoNecesario: []
+        });
+      },
+      error: (error) => {
+        this.creandoEjercicio = false;
+        this.showAlert('Error al crear el ejercicio: ' + error.message, 'danger');
+      }
+    });
+  }
+
+  isEjercicioEnRutina(idEjercicio: string): boolean {
+    if (!this.selectedRutina?.ejercicios) return false;
+    return this.selectedRutina.ejercicios.some(ej => ej.idEjercicio === idEjercicio);
+  }
+
+  getEjercicioInfo(idEjercicio: string): Ejercicio | null {
+    return this.ejerciciosDisponibles.find(e => e.idEjercicio === idEjercicio) || null;
+  }
+
+  esEjercicioValido(): boolean {
+    return !!this.ejercicioSeleccionado && 
+           !!this.nuevoEjercicio.seriesEjercicio && 
+           this.nuevoEjercicio.seriesEjercicio > 0 &&
+           !!this.nuevoEjercicio.repeticionesEjercicio && 
+           this.nuevoEjercicio.repeticionesEjercicio > 0 &&
+           !!this.nuevoEjercicio.descansoEjercicio && 
+           this.nuevoEjercicio.descansoEjercicio >= 0 &&
+           !!this.nuevoEjercicio.orden && 
+           this.nuevoEjercicio.orden > 0;
+  }
+
+  agregarEjercicio() {
+    if (!this.selectedRutina || !this.ejercicioSeleccionado) return;
+
+    if (this.isEjercicioEnRutina(this.ejercicioSeleccionado)) {
+      this.showAlert('Este ejercicio ya está en la rutina. No se pueden agregar duplicados.', 'warning');
+      return;
+    }
+
+    if (!this.esEjercicioValido()) {
+      this.showAlert('Por favor completa todos los campos requeridos correctamente.', 'warning');
+      return;
+    }
+
+    const ejercicioRutina: EjercicioRutina = {
+      idEjercicio: this.ejercicioSeleccionado,
+      orden: this.nuevoEjercicio.orden || (this.selectedRutina.ejercicios?.length || 0) + 1,
+      seriesEjercicio: this.nuevoEjercicio.seriesEjercicio || 3,
+      repeticionesEjercicio: this.nuevoEjercicio.repeticionesEjercicio || 10,
+      descansoEjercicio: this.nuevoEjercicio.descansoEjercicio || 60,
+      instrucciones: this.nuevoEjercicio.instrucciones || this.getEjercicioInfo(this.ejercicioSeleccionado)?.instrucciones || ''
+    };
+
+    this.rutinaService.agregarEjercicioARutina(this.selectedRutina.folioRutina, ejercicioRutina).subscribe({
+      next: (rutinaActualizada) => {
+        this.selectedRutina = rutinaActualizada;
+        this.showEjercicioModal = false;
+        this.showAlert('Ejercicio agregado exitosamente', 'success');
+        
+        const index = this.rutinas.findIndex(r => r.folioRutina === rutinaActualizada.folioRutina);
+        if (index !== -1) {
+          this.rutinas[index] = rutinaActualizada;
+        }
+      },
+      error: (error) => {
+        if (error.message.includes('duplicate key') || error.message.includes('ya existe')) {
+          this.showAlert('Este ejercicio ya está en la rutina. No se pueden agregar duplicados.', 'warning');
+        } else {
+          this.showAlert('Error al agregar el ejercicio: ' + error.message, 'danger');
+        }
+      }
+    });
+  }
+
+  eliminarEjercicio(idEjercicio: string) {
+    if (!this.selectedRutina) return;
+
+    if (confirm('¿Estás seguro de que deseas eliminar este ejercicio de la rutina?')) {
+      this.rutinaService.eliminarEjercicioDeRutina(this.selectedRutina.folioRutina, idEjercicio).subscribe({
+        next: (rutinaActualizada) => {
+          this.selectedRutina = rutinaActualizada;
+          this.showAlert('Ejercicio eliminado exitosamente', 'success');
+          
+          const index = this.rutinas.findIndex(r => r.folioRutina === rutinaActualizada.folioRutina);
+          if (index !== -1) {
+            this.rutinas[index] = rutinaActualizada;
+          }
+        },
+        error: (error) => {
+          this.showAlert('Error al eliminar el ejercicio: ' + error.message, 'danger');
+        }
+      });
+    }
+  }
+
+  getEjercicioNombre(idEjercicio: string): string {
+    const ejercicio = this.ejerciciosDisponibles.find(e => e.idEjercicio === idEjercicio);
+    return ejercicio ? ejercicio.nombre : 'Ejercicio no encontrado';
+  }
+
+  // UTILIDADES
+  cargarRutinaDetalle(folioRutina: string) {
+    this.rutinaService.obtenerRutinaPorId(folioRutina).subscribe({
+      next: (rutina) => {
+        this.selectedRutina = rutina;
+      },
+      error: (error) => {
+        this.showAlert('Error al cargar los detalles de la rutina: ' + error.message, 'danger');
+      }
+    });
+  }
+
+  getStatusBadgeClass(estatus: string): string {
+    switch (estatus) {
+      case 'Activa': return 'bg-success';
+      case 'Inactiva': return 'bg-secondary';
+      default: return 'bg-info';
+    }
+  }
+
+  getNivelBadgeClass(nivel: string): string {
+    switch (nivel) {
+      case 'Principiante': return 'bg-success';
+      case 'Intermedio': return 'bg-warning';
+      case 'Avanzado': return 'bg-danger';
+      default: return 'bg-info';
+    }
+  }
+
+  showAlert(message: string, type: 'success' | 'danger' | 'warning') {
+    this.alertMessage = message;
+    this.alertType = `alert-${type}`;
+    
     setTimeout(() => {
-      this.mensaje = '';
+      this.clearAlert();
     }, 5000);
   }
 
-  // Método auxiliar para formatear fechas
-  formatearFecha(fecha: string): string {
-    return this.datePipe.transform(fecha, 'dd/MM/yyyy') || 'Fecha inválida';
+  clearAlert() {
+    this.alertMessage = '';
   }
+
+  // MÉTODOS ADICIONALES
+  duplicarRutina(rutina: Rutina): void {
+    if (!rutina) return;
+
+    const rutinaDuplicada = {
+      nombre: `${rutina.nombre} (Copia)`,
+      descripcion: rutina.descripcion,
+      nivel: rutina.nivel,
+      objetivo: rutina.objetivo,
+      estatus: 'Activa',
+      folioInstructor: this.instructorTemporal,
+      ejercicios: rutina.ejercicios ? [...rutina.ejercicios] : []
+    };
+
+    this.rutinaService.crearRutina(rutinaDuplicada).subscribe({
+      next: (nuevaRutina) => {
+        this.rutinas.push(nuevaRutina);
+        this.selectRutina(nuevaRutina);
+        this.showAlert('Rutina duplicada exitosamente', 'success');
+        this.filterRutinas();
+      },
+      error: (error) => {
+        this.showAlert('Error al duplicar la rutina: ' + error.message, 'danger');
+      }
+    });
+  }
+
+  cambiarEstadoRutina(rutina: Rutina, nuevoEstado: string): void {
+    if (!rutina) return;
+
+    this.rutinaService.cambiarEstatusRutina(rutina.folioRutina, nuevoEstado).subscribe({
+      next: () => {
+        rutina.estatus = nuevoEstado;
+        this.showAlert(`Rutina ${nuevoEstado.toLowerCase()} exitosamente`, 'success');
+        this.filterRutinas();
+      },
+      error: (error) => {
+        this.showAlert('Error al cambiar el estado de la rutina: ' + error.message, 'danger');
+      }
+    });
+  }
+
+  limpiarFiltros(): void {
+    this.searchTerm = '';
+    this.filterStatus = '';
+    this.filterRutinas();
+  }
+
+  // TrackBy functions para mejor rendimiento
+  trackByRutina(index: number, rutina: Rutina): string {
+    return rutina.folioRutina;
+  }
+
+  trackByEjercicio(index: number, ejercicio: EjercicioRutina): string {
+    return `${ejercicio.idEjercicio}-${ejercicio.orden}`;
+  }
+
+  trackByEjercicioDisponible(index: number, ejercicio: Ejercicio): string {
+    return ejercicio.idEjercicio;
+  }
+
+  trackByCliente(index: number, cliente: Cliente): string {
+    return cliente.folioCliente;
+  }
+
+
+cambiarEstatusRutina(rutina: Rutina, nuevoEstatus: string): void {
+  const confirmMessage = nuevoEstatus === 'Inactiva' 
+    ? `¿Estás seguro de que quieres inactivar la rutina "${rutina.nombre}"?` 
+    : `¿Estás seguro de que quieres activar la rutina "${rutina.nombre}"?`;
+
+  if (confirm(confirmMessage)) {
+    this.rutinaService.cambiarEstatusRutina(rutina.folioRutina, nuevoEstatus)
+      .subscribe({
+        next: (response: any) => {
+          this.showAlert(`Rutina ${nuevoEstatus === 'Inactiva' ? 'inactivada' : 'activada'} exitosamente`, 'success');
+          
+          // Actualizar la rutina en la lista
+          const index = this.rutinas.findIndex(r => r.folioRutina === rutina.folioRutina);
+          if (index !== -1) {
+            this.rutinas[index].estatus = nuevoEstatus;
+          }
+          
+          // Si la rutina seleccionada es la que se modificó, actualizarla
+          if (this.selectedRutina && this.selectedRutina.folioRutina === rutina.folioRutina) {
+            this.selectedRutina.estatus = nuevoEstatus;
+          }
+          
+          // Recargar la lista filtrada
+          this.filterRutinas();
+        },
+        error: (error) => {
+          console.error('Error al cambiar estatus:', error);
+          this.showAlert('Error al cambiar el estatus de la rutina', 'danger');
+        }
+      });
+  }
+}
+
+// Método específico para inactivar
+inactivarRutina(rutina: Rutina): void {
+  this.cambiarEstatusRutina(rutina, 'Inactiva');
+}
+
+// Método específico para activar
+activarRutina(rutina: Rutina): void {
+  this.cambiarEstatusRutina(rutina, 'Activa');
+}
+
+// Método para obtener rutinas por estatus (para filtros)
+filtrarPorEstatus(estatus: string): void {
+  this.rutinaService.getRutinasPorEstatus(estatus).subscribe({
+    next: (rutinas) => {
+      this.rutinas = rutinas;
+      this.filterRutinas();
+    },
+    error: (error) => {
+      console.error('Error al filtrar rutinas por estatus:', error);
+    }
+  });
+}
 }
