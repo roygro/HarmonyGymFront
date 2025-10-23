@@ -8,8 +8,16 @@ import { ClienteComponent } from './component/Cliente/cliente-component/cliente-
 import { PagoList } from './component/pagos/pago-list/pago-list';
 import { PagoDetails } from './component/pagos/pago-details/pago-details';
 import { PagoCreate } from './component/pagos/pago-create/pago-create';
+import { LoginComponent } from './component/Auth/login-component/login-component';
 
 export const routes: Routes = [
+
+  // Rutas de Autenticación
+  { 
+    path: 'login', 
+    component: LoginComponent 
+  },
+
 
   // Rutas de Pagos
   { 
@@ -65,13 +73,13 @@ export const routes: Routes = [
   // Ruta por defecto
   { 
     path: '', 
-    redirectTo: 'recepcionista', 
+    redirectTo: 'login', 
     pathMatch: 'full' 
   },
   
   // Ruta comodín
   {
     path: '**',
-    redirectTo: 'recepcionista'
+    redirectTo: 'login'
   }
 ];
