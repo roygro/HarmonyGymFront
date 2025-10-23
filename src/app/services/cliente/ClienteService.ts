@@ -107,6 +107,7 @@ export class ClienteService {
   obtenerClientesPorEstatus(estatus: string): Observable<Cliente[]> {
     return this.http.get<Cliente[]>(`${this.apiUrl}/estatus/${estatus}`);
   }
+  
 
   /**
    * Obtener solo clientes activos
