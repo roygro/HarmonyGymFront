@@ -460,25 +460,38 @@ obtenerClientesNoAsignadosARutina(folioRutina: string): Observable<Cliente[]> {
    * Calcular duración estimada basada en ejercicios
    */
   calcularDuracionEstimada(ejercicios: EjercicioRutina[]): number {
-    if (!ejercicios || ejercicios.length === 0) {
-      return 0;
-    }
-
-    let duracionTotal = 0;
-    
-    ejercicios.forEach(ejercicio => {
-      // Estimación básica: 30 segundos por serie + tiempo de descanso
-      const tiempoPorSerie = 30; // segundos
-      const series = ejercicio.seriesEjercicio || 3;
-      const descansoPorSerie = ejercicio.descansoEjercicio || 60; // segundos
-      
-      duracionTotal += (tiempoPorSerie * series) + (descansoPorSerie * (series - 1));
-    });
-
-    // Convertir a minutos
-    return Math.ceil(duracionTotal / 60);
+  if (!ejercicios || ejercicios.length === 0) {
+    return 0;
   }
 
+  let duracionTotal = 0; // en minutos
+  
+  ejercicios.forEach(ejercicio => {
+    // Estimación: 0.75 minutos por serie + tiempo de descanso en minutos
+    const tiempoPorSerie = 0.75; // 45 segundos = 0.75 minutos
+    const series = ejercicio.seriesEjercicio || 3;
+    const descansoPorSerie = (ejercicio.descansoEjercicio || 60) / 60; // convertir segundos a minutos
+    
+    duracionTotal += (tiempoPorSerie * series) + (descansoPorSerie * (series - 1));
+  });
+
+  // Ya está en minutos, redondear hacia arriba
+  return Math.ceil(duracionTotal);
+}
+// Método para formatear tiempo en formato legible
+formatearTiempo(minutos: number): string {
+  if (minutos < 60) {
+    return `${minutos} min`;
+  } else {
+    const horas = Math.floor(minutos / 60);
+    const minsRestantes = minutos % 60;
+    if (minsRestantes === 0) {
+      return `${horas} h`;
+    } else {
+      return `${horas} h ${minsRestantes} min`;
+    }
+  }
+}
   /**
    * Validar datos de rutina antes de enviar al backend
    */
@@ -574,4 +587,20 @@ obtenerClientesNoAsignadosARutina(folioRutina: string): Observable<Cliente[]> {
     
     return throwError(() => new Error(mensajeError));
   }
+
+  
+// Método específico para inactivar
+inactivarRutina(folioRutina: string): Observable<any> {
+  return this.http.patch(`${this.apiUrl}/${folioRutina}/inactivar`, {});
+}
+
+// Método específico para activar
+activarRutina(folioRutina: string): Observable<any> {
+  return this.http.patch(`${this.apiUrl}/${folioRutina}/activar`, {});
+}
+
+// Método para obtener rutinas por estatus
+getRutinasPorEstatus(estatus: string): Observable<Rutina[]> {
+  return this.http.get<Rutina[]>(`${this.apiUrl}/estatus/${estatus}`);
+}
 }

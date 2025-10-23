@@ -33,6 +33,7 @@ export class RutinaComponent implements OnInit {
   
   // Ejercicios
   ejerciciosDisponibles: Ejercicio[] = [];
+  ejerciciosFiltrados: Ejercicio[] = [];
   ejercicioSeleccionado: string = '';
   nuevoEjercicio: Partial<EjercicioRutina> = {
     seriesEjercicio: 3,
@@ -40,6 +41,23 @@ export class RutinaComponent implements OnInit {
     descansoEjercicio: 60,
     instrucciones: ''
   };
+  
+  // Filtros para ejercicios
+  filtroEjercicioNombre: string = '';
+  filtroGrupoMuscular: string = '';
+  
+  // Opciones para selects
+  gruposMusculares: string[] = [
+    'Pecho', 'Espalda', 'Hombros', 'Piernas', 'Brazos', 
+    'Abdominales', 'Glúteos', 'Cardio', 'Full Body'
+  ];
+  
+  equiposDisponibles: string[] = [
+    'Mancuernas', 'Barra', 'Máquina', 'Peso Corporal', 
+    'Bandas de Resistencia', 'Kettlebell', 'Balón Medicinal',
+    'TRX', 'Polea', 'Press', 'Bicicleta', 'Cinta de Correr',
+    'Elíptica', 'Step', 'Bosu', 'Ninguno', 'Otro'
+  ];
   
   // Modales
   showEjercicioModal = false;
@@ -91,11 +109,149 @@ export class RutinaComponent implements OnInit {
       series: [null],
       repeticiones: [null],
       descanso: [null],
-      equipoNecesario: ['', Validators.required],
+      equipoNecesario: [[], Validators.required],
       grupoMuscular: ['', Validators.required],
       instrucciones: ['', Validators.required],
       estatus: ['Activo']
     });
+  }
+
+  // MÉTODOS PARA EQUIPOS MÚLTIPLES
+  toggleEquipo(equipo: string) {
+    const equiposActuales: string[] = this.ejercicioForm.get('equipoNecesario')?.value || [];
+    const index = equiposActuales.indexOf(equipo);
+    
+    if (index > -1) {
+      // Remover equipo
+      equiposActuales.splice(index, 1);
+    } else {
+      // Agregar equipo
+      equiposActuales.push(equipo);
+    }
+    
+    this.ejercicioForm.patchValue({
+      equipoNecesario: [...equiposActuales]
+    });
+  }
+
+  isEquipoSeleccionado(equipo: string): boolean {
+    const equiposActuales: string[] = this.ejercicioForm.get('equipoNecesario')?.value || [];
+    return equiposActuales.includes(equipo);
+  }
+
+  getEquiposSeleccionadosTexto(): string {
+    const equipos: string[] = this.ejercicioForm.get('equipoNecesario')?.value || [];
+    return equipos.length > 0 ? equipos.join(', ') : 'Ningún equipo seleccionado';
+  }
+
+  // FILTRADO DE EJERCICIOS
+  filtrarEjercicios() {
+    let ejerciciosFiltrados = this.ejerciciosDisponibles;
+
+    // Filtrar por nombre
+    if (this.filtroEjercicioNombre) {
+      const termino = this.filtroEjercicioNombre.toLowerCase();
+      ejerciciosFiltrados = ejerciciosFiltrados.filter(ejercicio =>
+        ejercicio.nombre.toLowerCase().includes(termino)
+      );
+    }
+
+    // Filtrar por grupo muscular
+    if (this.filtroGrupoMuscular) {
+      ejerciciosFiltrados = ejerciciosFiltrados.filter(ejercicio =>
+        ejercicio.grupoMuscular === this.filtroGrupoMuscular
+      );
+    }
+
+    this.ejerciciosFiltrados = ejerciciosFiltrados;
+  }
+
+  onFiltroEjercicioNombreChange(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.filtroEjercicioNombre = value;
+    this.filtrarEjercicios();
+  }
+
+  onFiltroGrupoMuscularChange(event: Event) {
+    const value = (event.target as HTMLSelectElement).value;
+    this.filtroGrupoMuscular = value;
+    this.filtrarEjercicios();
+  }
+
+  limpiarFiltrosEjercicios() {
+    this.filtroEjercicioNombre = '';
+    this.filtroGrupoMuscular = '';
+    this.filtrarEjercicios();
+  }
+
+  // CONVERSIÓN DE TIEMPO
+  convertirMinutosASegundos(minutos: number | null): number | null {
+    return minutos !== null ? minutos * 60 : null;
+  }
+
+  convertirSegundosAMinutos(segundos: number | null): number | null {
+    return segundos !== null ? Math.round(segundos / 60) : null;
+  }
+
+  // CÁLCULO CORREGIDO DEL TIEMPO
+  calcularTiempoEjercicio(): number {
+    if (!this.ejercicioSeleccionado || !this.nuevoEjercicio.seriesEjercicio) return 0;
+    
+    const ejercicio = this.getEjercicioInfo(this.ejercicioSeleccionado);
+    
+    // Obtener tiempo por serie (en segundos)
+    let tiempoPorSerieSegundos = 45; // Valor por defecto: 45 segundos
+    if (ejercicio?.tiempo) {
+      tiempoPorSerieSegundos = ejercicio.tiempo;
+    }
+    
+    // Obtener descanso entre series (en segundos)
+    let descansoPorSerieSegundos = 60; // Valor por defecto: 60 segundos
+    if (this.nuevoEjercicio.descansoEjercicio) {
+      descansoPorSerieSegundos = this.nuevoEjercicio.descansoEjercicio;
+    }
+    
+    const series = this.nuevoEjercicio.seriesEjercicio;
+    
+    // Cálculo correcto: (tiempo por serie * series) + (descanso * (series - 1))
+    const tiempoTotalSegundos = (tiempoPorSerieSegundos * series) + (descansoPorSerieSegundos * (series - 1));
+    
+    // Convertir a minutos
+    const tiempoTotalMinutos = tiempoTotalSegundos / 60;
+    
+    return Math.ceil(tiempoTotalMinutos); // redondear hacia arriba
+  }
+
+  getTiempoEjercicioDesglose(): string {
+    if (!this.ejercicioSeleccionado || !this.nuevoEjercicio.seriesEjercicio) return '';
+    
+    const ejercicio = this.getEjercicioInfo(this.ejercicioSeleccionado);
+    
+    // Obtener valores en segundos
+    const tiempoPorSerieSegundos = ejercicio?.tiempo || 45;
+    const descansoPorSerieSegundos = this.nuevoEjercicio.descansoEjercicio || 60;
+    const series = this.nuevoEjercicio.seriesEjercicio;
+    
+    // Convertir a minutos para mostrar
+    const tiempoPorSerieMinutos = (tiempoPorSerieSegundos / 60).toFixed(2);
+    const descansoPorSerieMinutos = (descansoPorSerieSegundos / 60).toFixed(2);
+    
+    return `${series} series × ${tiempoPorSerieMinutos} min + ${(series - 1)} descansos × ${descansoPorSerieMinutos} min`;
+  }
+
+  // Método para formatear tiempo en formato legible
+  formatearTiempo(minutos: number): string {
+    if (minutos < 60) {
+      return `${minutos} min`;
+    } else {
+      const horas = Math.floor(minutos / 60);
+      const minsRestantes = minutos % 60;
+      if (minsRestantes === 0) {
+        return `${horas} h`;
+      } else {
+        return `${horas} h ${minsRestantes} min`;
+      }
+    }
   }
 
   showAsignarClientes() {
@@ -105,49 +261,31 @@ export class RutinaComponent implements OnInit {
     this.clientesSeleccionados = [];
     this.filtroCliente = '';
     
-    // Cargar primero clientes asignados, luego los disponibles
     this.cargarClientesAsignados();
   }
 
-  // Método para cargar clientes asignados
   cargarClientesAsignados() {
     if (!this.selectedRutina) return;
     
     this.rutinaService.obtenerClientesAsignadosARutina(this.selectedRutina.folioRutina).subscribe({
       next: (clientes) => {
         this.clientesAsignados = clientes;
-        console.log('Clientes asignados cargados:', clientes);
-        
-        // Una vez cargados los asignados, cargar todos los clientes y filtrar
         this.cargarTodosLosClientesYFiltrar();
       },
       error: (error) => {
         console.error('Error al cargar clientes asignados:', error);
-        // Si falla cargar asignados, cargar todos los clientes como disponibles
         this.cargarTodosLosClientesComoDisponibles();
       }
     });
   }
 
-  // Método principal para cargar clientes disponibles
-  cargarClientesDisponibles() {
-    if (!this.selectedRutina) return;
-    
-    // Método simplificado: cargar todos los clientes y filtrar manualmente
-    this.cargarTodosLosClientesYFiltrar();
-  }
-
-  // Método para cargar todos los clientes y filtrar los no asignados
   cargarTodosLosClientesYFiltrar() {
     this.rutinaService.obtenerTodosLosClientes().subscribe({
       next: (todosLosClientes) => {
-        // Filtrar clientes que no están asignados
         this.clientesDisponibles = todosLosClientes.filter(cliente => 
           !this.clientesAsignados.some(asignado => asignado.folioCliente === cliente.folioCliente)
         );
         this.clientesFiltrados = this.clientesDisponibles;
-        console.log('Clientes disponibles (filtrados):', this.clientesDisponibles);
-        console.log('Clientes asignados:', this.clientesAsignados);
       },
       error: (error) => {
         console.error('Error al cargar todos los clientes:', error);
@@ -156,13 +294,11 @@ export class RutinaComponent implements OnInit {
     });
   }
 
-  // Método de respaldo si falla cargar asignados
   cargarTodosLosClientesComoDisponibles() {
     this.rutinaService.obtenerTodosLosClientes().subscribe({
       next: (clientes) => {
         this.clientesDisponibles = clientes;
         this.clientesFiltrados = clientes;
-        console.log('Clientes cargados como disponibles (sin filtro):', clientes);
       },
       error: (error) => {
         console.error('Error al cargar todos los clientes:', error);
@@ -171,12 +307,10 @@ export class RutinaComponent implements OnInit {
     });
   }
 
-  // Método para verificar si un cliente está asignado
   isClienteAsignado(folioCliente: string): boolean {
     return this.clientesAsignados.some(cliente => cliente.folioCliente === folioCliente);
   }
 
-  // Actualizar el método de asignación para refrescar las listas
   asignarRutinaAClientes() {
     if (!this.selectedRutina || this.clientesSeleccionados.length === 0) {
       this.showAlert('Selecciona al menos un cliente para asignar la rutina', 'warning');
@@ -203,9 +337,7 @@ export class RutinaComponent implements OnInit {
               this.showAlert(`Algunos clientes no pudieron ser asignados: ${errores}`, 'warning');
             }
             
-            // Recargar las listas después de asignar
             this.cargarClientesAsignados();
-            
             this.closeAsignarModal();
           } else {
             this.showAlert('Error al asignar la rutina: ' + response.message, 'danger');
@@ -218,7 +350,6 @@ export class RutinaComponent implements OnInit {
       });
   }
 
-  // Método para desasignar clientes
   desasignarCliente(folioCliente: string) {
     if (!this.selectedRutina) return;
 
@@ -228,7 +359,6 @@ export class RutinaComponent implements OnInit {
           next: (response) => {
             if (response.success) {
               this.showAlert('Cliente desasignado exitosamente', 'success');
-              // Recargar las listas después de desasignar
               this.cargarClientesAsignados();
             } else {
               this.showAlert('Error al desasignar cliente: ' + response.message, 'danger');
@@ -241,7 +371,6 @@ export class RutinaComponent implements OnInit {
     }
   }
 
-  // Método para mostrar/ocultar clientes asignados
   toggleMostrarClientesAsignados() {
     this.mostrarClientesAsignados = !this.mostrarClientesAsignados;
   }
@@ -310,11 +439,9 @@ export class RutinaComponent implements OnInit {
       next: (rutinas) => {
         this.rutinas = rutinas;
         this.filteredRutinas = rutinas;
-        console.log('Rutinas cargadas:', rutinas);
       },
       error: (error) => {
         this.showAlert('Error al cargar las rutinas: ' + error.message, 'danger');
-        console.error('Error:', error);
       }
     });
   }
@@ -323,7 +450,7 @@ export class RutinaComponent implements OnInit {
     this.rutinaService.obtenerTodosLosEjercicios().subscribe({
       next: (ejercicios) => {
         this.ejerciciosDisponibles = ejercicios;
-        console.log('Ejercicios cargados:', ejercicios);
+        this.ejerciciosFiltrados = ejercicios;
       },
       error: (error) => {
         console.error('Error al cargar ejercicios:', error);
@@ -423,9 +550,8 @@ export class RutinaComponent implements OnInit {
     this.selectedRutina = rutina;
     this.isCreating = false;
     this.isEditing = false;
-    this.mostrarClientesAsignados = false; // Resetear la visualización
+    this.mostrarClientesAsignados = false;
     
-    // Cargar clientes asignados cuando se selecciona una rutina
     this.cargarClientesAsignados();
   }
 
@@ -475,7 +601,6 @@ export class RutinaComponent implements OnInit {
         },
         error: (error) => {
           this.showAlert('Error al crear la rutina: ' + error.message, 'danger');
-          console.error('Error:', error);
         }
       });
     } else if (this.isEditing && this.selectedRutina) {
@@ -492,7 +617,6 @@ export class RutinaComponent implements OnInit {
         },
         error: (error) => {
           this.showAlert('Error al actualizar la rutina: ' + error.message, 'danger');
-          console.error('Error:', error);
         }
       });
     }
@@ -511,7 +635,6 @@ export class RutinaComponent implements OnInit {
         },
         error: (error) => {
           this.showAlert('Error al eliminar la rutina: ' + error.message, 'danger');
-          console.error('Error:', error);
         }
       });
     }
@@ -529,6 +652,10 @@ export class RutinaComponent implements OnInit {
       orden: (this.selectedRutina.ejercicios?.length || 0) + 1,
       instrucciones: ''
     };
+    // Limpiar filtros al abrir el modal
+    this.filtroEjercicioNombre = '';
+    this.filtroGrupoMuscular = '';
+    this.filtrarEjercicios();
   }
 
   closeEjercicioModal() {
@@ -548,7 +675,8 @@ export class RutinaComponent implements OnInit {
   closeCrearEjercicioModal() {
     this.showCrearEjercicioModal = false;
     this.ejercicioForm.reset({
-      estatus: 'Activo'
+      estatus: 'Activo',
+      equipoNecesario: []
     });
   }
 
@@ -556,7 +684,16 @@ export class RutinaComponent implements OnInit {
     if (this.ejercicioForm.invalid) return;
 
     this.creandoEjercicio = true;
-    const ejercicioData: CrearEjercicioRequest = this.ejercicioForm.value;
+    
+    // Convertir tiempos de minutos a segundos para el backend
+    const formData = this.ejercicioForm.value;
+    const ejercicioData: CrearEjercicioRequest = {
+      ...formData,
+      tiempo: this.convertirMinutosASegundos(formData.tiempo),
+      descanso: this.convertirMinutosASegundos(formData.descanso),
+      equipoNecesario: Array.isArray(formData.equipoNecesario) ? 
+        formData.equipoNecesario.join(', ') : formData.equipoNecesario
+    };
 
     this.rutinaService.crearEjercicio(ejercicioData).subscribe({
       next: (nuevoEjercicio) => {
@@ -565,6 +702,7 @@ export class RutinaComponent implements OnInit {
         
         // Agregar el nuevo ejercicio a la lista de disponibles
         this.ejerciciosDisponibles.push(nuevoEjercicio);
+        this.filtrarEjercicios();
         
         // Si venimos del modal de agregar ejercicio, seleccionar automáticamente el nuevo ejercicio
         if (this.showEjercicioModal) {
@@ -574,13 +712,13 @@ export class RutinaComponent implements OnInit {
         
         this.showAlert('Ejercicio creado exitosamente', 'success');
         this.ejercicioForm.reset({
-          estatus: 'Activo'
+          estatus: 'Activo',
+          equipoNecesario: []
         });
       },
       error: (error) => {
         this.creandoEjercicio = false;
         this.showAlert('Error al crear el ejercicio: ' + error.message, 'danger');
-        console.error('Error:', error);
       }
     });
   }
@@ -604,18 +742,6 @@ export class RutinaComponent implements OnInit {
            this.nuevoEjercicio.descansoEjercicio >= 0 &&
            !!this.nuevoEjercicio.orden && 
            this.nuevoEjercicio.orden > 0;
-  }
-
-  calcularTiempoEjercicio(): number {
-    if (!this.ejercicioSeleccionado || !this.nuevoEjercicio.seriesEjercicio) return 0;
-    
-    const ejercicio = this.getEjercicioInfo(this.ejercicioSeleccionado);
-    const tiempoPorSerie = ejercicio?.tiempo || 45;
-    const series = this.nuevoEjercicio.seriesEjercicio;
-    const descansoPorSerie = this.nuevoEjercicio.descansoEjercicio || 60;
-    
-    const tiempoTotal = (tiempoPorSerie * series) + (descansoPorSerie * (series - 1));
-    return Math.ceil(tiempoTotal / 60);
   }
 
   agregarEjercicio() {
@@ -652,8 +778,6 @@ export class RutinaComponent implements OnInit {
         }
       },
       error: (error) => {
-        console.error('Error al agregar ejercicio:', error);
-        
         if (error.message.includes('duplicate key') || error.message.includes('ya existe')) {
           this.showAlert('Este ejercicio ya está en la rutina. No se pueden agregar duplicados.', 'warning');
         } else {
@@ -679,7 +803,6 @@ export class RutinaComponent implements OnInit {
         },
         error: (error) => {
           this.showAlert('Error al eliminar el ejercicio: ' + error.message, 'danger');
-          console.error('Error:', error);
         }
       });
     }
@@ -698,7 +821,6 @@ export class RutinaComponent implements OnInit {
       },
       error: (error) => {
         this.showAlert('Error al cargar los detalles de la rutina: ' + error.message, 'danger');
-        console.error('Error:', error);
       }
     });
   }
@@ -756,7 +878,6 @@ export class RutinaComponent implements OnInit {
       },
       error: (error) => {
         this.showAlert('Error al duplicar la rutina: ' + error.message, 'danger');
-        console.error('Error:', error);
       }
     });
   }
@@ -772,7 +893,6 @@ export class RutinaComponent implements OnInit {
       },
       error: (error) => {
         this.showAlert('Error al cambiar el estado de la rutina: ' + error.message, 'danger');
-        console.error('Error:', error);
       }
     });
   }
@@ -799,4 +919,61 @@ export class RutinaComponent implements OnInit {
   trackByCliente(index: number, cliente: Cliente): string {
     return cliente.folioCliente;
   }
+
+
+cambiarEstatusRutina(rutina: Rutina, nuevoEstatus: string): void {
+  const confirmMessage = nuevoEstatus === 'Inactiva' 
+    ? `¿Estás seguro de que quieres inactivar la rutina "${rutina.nombre}"?` 
+    : `¿Estás seguro de que quieres activar la rutina "${rutina.nombre}"?`;
+
+  if (confirm(confirmMessage)) {
+    this.rutinaService.cambiarEstatusRutina(rutina.folioRutina, nuevoEstatus)
+      .subscribe({
+        next: (response: any) => {
+          this.showAlert(`Rutina ${nuevoEstatus === 'Inactiva' ? 'inactivada' : 'activada'} exitosamente`, 'success');
+          
+          // Actualizar la rutina en la lista
+          const index = this.rutinas.findIndex(r => r.folioRutina === rutina.folioRutina);
+          if (index !== -1) {
+            this.rutinas[index].estatus = nuevoEstatus;
+          }
+          
+          // Si la rutina seleccionada es la que se modificó, actualizarla
+          if (this.selectedRutina && this.selectedRutina.folioRutina === rutina.folioRutina) {
+            this.selectedRutina.estatus = nuevoEstatus;
+          }
+          
+          // Recargar la lista filtrada
+          this.filterRutinas();
+        },
+        error: (error) => {
+          console.error('Error al cambiar estatus:', error);
+          this.showAlert('Error al cambiar el estatus de la rutina', 'danger');
+        }
+      });
+  }
+}
+
+// Método específico para inactivar
+inactivarRutina(rutina: Rutina): void {
+  this.cambiarEstatusRutina(rutina, 'Inactiva');
+}
+
+// Método específico para activar
+activarRutina(rutina: Rutina): void {
+  this.cambiarEstatusRutina(rutina, 'Activa');
+}
+
+// Método para obtener rutinas por estatus (para filtros)
+filtrarPorEstatus(estatus: string): void {
+  this.rutinaService.getRutinasPorEstatus(estatus).subscribe({
+    next: (rutinas) => {
+      this.rutinas = rutinas;
+      this.filterRutinas();
+    },
+    error: (error) => {
+      console.error('Error al filtrar rutinas por estatus:', error);
+    }
+  });
+}
 }
