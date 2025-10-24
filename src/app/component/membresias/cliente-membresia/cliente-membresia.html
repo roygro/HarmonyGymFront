@@ -1,0 +1,246 @@
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1>Gestión de Membresías de Clientes</h1>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="abrirDialogoAsignar()">
+        <span class="icon">➕</span>
+        Asignar Membresía
+      </button>
+      <button class="btn btn-secondary" (click)="cargarMembresiasPorExpirar()">
+        <span class="icon">⚠️</span>
+        Por Expirar
+      </button>
+      <button class="btn btn-secondary" (click)="verEstadisticas()">
+        <span class="icon">📊</span>
+        Estadísticas
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filtros-container">
+    <div class="filtro-group">
+      <input 
+        type="text" 
+        [(ngModel)]="filtro" 
+        (input)="aplicarFiltro()"
+        placeholder="Buscar por folio, tipo o estatus..."
+        class="filtro-input">
+      <button class="btn btn-clear" (click)="limpiarFiltro()">
+        <span class="icon">🗑️</span>
+        Limpiar
+      </button>
+    </div>
+  </div>
+
+  <!-- Métricas Rápidas -->
+  <div class="metricas-container">
+    <div class="metrica-card">
+      <div class="metrica-icon">👥</div>
+      <div class="metrica-info">
+        <div class="metrica-valor">{{ membresias.length }}</div>
+        <div class="metrica-label">Total Membresías</div>
+      </div>
+    </div>
+    <div class="metrica-card">
+      <div class="metrica-icon">✅</div>
+      <div class="metrica-info">
+        <div class="metrica-valor">{{ calcularTotalActivas() }}</div>
+        <div class="metrica-label">Activas</div>
+      </div>
+    </div>
+    <div class="metrica-card">
+      <div class="metrica-icon">⏰</div>
+      <div class="metrica-info">
+        <div class="metrica-valor">{{ calcularPorExpirar() }}</div>
+        <div class="metrica-label">Por Expirar</div>
+      </div>
+    </div>
+    <div class="metrica-card">
+      <div class="metrica-icon">🔄</div>
+      <div class="metrica-info">
+        <div class="metrica-valor">{{ calcularTasaRenovacion() }}%</div>
+        <div class="metrica-label">Tasa Renovación</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando membresías...</p>
+  </div>
+
+  <!-- Table -->
+  <div *ngIf="!loading && membresiasFiltradas.length > 0" class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr class="header-row">
+          <th>Folio Cliente</th>
+          <th>Tipo Membresía</th>
+          <th>Vigencia</th>
+          <th>Estatus</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let membresia of membresiasFiltradas" class="data-row">
+          <td class="folio-cell">
+            <span class="client-icon">👤</span>
+            {{ membresia.folio_cliente }}
+          </td>
+          <td class="membresia-cell">
+            <span [class]="'badge ' + obtenerClaseMembresia(membresia.id_membresia)">
+              {{ obtenerEtiquetaMembresia(membresia.id_membresia) }}
+            </span>
+          </td>
+          <td class="fechas-cell">
+            <div class="fecha-item">
+              <span class="fecha-icon">📅</span>
+              <div class="fecha-info">
+                <span class="fecha-label">Inicio:</span>
+                <span class="fecha-value">{{ formatearFecha(membresia.fecha_inicio) }}</span>
+              </div>
+            </div>
+            <div class="fecha-item">
+              <span class="fecha-icon">⏰</span>
+              <div class="fecha-info">
+                <span class="fecha-label">Fin:</span>
+                <span class="fecha-value">{{ formatearFecha(membresia.fecha_fin) }}</span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span [class]="'estatus-chip ' + obtenerClaseEstatus(membresia.estatus)">
+              <span class="chip-icon">{{ obtenerIconoEstatus(membresia.estatus) }}</span>
+              {{ membresia.estatus }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <div class="actions-container">
+              <button class="btn-icon btn-primary" 
+                      (click)="renovarMembresia(membresia)"
+                      title="Renovar membresía">
+                <span>🔄</span>
+              </button>
+              
+              <button class="btn-icon btn-warn" 
+                      (click)="cancelarMembresia(membresia)"
+                      title="Cancelar membresía"
+                      [disabled]="membresia.estatus === 'Cancelada'">
+                <span>❌</span>
+              </button>
+              
+              <button class="btn-icon btn-accent" 
+                      (click)="verificarAcceso(membresia)"
+                      title="Verificar acceso">
+                <span>✅</span>
+              </button>
+              
+              <button class="btn-icon btn-basic" 
+                      (click)="verHistorial(membresia)"
+                      title="Ver historial">
+                <span>📋</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && membresiasFiltradas.length === 0" class="empty-state">
+    <div class="empty-content">
+      <span class="empty-icon">👥</span>
+      <h3>No hay membresías registradas</h3>
+      <p>Comienza asignando una nueva membresía a un cliente.</p>
+      <button class="btn btn-primary" (click)="abrirDialogoAsignar()">
+        <span class="icon">➕</span>
+        Asignar Primera Membresía
+      </button>
+    </div>
+  </div>
+
+  <!-- Diálogo para asignar membresía -->
+  <div *ngIf="showAsignarDialog" class="dialog-overlay">
+    <div class="dialog">
+      <div class="dialog-header">
+        <h2>Asignar Nueva Membresía</h2>
+        <button class="close-btn" (click)="showAsignarDialog = false">×</button>
+      </div>
+      
+      <div class="dialog-content">
+        <form (ngSubmit)="asignarMembresia()" #asignarForm="ngForm" class="form-container">
+          <div class="form-group">
+            <label for="folioCliente">Folio Cliente *</label>
+            <input type="text" 
+                   id="folioCliente"
+                   [(ngModel)]="asignarFormData.folioCliente" 
+                   name="folioCliente" 
+                   required
+                   placeholder="Ingresa el folio del cliente"
+                   class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label for="idMembresia">Tipo de Membresía *</label>
+            <select [(ngModel)]="asignarFormData.idMembresia" name="idMembresia" required class="form-control">
+              <option *ngFor="let tipo of tipoMembresias" [value]="tipo.value">
+                {{ tipo.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="fechaInicio">Fecha Inicio *</label>
+            <input type="date" 
+                   id="fechaInicio"
+                   [(ngModel)]="asignarFormData.fechaInicio" 
+                   name="fechaInicio" 
+                   required
+                   class="form-control">
+          </div>
+
+          <div class="form-info">
+            <span class="info-icon">ℹ️</span>
+            <span>La membresía se asignará con vigencia según el tipo seleccionado</span>
+          </div>
+        </form>
+      </div>
+
+      <div class="dialog-actions">
+        <button class="btn btn-cancel" 
+                type="button" 
+                (click)="showAsignarDialog = false">
+          Cancelar
+        </button>
+        <button class="btn btn-primary" 
+                type="button"
+                (click)="asignarMembresia()"
+                [disabled]="!asignarForm.form.valid || loading">
+          <span *ngIf="!loading">✓</span>
+          <span *ngIf="loading" class="spinner-small"></span>
+          {{ loading ? 'Asignando...' : 'Asignar Membresía' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Snackbar -->
+  <div *ngIf="snackbar.show" 
+       class="snackbar" 
+       [class.snackbar-success]="snackbar.type === 'success'"
+       [class.snackbar-error]="snackbar.type === 'error'">
+    <div class="snackbar-content">
+      <span class="snackbar-icon">
+        {{ snackbar.type === 'success' ? '✅' : '❌' }}
+      </span>
+      <span class="snackbar-message">{{ snackbar.message }}</span>
+    </div>
+    <button class="snackbar-close" (click)="cerrarSnackbar()">
+      ×
+    </button>
+  </div>
+</div>

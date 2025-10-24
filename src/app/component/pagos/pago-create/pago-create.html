@@ -1,1 +1,171 @@
-<p>pago-create works!</p>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            <!-- Loading -->
+            <div *ngIf="cargando" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-3 text-muted">Cargando datos del sistema...</p>
+            </div>
+
+            <!-- Formulario -->
+            <div *ngIf="!cargando" class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-cash-register fa-lg me-3"></i>
+                        <div>
+                            <h4 class="mb-0">Registrar Nuevo Pago</h4>
+                            <small class="opacity-75">Complete los datos para registrar una nueva venta</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <form [formGroup]="pagoForm" (ngSubmit)="onSubmit()" class="needs-validation" novalidate>
+
+                        <!-- Recepcionista -->
+                        <div class="mb-4">
+                            <label for="idRecepcionista" class="form-label fw-semibold">
+                                <i class="fas fa-user-tie me-2 text-primary"></i>Recepcionista *
+                            </label>
+                            <input type="text" id="idRecepcionista" class="form-control form-control-lg bg-light"
+                                formControlName="idRecepcionista" value="REC001" readonly>
+                            <div class="form-text text-muted">
+                                <i class="fas fa-info-circle me-1"></i>Recepcionista asignado automáticamente
+                            </div>
+                        </div>
+
+                        <!-- Cliente -->
+                        <div class="mb-4">
+                            <label for="folioCliente" class="form-label fw-semibold">
+                                <i class="fas fa-users me-2 text-success"></i>Cliente *
+                            </label>
+                            <select id="folioCliente" class="form-select form-select-lg" formControlName="folioCliente"
+                                [class.is-invalid]="f['folioCliente'].invalid && f['folioCliente'].touched"
+                                [class.is-valid]="f['folioCliente'].valid && f['folioCliente'].touched">
+                                <option value="" disabled selected>Seleccione un cliente...</option>
+                                <option *ngFor="let cliente of clientes" [value]="cliente.folioCliente">
+                                    {{ cliente.nombre }} - {{ cliente.folioCliente }}
+                                </option>
+                            </select>
+                            <div class="invalid-feedback d-block"
+                                *ngIf="f['folioCliente'].invalid && f['folioCliente'].touched">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Seleccione un cliente
+                            </div>
+                            <div class="valid-feedback d-block"
+                                *ngIf="f['folioCliente'].valid && f['folioCliente'].touched">
+                                <i class="fas fa-check-circle me-1"></i>Cliente seleccionado
+                            </div>
+                        </div>
+
+                        <!-- Producto -->
+                        <div class="mb-4">
+                            <label for="codigoProducto" class="form-label fw-semibold">
+                                <i class="fas fa-box me-2 text-warning"></i>Producto *
+                            </label>
+                            <select id="codigoProducto" class="form-select form-select-lg"
+                                formControlName="codigoProducto"
+                                [class.is-invalid]="f['codigoProducto'].invalid && f['codigoProducto'].touched"
+                                [class.is-valid]="f['codigoProducto'].valid && f['codigoProducto'].touched">
+                                <option value="" disabled selected>Seleccione un producto...</option>
+                                <option *ngFor="let producto of productos" [value]="producto.codigo">
+                                    {{ producto.nombre }} - {{ formatearMoneda(producto.precio) }}
+                                </option>
+                            </select>
+                            <div class="invalid-feedback d-block"
+                                *ngIf="f['codigoProducto'].invalid && f['codigoProducto'].touched">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Seleccione un producto
+                            </div>
+                            <div class="valid-feedback d-block"
+                                *ngIf="f['codigoProducto'].valid && f['codigoProducto'].touched">
+                                <i class="fas fa-check-circle me-1"></i>Producto seleccionado
+                            </div>
+                        </div>
+
+                        <!-- Cantidad y Precio -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="cantidad" class="form-label fw-semibold">
+                                    <i class="fas fa-hashtag me-2 text-info"></i>Cantidad *
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="fas fa-cubes text-info"></i>
+                                    </span>
+                                    <input type="number" id="cantidad" class="form-control border-start-0"
+                                        formControlName="cantidad" min="1" max="100"
+                                        [class.is-invalid]="f['cantidad'].invalid && f['cantidad'].touched"
+                                        [class.is-valid]="f['cantidad'].valid && f['cantidad'].touched">
+                                </div>
+                                <div class="invalid-feedback d-block"
+                                    *ngIf="f['cantidad'].errors?.['required'] && f['cantidad'].touched">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>La cantidad es requerida
+                                </div>
+                                <div class="invalid-feedback d-block"
+                                    *ngIf="f['cantidad'].errors?.['min'] && f['cantidad'].touched">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>La cantidad mínima es 1
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="precioUnitario" class="form-label fw-semibold">
+                                    <i class="fas fa-tag me-2 text-success"></i>Precio Unitario *
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="fas fa-dollar-sign text-success"></i>
+                                    </span>
+                                    <input type="number" id="precioUnitario" class="form-control border-start-0"
+                                        formControlName="precioUnitario" step="0.01" min="0"
+                                        (change)="onPrecioManualChange()"
+                                        [class.is-invalid]="f['precioUnitario'].invalid && f['precioUnitario'].touched"
+                                        [class.is-valid]="f['precioUnitario'].valid && f['precioUnitario'].touched">
+                                </div>
+                                <div class="invalid-feedback d-block"
+                                    *ngIf="f['precioUnitario'].invalid && f['precioUnitario'].touched">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>El precio unitario es requerido
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total -->
+                        <div class="mb-4 p-3 bg-light rounded-3 border">
+                            <label for="total" class="form-label fw-semibold">
+                                <i class="fas fa-calculator me-2 text-primary"></i>Total a Pagar
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-dollar-sign text-success"></i>
+                                </span>
+                                <input type="text" id="total"
+                                    class="form-control border-start-0 fw-bold fs-4 text-success bg-white"
+                                    formControlName="total" [disabled]="true"
+                                    [value]="formatearMoneda(f['total'].value)">
+                            </div>
+                            <div class="form-text text-muted mt-2">
+                                <i class="fas fa-info-circle me-1"></i>Total calculado automáticamente
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end border-top pt-4 mt-4">
+                            <button type="button" class="btn btn-lg btn-outline-secondary me-md-2 px-4"
+                                (click)="onCancel()" [disabled]="enviando">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-lg btn-success px-4"
+                                [disabled]="enviando || pagoForm.invalid" [class.btn-progress]="enviando">
+                                <i class="fas" [class.fa-save]="!enviando" [class.fa-spinner]="enviando"
+                                    [class.fa-spin]="enviando" class="me-2"></i>
+                                {{ enviando ? 'Registrando...' : 'Registrar Pago' }}
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

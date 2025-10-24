@@ -9,6 +9,7 @@ import { PagoList } from './component/pagos/pago-list/pago-list';
 import { PagoDetails } from './component/pagos/pago-details/pago-details';
 import { PagoCreate } from './component/pagos/pago-create/pago-create';
 import { LoginComponent } from './component/Auth/login-component/login-component';
+import { ClienteMembresiaComponent } from './component/membresias/cliente-membresia/cliente-membresia';
 
 export const routes: Routes = [
 
@@ -45,6 +46,13 @@ export const routes: Routes = [
   { 
     path: 'membresias/editar/:id', 
     component: MembresiaForm 
+  },
+
+
+    // Nueva Ruta para Membresías de Clientes
+  { 
+    path: 'membresias-clientes', 
+    component: ClienteMembresiaComponent 
   },
 
   // Ruta para actividades PRIMERO - usando loadComponent
