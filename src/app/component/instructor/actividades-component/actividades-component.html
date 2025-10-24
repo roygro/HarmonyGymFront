@@ -160,14 +160,7 @@
       </div>
       
       <form [formGroup]="actividadForm" (ngSubmit)="guardarActividad()">
-        <!-- ID solo visible en edición -->
-        <div *ngIf="isEditing" class="form-group full-width">
-          <label>
-            <i class="fas fa-id-card"></i> ID de Actividad
-          </label>
-          <input>
-          <small class="help-text">ID generado automáticamente por el sistema</small>
-        </div>
+  
 
         <div class="form-row">
           <div class="form-group full-width">
@@ -264,93 +257,93 @@
         </div>
 
         <!-- Calendario de Horarios Mejorado -->
-        <div *ngIf="showCalendar && selectedDate" class="calendar-container">
-          <div class="calendar-header">
-            <div class="calendar-title">
-              <h3><i class="fas fa-clock"></i> Horarios Disponibles</h3>
-              <p class="selected-date">{{ selectedDate | date:'fullDate':'es-ES' | titlecase }}</p>
-            </div>
-            <div class="duracion-selector">
-              <label><i class="fas fa-stopwatch"></i> Duración:</label>
-              <div class="duracion-buttons">
-                <button 
-                  type="button"
-                  class="btn btn-sm" 
-                  [class.btn-primary]="duracionSeleccionada === 60"
-                  [class.btn-secondary]="duracionSeleccionada !== 60"
-                  (click)="cambiarDuracion(60)">
-                  <i class="fas fa-hourglass-start"></i> 1h
-                </button>
-                <button 
-                  type="button"
-                  class="btn btn-sm" 
-                  [class.btn-primary]="duracionSeleccionada === 90"
-                  [class.btn-secondary]="duracionSeleccionada !== 90"
-                  (click)="cambiarDuracion(90)">
-                  <i class="fas fa-hourglass-half"></i> 1.5h
-                </button>
-                <button 
-                  type="button"
-                  class="btn btn-sm" 
-                  [class.btn-primary]="duracionSeleccionada === 120"
-                  [class.btn-secondary]="duracionSeleccionada !== 120"
-                  (click)="cambiarDuracion(120)">
-                  <i class="fas fa-hourglass-end"></i> 2h
-                </button>
-                <button 
-                  type="button"
-                  class="btn btn-sm" 
-                  [class.btn-primary]="duracionSeleccionada === 150"
-                  [class.btn-secondary]="duracionSeleccionada !== 150"
-                  (click)="cambiarDuracion(150)">
-                  <i class="fas fa-hourglass"></i> 2.5h
-                </button>
-              </div>
-            </div>
-            <small class="help-text">
-              <i class="fas fa-circle available-dot"></i> Disponible 
-              <i class="fas fa-circle occupied-dot"></i> Ocupado 
-              • Duración: {{ getDuracionTexto(duracionSeleccionada) }}
-            </small>
-          </div>
-          
-          <!-- Horario seleccionado mejorado -->
-          <div *ngIf="horarioSeleccionado" class="selected-schedule">
-            <div class="selected-info">
-              <i class="fas fa-check-circle"></i>
-              <div>
-                <strong>Horario seleccionado</strong>
-                <span>{{ horarioSeleccionado.horaInicio }} - {{ horarioSeleccionado.horaFin }}</span>
-              </div>
-            </div>
-            <button type="button" class="btn btn-sm btn-clear" (click)="limpiarHorarioSeleccionado()">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
+<div *ngIf="showCalendar && selectedDate" class="calendar-container">
+  <div class="calendar-header">
+    <div class="calendar-title">
+      <h3><i class="fas fa-clock"></i> Horarios Disponibles</h3>
+      <p class="selected-date">{{ selectedDate | date:'fullDate':'es-ES' | titlecase }}</p>
+    </div>
+    <div class="duracion-selector">
+      <label><i class="fas fa-stopwatch"></i> Duración:</label>
+      <div class="duracion-buttons">
+        <button 
+          type="button"
+          class="btn btn-sm" 
+          [class.btn-primary]="duracionSeleccionada === 60"
+          [class.btn-secondary]="duracionSeleccionada !== 60"
+          (click)="cambiarDuracion(60)">
+          <i class="fas fa-hourglass-start"></i> 1h
+        </button>
+        <button 
+          type="button"
+          class="btn btn-sm" 
+          [class.btn-primary]="duracionSeleccionada === 90"
+          [class.btn-secondary]="duracionSeleccionada !== 90"
+          (click)="cambiarDuracion(90)">
+          <i class="fas fa-hourglass-half"></i> 1.5h
+        </button>
+        <button 
+          type="button"
+          class="btn btn-sm" 
+          [class.btn-primary]="duracionSeleccionada === 120"
+          [class.btn-secondary]="duracionSeleccionada !== 120"
+          (click)="cambiarDuracion(120)">
+          <i class="fas fa-hourglass-end"></i> 2h
+        </button>
+        <button 
+          type="button"
+          class="btn btn-sm" 
+          [class.btn-primary]="duracionSeleccionada === 150"
+          [class.btn-secondary]="duracionSeleccionada !== 150"
+          (click)="cambiarDuracion(150)">
+          <i class="fas fa-hourglass"></i> 2.5h
+        </button>
+      </div>
+    </div>
+    <small class="help-text">
+      <i class="fas fa-circle available-dot"></i> Disponible 
+      <i class="fas fa-circle occupied-dot"></i> Ocupado 
+      • Duración: {{ getDuracionTexto(duracionSeleccionada) }}
+    </small>
+  </div>
+  
+  <!-- Horario seleccionado mejorado -->
+  <div *ngIf="horarioSeleccionado" class="selected-schedule">
+    <div class="selected-info">
+      <i class="fas fa-check-circle"></i>
+      <div>
+        <strong>Horario seleccionado</strong>
+        <span>{{ formatearHoraParaDisplay(horarioSeleccionado.horaInicio) }} - {{ formatearHoraParaDisplay(horarioSeleccionado.horaFin) }}</span>
+        <small *ngIf="isEditing" class="help-text">(Horario actual de la actividad)</small>
+      </div>
+    </div>
+    <button type="button" class="btn btn-sm btn-clear" (click)="limpiarHorarioSeleccionado()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
 
-          <!-- Mensaje de advertencia mejorado -->
-          <div *ngIf="!horarioSeleccionado" class="warning-message">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span>Por favor selecciona un horario del calendario</span>
-          </div>
-          
-          <div class="hours-grid">
-            <div *ngFor="let hora of horasDisponibles" 
-                 [class]="getHourSlotClass(hora)"
-                 (click)="seleccionarHorario(hora)">
-              <span class="hour-time">{{ hora }}</span>
-              <span class="hour-duration">a {{ calcularHoraFin(hora, duracionSeleccionada) }}</span>
-              <span class="hour-status">
-                <i [class]="getHourStatusIcon(hora)"></i>
-                {{ esHoraOcupada(hora) ? 'Ocupado' : 'Disponible' }}
-              </span>
-              <span *ngIf="esHorarioSeleccionado(hora)" class="hour-selected">
-                <i class="fas fa-check"></i> Seleccionado
-              </span>
-            </div>
-          </div>
-        </div>
-
+  <!-- Mensaje de advertencia mejorado -->
+  <div *ngIf="!horarioSeleccionado" class="warning-message">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>Por favor selecciona un horario del calendario</span>
+  </div>
+  
+  <div class="hours-grid">
+    <div *ngFor="let hora of horasDisponibles" 
+         [class]="getHourSlotClass(hora)"
+         (click)="seleccionarHorario(hora)">
+      <span class="hour-time">{{ hora }}</span>
+      <span class="hour-duration">a {{ calcularHoraFin(hora, duracionSeleccionada) }}</span>
+      <span class="hour-status">
+        <i [class]="getHourStatusIcon(hora)"></i>
+        {{ esHoraOcupada(hora) ? 'Ocupado' : 'Disponible' }}
+      </span>
+      <span *ngIf="esHorarioSeleccionado(hora) || esHorarioCargado(hora)" class="hour-selected">
+        <i class="fas fa-check"></i> Seleccionado
+      </span>
+    </div>
+  </div>
+</div>
         <div class="form-row">
           <div class="form-group">
             <label>

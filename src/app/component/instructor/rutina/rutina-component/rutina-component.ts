@@ -23,8 +23,10 @@ export class RutinaComponent implements OnInit {
   clientesFiltrados: Cliente[] = [];
   filtroCliente: string = '';
   asignando = false;
-  clientesAsignados: Cliente[] = [];
-  clientesNoAsignados: Cliente[] = [];
+  
+  // REEMPLAZADO: clientesAsignados por clientesPorRutina
+  clientesPorRutina: Map<string, Cliente[]> = new Map();
+  showVerClientesModal: boolean = false;
   mostrarClientesAsignados = false;
   
   // Búsqueda y filtros
@@ -75,6 +77,7 @@ export class RutinaComponent implements OnInit {
   // Formularios
   rutinaForm: FormGroup;
   ejercicioForm: FormGroup;
+clientesAsignados: any;
 
   constructor(
     private fb: FormBuilder,
@@ -113,6 +116,50 @@ export class RutinaComponent implements OnInit {
       grupoMuscular: ['', Validators.required],
       instrucciones: ['', Validators.required],
       estatus: ['Activo']
+    });
+  }
+
+  // NUEVOS MÉTODOS PARA MANEJAR CLIENTES POR RUTINA
+  showVerClientesAsignados(): void {
+    if (!this.selectedRutina || this.getClientesAsignadosCount(this.selectedRutina.folioRutina) === 0) {
+      this.showAlert('No hay clientes asignados para mostrar', 'warning');
+      return;
+    }
+    this.showVerClientesModal = true;
+  }
+
+  closeVerClientesModal(): void {
+    this.showVerClientesModal = false;
+  }
+
+  // Método para obtener clientes asignados de una rutina específica
+  getClientesAsignados(folioRutina: string): Cliente[] {
+    return this.clientesPorRutina.get(folioRutina) || [];
+  }
+
+  // Método para obtener el conteo de clientes asignados
+  getClientesAsignadosCount(folioRutina: string): number {
+    return this.getClientesAsignados(folioRutina).length;
+  }
+
+  // Método para precargar clientes de todas las rutinas
+  precargarClientesDeTodasLasRutinas() {
+    this.rutinas.forEach(rutina => {
+      this.cargarClientesAsignadosParaRutina(rutina.folioRutina);
+    });
+  }
+
+  // Método modificado para cargar clientes para una rutina específica
+  cargarClientesAsignadosParaRutina(folioRutina: string) {
+    this.rutinaService.obtenerClientesAsignadosARutina(folioRutina).subscribe({
+      next: (clientes) => {
+        this.clientesPorRutina.set(folioRutina, clientes);
+      },
+      error: (error) => {
+        console.error('Error al cargar clientes asignados para rutina:', folioRutina, error);
+        // Asegurarse de que haya una entrada vacía en el mapa
+        this.clientesPorRutina.set(folioRutina, []);
+      }
     });
   }
 
@@ -264,12 +311,14 @@ export class RutinaComponent implements OnInit {
     this.cargarClientesAsignados();
   }
 
+  // MÉTODO MODIFICADO: Ahora usa el mapa clientesPorRutina
   cargarClientesAsignados() {
     if (!this.selectedRutina) return;
     
     this.rutinaService.obtenerClientesAsignadosARutina(this.selectedRutina.folioRutina).subscribe({
       next: (clientes) => {
-        this.clientesAsignados = clientes;
+        // Guardar en el mapa
+        this.clientesPorRutina.set(this.selectedRutina!.folioRutina, clientes);
         this.cargarTodosLosClientesYFiltrar();
       },
       error: (error) => {
@@ -282,8 +331,9 @@ export class RutinaComponent implements OnInit {
   cargarTodosLosClientesYFiltrar() {
     this.rutinaService.obtenerTodosLosClientes().subscribe({
       next: (todosLosClientes) => {
+        const clientesAsignadosActuales = this.getClientesAsignados(this.selectedRutina!.folioRutina);
         this.clientesDisponibles = todosLosClientes.filter(cliente => 
-          !this.clientesAsignados.some(asignado => asignado.folioCliente === cliente.folioCliente)
+          !clientesAsignadosActuales.some(asignado => asignado.folioCliente === cliente.folioCliente)
         );
         this.clientesFiltrados = this.clientesDisponibles;
       },
@@ -308,7 +358,9 @@ export class RutinaComponent implements OnInit {
   }
 
   isClienteAsignado(folioCliente: string): boolean {
-    return this.clientesAsignados.some(cliente => cliente.folioCliente === folioCliente);
+    if (!this.selectedRutina) return false;
+    const clientesAsignados = this.getClientesAsignados(this.selectedRutina.folioRutina);
+    return clientesAsignados.some(cliente => cliente.folioCliente === folioCliente);
   }
 
   asignarRutinaAClientes() {
@@ -337,7 +389,8 @@ export class RutinaComponent implements OnInit {
               this.showAlert(`Algunos clientes no pudieron ser asignados: ${errores}`, 'warning');
             }
             
-            this.cargarClientesAsignados();
+            // Recargar los clientes asignados para esta rutina
+            this.cargarClientesAsignadosParaRutina(this.selectedRutina!.folioRutina);
             this.closeAsignarModal();
           } else {
             this.showAlert('Error al asignar la rutina: ' + response.message, 'danger');
@@ -359,7 +412,8 @@ export class RutinaComponent implements OnInit {
           next: (response) => {
             if (response.success) {
               this.showAlert('Cliente desasignado exitosamente', 'success');
-              this.cargarClientesAsignados();
+              // Recargar los clientes asignados para esta rutina
+              this.cargarClientesAsignadosParaRutina(this.selectedRutina!.folioRutina);
             } else {
               this.showAlert('Error al desasignar cliente: ' + response.message, 'danger');
             }
@@ -433,12 +487,14 @@ export class RutinaComponent implements OnInit {
     };
   }
 
-  // CARGA DE DATOS
+  // CARGA DE DATOS MODIFICADA
   cargarRutinas() {
     this.rutinaService.obtenerTodasLasRutinas().subscribe({
       next: (rutinas) => {
         this.rutinas = rutinas;
         this.filteredRutinas = rutinas;
+        // Precargar clientes para todas las rutinas
+        this.precargarClientesDeTodasLasRutinas();
       },
       error: (error) => {
         this.showAlert('Error al cargar las rutinas: ' + error.message, 'danger');
@@ -594,6 +650,8 @@ export class RutinaComponent implements OnInit {
       this.rutinaService.crearRutina(rutinaData).subscribe({
         next: (nuevaRutina) => {
           this.rutinas.push(nuevaRutina);
+          // Inicializar el mapa de clientes para la nueva rutina
+          this.clientesPorRutina.set(nuevaRutina.folioRutina, []);
           this.selectRutina(nuevaRutina);
           this.isCreating = false;
           this.showAlert('Rutina creada exitosamente', 'success');
@@ -628,6 +686,8 @@ export class RutinaComponent implements OnInit {
     if (confirm(`¿Estás seguro de que deseas eliminar la rutina "${this.selectedRutina.nombre}"?`)) {
       this.rutinaService.eliminarRutina(this.selectedRutina.folioRutina).subscribe({
         next: () => {
+          // Eliminar también del mapa de clientes
+          this.clientesPorRutina.delete(this.selectedRutina!.folioRutina);
           this.rutinas = this.rutinas.filter(r => r.folioRutina !== this.selectedRutina!.folioRutina);
           this.selectedRutina = null;
           this.showAlert('Rutina eliminada exitosamente', 'success');
@@ -872,6 +932,8 @@ export class RutinaComponent implements OnInit {
     this.rutinaService.crearRutina(rutinaDuplicada).subscribe({
       next: (nuevaRutina) => {
         this.rutinas.push(nuevaRutina);
+        // Inicializar el mapa de clientes para la nueva rutina
+        this.clientesPorRutina.set(nuevaRutina.folioRutina, []);
         this.selectRutina(nuevaRutina);
         this.showAlert('Rutina duplicada exitosamente', 'success');
         this.filterRutinas();
@@ -920,60 +982,59 @@ export class RutinaComponent implements OnInit {
     return cliente.folioCliente;
   }
 
+  cambiarEstatusRutina(rutina: Rutina, nuevoEstatus: string): void {
+    const confirmMessage = nuevoEstatus === 'Inactiva' 
+      ? `¿Estás seguro de que quieres inactivar la rutina "${rutina.nombre}"?` 
+      : `¿Estás seguro de que quieres activar la rutina "${rutina.nombre}"?`;
 
-cambiarEstatusRutina(rutina: Rutina, nuevoEstatus: string): void {
-  const confirmMessage = nuevoEstatus === 'Inactiva' 
-    ? `¿Estás seguro de que quieres inactivar la rutina "${rutina.nombre}"?` 
-    : `¿Estás seguro de que quieres activar la rutina "${rutina.nombre}"?`;
-
-  if (confirm(confirmMessage)) {
-    this.rutinaService.cambiarEstatusRutina(rutina.folioRutina, nuevoEstatus)
-      .subscribe({
-        next: (response: any) => {
-          this.showAlert(`Rutina ${nuevoEstatus === 'Inactiva' ? 'inactivada' : 'activada'} exitosamente`, 'success');
-          
-          // Actualizar la rutina en la lista
-          const index = this.rutinas.findIndex(r => r.folioRutina === rutina.folioRutina);
-          if (index !== -1) {
-            this.rutinas[index].estatus = nuevoEstatus;
+    if (confirm(confirmMessage)) {
+      this.rutinaService.cambiarEstatusRutina(rutina.folioRutina, nuevoEstatus)
+        .subscribe({
+          next: (response: any) => {
+            this.showAlert(`Rutina ${nuevoEstatus === 'Inactiva' ? 'inactivada' : 'activada'} exitosamente`, 'success');
+            
+            // Actualizar la rutina en la lista
+            const index = this.rutinas.findIndex(r => r.folioRutina === rutina.folioRutina);
+            if (index !== -1) {
+              this.rutinas[index].estatus = nuevoEstatus;
+            }
+            
+            // Si la rutina seleccionada es la que se modificó, actualizarla
+            if (this.selectedRutina && this.selectedRutina.folioRutina === rutina.folioRutina) {
+              this.selectedRutina.estatus = nuevoEstatus;
+            }
+            
+            // Recargar la lista filtrada
+            this.filterRutinas();
+          },
+          error: (error) => {
+            console.error('Error al cambiar estatus:', error);
+            this.showAlert('Error al cambiar el estatus de la rutina', 'danger');
           }
-          
-          // Si la rutina seleccionada es la que se modificó, actualizarla
-          if (this.selectedRutina && this.selectedRutina.folioRutina === rutina.folioRutina) {
-            this.selectedRutina.estatus = nuevoEstatus;
-          }
-          
-          // Recargar la lista filtrada
-          this.filterRutinas();
-        },
-        error: (error) => {
-          console.error('Error al cambiar estatus:', error);
-          this.showAlert('Error al cambiar el estatus de la rutina', 'danger');
-        }
-      });
-  }
-}
-
-// Método específico para inactivar
-inactivarRutina(rutina: Rutina): void {
-  this.cambiarEstatusRutina(rutina, 'Inactiva');
-}
-
-// Método específico para activar
-activarRutina(rutina: Rutina): void {
-  this.cambiarEstatusRutina(rutina, 'Activa');
-}
-
-// Método para obtener rutinas por estatus (para filtros)
-filtrarPorEstatus(estatus: string): void {
-  this.rutinaService.getRutinasPorEstatus(estatus).subscribe({
-    next: (rutinas) => {
-      this.rutinas = rutinas;
-      this.filterRutinas();
-    },
-    error: (error) => {
-      console.error('Error al filtrar rutinas por estatus:', error);
+        });
     }
-  });
-}
+  }
+
+  // Método específico para inactivar
+  inactivarRutina(rutina: Rutina): void {
+    this.cambiarEstatusRutina(rutina, 'Inactiva');
+  }
+
+  // Método específico para activar
+  activarRutina(rutina: Rutina): void {
+    this.cambiarEstatusRutina(rutina, 'Activa');
+  }
+
+  // Método para obtener rutinas por estatus (para filtros)
+  filtrarPorEstatus(estatus: string): void {
+    this.rutinaService.getRutinasPorEstatus(estatus).subscribe({
+      next: (rutinas) => {
+        this.rutinas = rutinas;
+        this.filterRutinas();
+      },
+      error: (error) => {
+        console.error('Error al filtrar rutinas por estatus:', error);
+      }
+    });
+  }
 }

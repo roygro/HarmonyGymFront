@@ -277,7 +277,7 @@ export class ActividadesComponent implements OnInit {
       horaInicio: [''], // Campo oculto, se llena desde el calendario
       horaFin: [''], // Campo oculto, se llena desde el calendario
       descripcion: [''],
-      cupo: [1, [Validators.required, Validators.min(1), Validators.max(50)]],
+      cupo: [0, [Validators.required, Validators.min(0), Validators.max(50)]],
       lugar: ['', Validators.required],
       folioInstructor: [this.instructorFijo, Validators.required],
       imagenUrl: [this.getRandomDefaultImage()]
@@ -409,7 +409,7 @@ export class ActividadesComponent implements OnInit {
       horaInicio: '',
       horaFin: '',
       descripcion: '',
-      cupo: 1,
+      cupo: '',
       lugar: '',
       folioInstructor: this.instructorFijo,
       imagenUrl: this.getRandomDefaultImage()
@@ -431,21 +431,26 @@ export class ActividadesComponent implements OnInit {
     const diffMs = fin.getTime() - inicio.getTime();
     this.duracionSeleccionada = Math.round(diffMs / (1000 * 60));
     
-    // Establecer horario seleccionado
+    // Establecer horario seleccionado (IMPORTANTE: asegurar formato correcto)
     this.horarioSeleccionado = {
-      horaInicio: actividad.horaInicio,
-      horaFin: actividad.horaFin
+      horaInicio: actividad.horaInicio.endsWith(':00') ? actividad.horaInicio : actividad.horaInicio + ':00',
+      horaFin: actividad.horaFin.endsWith(':00') ? actividad.horaFin : actividad.horaFin + ':00'
     };
     
-    // Configurar el lugar (predefinido o personalizado)
+    console.log('🔄 Cargando actividad para edición:', {
+      horario: this.horarioSeleccionado,
+      duracion: this.duracionSeleccionada
+    });
+    
+    // Configurar el lugar
     this.configurarLugarParaEdicion(actividad.lugar);
     
     this.actividadForm.patchValue({
       idActividad: actividad.idActividad,
       nombreActividad: actividad.nombreActividad,
       fechaActividad: actividad.fechaActividad,
-      horaInicio: actividad.horaInicio,
-      horaFin: actividad.horaFin,
+      horaInicio: this.horarioSeleccionado.horaInicio,
+      horaFin: this.horarioSeleccionado.horaFin,
       descripcion: actividad.descripcion || '',
       cupo: actividad.cupo,
       lugar: actividad.lugar,
@@ -455,6 +460,11 @@ export class ActividadesComponent implements OnInit {
     
     this.showForm = true;
     this.showCalendar = !!actividad.fechaActividad;
+    
+    // Forzar detección de cambios (opcional, pero útil)
+    setTimeout(() => {
+      this.generarCalendario();
+    }, 100);
   }
 
   onFechaSeleccionada(event: any): void {
@@ -535,6 +545,15 @@ export class ActividadesComponent implements OnInit {
     }
   }
 
+  // NUEVO MÉTODO: Detectar horario cargado en edición
+  esHorarioCargado(hora: string): boolean {
+    if (!this.horarioSeleccionado) return false;
+    
+    // Comparar solo las horas (sin segundos)
+    const horaCargada = this.horarioSeleccionado.horaInicio.substring(0, 5);
+    return horaCargada === hora;
+  }
+
   getHourSlotClass(hora: string): string {
     let classes = 'hour-slot';
     
@@ -544,7 +563,8 @@ export class ActividadesComponent implements OnInit {
       classes += ' available';
     }
     
-    if (this.esHorarioSeleccionado(hora)) {
+    // Agregar esta condición para detectar horario cargado en edición
+    if (this.esHorarioSeleccionado(hora) || this.esHorarioCargado(hora)) {
       classes += ' selected';
     }
     
@@ -560,7 +580,7 @@ export class ActividadesComponent implements OnInit {
   getHourStatusIcon(hora: string): string {
     if (this.esHoraOcupada(hora)) {
       return 'fas fa-times-circle';
-    } else if (this.esHorarioSeleccionado(hora)) {
+    } else if (this.esHorarioSeleccionado(hora) || this.esHorarioCargado(hora)) {
       return 'fas fa-check-circle';
     } else {
       return 'fas fa-clock';
@@ -598,98 +618,146 @@ export class ActividadesComponent implements OnInit {
     return `${duracion} min`;
   }
 
-  async guardarActividad(): Promise<void> {
-    if (!this.horarioSeleccionado) {
-      this.mostrarAdvertencia('Horario Requerido', 'Por favor selecciona un horario del calendario');
+  // NUEVO MÉTODO: Formatear hora para display
+  formatearHoraParaDisplay(hora: string): string {
+    if (!hora) return '';
+    return hora.substring(0, 5); // Devuelve solo HH:MM
+  }
+
+ async guardarActividad(): Promise<void> {
+  if (!this.horarioSeleccionado) {
+    this.mostrarAdvertencia('Horario Requerido', 'Por favor selecciona un horario del calendario');
+    return;
+  }
+
+  if (this.actividadForm.valid) {
+    const actividadData: Actividad = this.actividadForm.value;
+
+    // Validar que la fecha no sea en el pasado
+    const fechaActividad = new Date(actividadData.fechaActividad);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
+    if (fechaActividad < hoy) {
+      this.mostrarError('Fecha Inválida', 'La fecha de la actividad no puede ser en el pasado');
       return;
     }
 
-    if (this.actividadForm.valid) {
-      const actividadData: Actividad = this.actividadForm.value;
+    try {
+      let tieneConflicto = false;
 
-      // Validar que la fecha no sea en el pasado
-      const fechaActividad = new Date(actividadData.fechaActividad);
-      const hoy = new Date();
-      hoy.setHours(0, 0, 0, 0);
-      
-      if (fechaActividad < hoy) {
-        this.mostrarError('Fecha Inválida', 'La fecha de la actividad no puede ser en el pasado');
-        return;
-      }
-
-      try {
-        const tieneConflicto = await this.verificarConflictoHorario(
+      if (this.isEditing && this.selectedActividad) {
+        // Para EDICIÓN: usar el método que excluye la actividad actual
+        console.log('🔄 Verificando conflicto para edición, excluyendo:', this.selectedActividad.idActividad);
+        
+        tieneConflicto = await this.verificarConflictoHorarioExcluyendo(
           actividadData.lugar,
           actividadData.fechaActividad,
           actividadData.horaInicio,
           actividadData.horaFin,
-          this.isEditing ? actividadData.idActividad : undefined
+          this.selectedActividad.idActividad
         );
-
-        if (tieneConflicto) {
-          this.mostrarError('Conflicto de Horario', 'Ya existe una actividad en el mismo lugar y horario');
-          return;
-        }
-
-        if (this.isEditing && this.selectedActividad) {
-          // Para edición: usar el ID existente
-          this.actividadService.actualizarActividad(this.selectedActividad.idActividad, actividadData)
-            .subscribe({
-              next: () => {
-                this.mostrarExito('¡Éxito!', 'Actividad actualizada exitosamente');
-                this.cancelarEdicion();
-                this.cargarActividadesInstructor();
-              },
-              error: (error) => {
-                console.error('❌ Error al actualizar actividad:', error);
-                const errorMessage = error.error?.message || error.error || 'Error desconocido';
-                this.mostrarError('Error al Actualizar', 'Error al actualizar la actividad: ' + errorMessage);
-              }
-            });
-        } else {
-          // Para creación: NO enviar idActividad, el backend lo generará automáticamente
-          const { idActividad, ...actividadSinId } = actividadData;
-          
-          this.actividadService.crearActividad(actividadSinId as Actividad)
-            .subscribe({
-              next: (nuevaActividad) => {
-                this.mostrarExito('¡Éxito!', `Actividad creada exitosamente`);
-                this.cancelarEdicion();
-                this.cargarActividadesInstructor();
-              },
-              error: (error) => {
-                console.error('❌ Error al crear actividad:', error);
-                const errorMessage = error.error?.message || error.error || 'Error desconocido';
-                this.mostrarError('Error al Crear', 'Error al crear la actividad: ' + errorMessage);
-              }
-            });
-        }
-      } catch (error) {
-        console.error('❌ Error al verificar conflicto:', error);
-        this.mostrarError('Error de Verificación', 'Error al verificar disponibilidad de horario');
+      } else {
+        // Para CREACIÓN: usar el método normal
+        console.log('🔄 Verificando conflicto para creación nueva');
+        
+        tieneConflicto = await this.verificarConflictoHorario(
+          actividadData.lugar,
+          actividadData.fechaActividad,
+          actividadData.horaInicio,
+          actividadData.horaFin
+        );
       }
-    } else {
-      this.marcarCamposInvalidos();
-      this.mostrarAdvertencia('Formulario Incompleto', 'Por favor complete todos los campos requeridos correctamente');
+
+      if (tieneConflicto) {
+        this.mostrarError('Conflicto de Horario', 'Ya existe una actividad en el mismo lugar y horario');
+        return;
+      }
+
+      if (this.isEditing && this.selectedActividad) {
+        // Para edición: usar el ID existente
+        this.actividadService.actualizarActividad(this.selectedActividad.idActividad, actividadData)
+          .subscribe({
+            next: () => {
+              this.mostrarExito('¡Éxito!', 'Actividad actualizada exitosamente');
+              this.cancelarEdicion();
+              this.cargarActividadesInstructor();
+            },
+            error: (error) => {
+              console.error('❌ Error al actualizar actividad:', error);
+              const errorMessage = error.error?.message || error.error || 'Error desconocido';
+              this.mostrarError('Error al Actualizar', 'Error al actualizar la actividad: ' + errorMessage);
+            }
+          });
+      } else {
+        // Para creación: NO enviar idActividad, el backend lo generará automáticamente
+        const { idActividad, ...actividadSinId } = actividadData;
+        
+        this.actividadService.crearActividad(actividadSinId as Actividad)
+          .subscribe({
+            next: (nuevaActividad) => {
+              this.mostrarExito('¡Éxito!', `Actividad creada exitosamente`);
+              this.cancelarEdicion();
+              this.cargarActividadesInstructor();
+            },
+            error: (error) => {
+              console.error('❌ Error al crear actividad:', error);
+              const errorMessage = error.error?.message || error.error || 'Error desconocido';
+              this.mostrarError('Error al Crear', 'Error al crear la actividad: ' + errorMessage);
+            }
+          });
+      }
+    } catch (error) {
+      console.error('❌ Error al verificar conflicto:', error);
+      this.mostrarError('Error de Verificación', 'Error al verificar disponibilidad de horario');
     }
+  } else {
+    this.marcarCamposInvalidos();
+    this.mostrarAdvertencia('Formulario Incompleto', 'Por favor complete todos los campos requeridos correctamente');
   }
+}
 
-  private verificarConflictoHorario(
-    lugar: string, 
-    fecha: string, 
-    horaInicio: string, 
-    horaFin: string, 
-    excludeId?: string
-  ): Promise<boolean> {
-    return new Promise((resolve) => {
-      this.actividadService.verificarConflictoHorario(lugar, fecha, horaInicio, horaFin)
-        .subscribe({
-          next: (tieneConflicto) => resolve(tieneConflicto),
-          error: () => resolve(false)
-        });
-    });
-  }
+// NUEVO MÉTODO: Verificar conflicto excluyendo una actividad específica
+private verificarConflictoHorarioExcluyendo(
+  lugar: string, 
+  fecha: string, 
+  horaInicio: string, 
+  horaFin: string, 
+  excludeId: string
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    this.actividadService.verificarConflictoHorarioExcluyendo(lugar, fecha, horaInicio, horaFin, excludeId)
+      .subscribe({
+        next: (tieneConflicto) => {
+          console.log('🔍 Resultado verificación backend (excluyendo):', tieneConflicto);
+          resolve(tieneConflicto);
+        },
+        error: (error) => {
+          console.error('❌ Error en verificación excluyendo:', error);
+          resolve(false); // En caso de error, permitir continuar
+        }
+      });
+  });
+}
 
+// MÉTODO EXISTENTE (mantener)
+private verificarConflictoHorario(
+  lugar: string, 
+  fecha: string, 
+  horaInicio: string, 
+  horaFin: string
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    this.actividadService.verificarConflictoHorario(lugar, fecha, horaInicio, horaFin)
+      .subscribe({
+        next: (tieneConflicto) => {
+          console.log('🔍 Resultado verificación backend:', tieneConflicto);
+          resolve(tieneConflicto);
+        },
+        error: () => resolve(false)
+      });
+  });
+}
   private marcarCamposInvalidos(): void {
     Object.keys(this.actividadForm.controls).forEach(key => {
       const control = this.actividadForm.get(key);

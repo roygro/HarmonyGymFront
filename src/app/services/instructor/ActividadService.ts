@@ -84,7 +84,17 @@ export class ActividadService {
   contarActividadesActivas(): Observable<number> {
     return this.http.get<number>(`${this.apiUrl}/contar-activas`);
   }
-
+verificarConflictoHorarioExcluyendo(
+  lugar: string, 
+  fecha: string, 
+  horaInicio: string, 
+  horaFin: string, 
+  excludeId: string
+): Observable<boolean> {
+  return this.http.get<boolean>(
+    `${this.apiUrl}/verificar-conflicto-excluyendo?lugar=${lugar}&fecha=${fecha}&horaInicio=${horaInicio}&horaFin=${horaFin}&excludeId=${excludeId}`
+  );
+}
   // Verificar conflicto de horarios
   verificarConflictoHorario(lugar: string, fecha: string, horaInicio: string, horaFin: string): Observable<boolean> {
     return this.http.get<boolean>(
