@@ -88,6 +88,11 @@
                         <small class="text-muted">
                           <i class="fas fa-dumbbell"></i> {{ rutina.ejercicios ? rutina.ejercicios.length : 0 }} ejercicios
                         </small>
+
+
+                        <small class="text-muted">
+  <i class="fas fa-users"></i> {{ getClientesAsignadosCount(rutina.folioRutina) }} clientes asignados
+</small>
                       </div>
                       
                       <div class="rutina-meta">
@@ -120,14 +125,17 @@
               <div class="d-flex justify-content-between align-items-center">
                 <h4 class="card-title">{{ selectedRutina.nombre }}</h4>
                 <div class="action-buttons">
-                  <button class="btn btn-outline-primary btn-sm" (click)="editRutina()">
+                  <button class="btn btn-outline-primary btn-sm me-2" (click)="showVerClientesAsignados()">
+                    <i class="fas fa-eye"></i> Ver Clientes
+                  </button>
+                  <button class="btn btn-outline-primary btn-sm me-2" (click)="editRutina()">
                     <i class="fas fa-edit"></i> Editar
                   </button>
-                  <button class="btn btn-outline-danger btn-sm" (click)="deleteRutina()">
+                  <button class="btn btn-outline-danger btn-sm me-2" (click)="deleteRutina()">
                     <i class="fas fa-trash"></i> Eliminar
                   </button>
                   <button class="btn btn-success btn-sm" (click)="showAsignarClientes()">
-                    <i class="fas fa-users"></i> Asignar Clientes
+                    <i class="fas fa-user-plus"></i> Asignar Clientes
                   </button>
                 </div>
               </div>
@@ -162,13 +170,17 @@
                       </div>
                     </div>
                     <div class="col-md-6">
-                      <div class="info-card">
-                        <h6><i class="fas fa-chart-bar"></i> Estadísticas</h6>
-                        <div class="info-grid">
-                          <div class="info-item">
-                            <span class="info-label">Ejercicios:</span>
-                            <span class="info-value">{{ selectedRutina.ejercicios ? selectedRutina.ejercicios.length : 0 }}</span>
-                          </div>
+  <div class="info-card">
+    <h6><i class="fas fa-chart-bar"></i> Estadísticas</h6>
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">Ejercicios:</span>
+        <span class="info-value">{{ selectedRutina.ejercicios ? selectedRutina.ejercicios.length : 0 }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Clientes Asignados:</span>
+        <span class="info-value">{{ getClientesAsignadosCount(selectedRutina.folioRutina) }}</span>
+      </div>
                           <div class="info-item">
                             <span class="info-label">Fecha creación:</span>
                             <span class="info-value">{{ selectedRutina.fechaCreacion | date:'dd/MM/yyyy' }}</span>
@@ -188,79 +200,6 @@
                     </div>
                   </div>
                 }
-
-                <!-- CLIENTES ASIGNADOS -->
-                <div class="clientes-section">
-                  <div class="section-header">
-                    <h6>
-                      <i class="fas fa-users"></i> 
-                      Clientes Asignados
-                      <span class="badge bg-primary ms-2">{{ clientesAsignados.length }}</span>
-                    </h6>
-                    <button class="btn btn-outline-primary btn-sm" (click)="toggleMostrarClientesAsignados()">
-                      <i class="fas" [class.fa-eye]="!mostrarClientesAsignados" [class.fa-eye-slash]="mostrarClientesAsignados"></i>
-                      {{ mostrarClientesAsignados ? 'Ocultar' : 'Mostrar' }}
-                    </button>
-                  </div>
-
-                  @if (mostrarClientesAsignados) {
-                    <div class="clientes-content">
-                      @if (clientesAsignados.length > 0) {
-                        <!-- Vista de tabla para clientes asignados -->
-                        <div class="table-container">
-                          <table class="table table-hover">
-                            <thead>
-                              <tr>
-                                <th>Nombre</th>
-                                <th>Edad</th>
-                                <th>Género</th>
-                                <th>Email</th>
-                                <th>Estado</th>
-                                <th width="80">Acciones</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              @for (cliente of clientesAsignados; track cliente.folioCliente) {
-                                <tr>
-                                  <td>
-                                    <strong>{{ cliente.nombre }}</strong>
-                                  </td>
-                                  <td>{{ calcularEdad(cliente.fechaNacimiento) }} años</td>
-                                  <td>{{ cliente.genero }}</td>
-                                  <td>
-                                    <small>{{ cliente.email }}</small>
-                                  </td>
-                                  <td>
-                                    <span class="badge" [class]="cliente.estatus === 'Activo' ? 'bg-success' : 'bg-secondary'">
-                                      {{ cliente.estatus }}
-                                    </span>
-                                  </td>
-                                  <td>
-                                    <button class="btn btn-outline-danger btn-sm" 
-                                            (click)="desasignarCliente(cliente.folioCliente)"
-                                            title="Desasignar cliente">
-                                      <i class="fas fa-user-times"></i>
-                                    </button>
-                                  </td>
-                                </tr>
-                              }
-                            </tbody>
-                          </table>
-                        </div>
-                      }
-
-                      @if (clientesAsignados.length === 0) {
-                        <div class="empty-state">
-                          <i class="fas fa-users"></i>
-                          <p>No hay clientes asignados a esta rutina</p>
-                          <button class="btn btn-primary" (click)="showAsignarClientes()">
-                            <i class="fas fa-user-plus"></i> Asignar Clientes
-                          </button>
-                        </div>
-                      }
-                    </div>
-                  }
-                </div>
 
                 <!-- LISTA DE EJERCICIOS -->
                 <div class="ejercicios-section">
@@ -435,6 +374,121 @@
     </div>
   </div>
 </div>
+
+<!-- MODAL VER CLIENTES ASIGNADOS -->
+@if (showVerClientesModal) {
+  <div class="modal show" style="display: block">
+    <div class="modal-dialog modal-xl clientes-asignados-modal">
+      <div class="modal-content card-scrollable">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-users"></i> Clientes Asignados a la Rutina
+          </h5>
+          <button type="button" class="btn-close" (click)="closeVerClientesModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="card-content">
+            <!-- Información de la Rutina -->
+            <div class="card mb-4">
+              <div class="card-body">
+                <h6>Información de la Rutina</h6>
+                <div class="rutina-info">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="info-item">
+                        <strong>Nombre:  {{ selectedRutina?.nombre }}</strong>
+                      </div>
+                      <div class="info-item">
+                        <strong>Nivel: {{ selectedRutina?.nivel || 'No especificado' }}</strong>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="info-item">
+                        <strong>Objetivo:{{ selectedRutina?.objetivo || 'No especificado' }}</strong> 
+                      </div>
+                      <div class="info-item">
+                        <strong>Total de Clientes:
+                        {{ clientesAsignados.length }}</strong> 
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lista de Clientes Asignados -->
+            <div class="clientes-list-section">
+              @if (clientesAsignados.length > 0) {
+                <div class="table-container">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Nombre</th>
+                        <th>Edad</th>
+                        <th>Género</th>
+                        <th>Email</th>
+                        <th>Teléfono</th>
+                        <th>Estado</th>
+                        <th width="100">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (cliente of clientesAsignados; track cliente.folioCliente) {
+                        <tr>
+                          <td>
+                            <strong>{{ cliente.nombre }}</strong>
+                          </td>
+                          <td>{{ calcularEdad(cliente.fechaNacimiento) }} años</td>
+                          <td>{{ cliente.genero }}</td>
+                          <td>
+                            <small>{{ cliente.email }}</small>
+                          </td>
+                          <td>
+                            <small>{{ cliente.telefono || 'No especificado' }}</small>
+                          </td>
+                          <td>
+                            <span class="badge" [class]="cliente.estatus === 'Activo' ? 'bg-success' : 'bg-secondary'">
+                              {{ cliente.estatus }}
+                            </span>
+                          </td>
+                          <td>
+                            <button class="btn btn-outline-danger btn-sm" 
+                                    (click)="desasignarCliente(cliente.folioCliente)"
+                                    title="Desasignar cliente">
+                              <i class="fas fa-user-times"></i> Desasignar
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <div class="empty-state">
+                  <i class="fas fa-users"></i>
+                  <p>No hay clientes asignados a esta rutina</p>
+                  <button class="btn btn-primary" (click)="closeVerClientesModal(); showAsignarClientes()">
+                    <i class="fas fa-user-plus"></i> Asignar Clientes
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeVerClientesModal()">
+            Cerrar
+          </button>
+          <button type="button" class="btn btn-primary" (click)="closeVerClientesModal(); showAsignarClientes()">
+            <i class="fas fa-user-plus"></i> Asignar Más Clientes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
 
 <!-- MODAL AGREGAR EJERCICIO - MÁS GRANDE -->
 @if (showEjercicioModal) {

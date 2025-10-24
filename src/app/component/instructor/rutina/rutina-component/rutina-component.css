@@ -12,6 +12,287 @@
   --gray-light: #E2E8F0;
 }
 
+/* HEADER MEJORADO - ESTRUCTURA MÁS ORGANIZADA */
+.header-section {
+  background: linear-gradient(135deg, var(--primary-red) 0%, var(--secondary-orange) 100%);
+  border-radius: 16px;
+  padding: 20px 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.header-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,0 L100,0 L100,100 Z" fill="rgba(255,255,255,0.1)"/></svg>');
+  background-size: cover;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+}
+
+/* Lado izquierdo - Título compacto */
+.header-left {
+  flex: 1;
+  min-width: 250px;
+}
+
+.section-title {
+  font-size: 1.6rem;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  line-height: 1.2;
+}
+
+.section-title i {
+  color: var(--white);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.section-subtitle {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  line-height: 1.3;
+  max-width: 400px;
+}
+
+/* Lado derecho - Estructura mejorada */
+.header-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+  min-width: 280px;
+}
+
+/* Estadísticas del header */
+.header-stats {
+  display: flex;
+  gap: 10px;
+}
+
+.clientes-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  font-weight: 500;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.count-text {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.clientes-count .badge {
+  background: var(--white);
+  color: var(--primary-red);
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+/* Acciones del header organizadas en grupos */
+.header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.action-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Botones de header mejorados */
+.btn-header {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.btn-header:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-header-primary {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.btn-header-primary:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.btn-header-success {
+  background: rgba(76, 175, 80, 0.3);
+  border-color: rgba(76, 175, 80, 0.5);
+}
+
+.btn-header-success:hover {
+  background: rgba(76, 175, 80, 0.4);
+}
+
+.btn-header-info {
+  background: rgba(33, 150, 243, 0.3);
+  border-color: rgba(33, 150, 243, 0.5);
+}
+
+.btn-header-info:hover {
+  background: rgba(33, 150, 243, 0.4);
+}
+
+.btn-header-danger {
+  background: rgba(244, 67, 54, 0.3);
+  border-color: rgba(244, 67, 54, 0.5);
+}
+
+.btn-header-danger:hover {
+  background: rgba(244, 67, 54, 0.4);
+}
+
+.btn-text {
+  font-size: 0.75rem;
+}
+
+/* CARD HEADER MEJORADO */
+.card-header {
+  background: rgba(69, 123, 157, 0.25);
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 15px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Header de rutina seleccionada mejorado */
+.rutina-header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  width: 100%;
+}
+
+.rutina-title-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.rutina-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--white);
+  line-height: 1.2;
+  word-wrap: break-word;
+}
+
+.rutina-meta-info {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+/* Action buttons más compactos */
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.btn-group {
+  display: flex;
+  gap: 6px;
+}
+
+/* Botones pequeños mejorados */
+.btn-sm {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-sm span {
+  font-size: 0.7rem;
+}
+
 /* Estilos generales */
 * {
   margin: 0;
@@ -32,56 +313,6 @@ body {
   margin: 0 auto;
   padding: 20px;
   min-height: 100vh;
-}
-
-/* Header mejorado */
-.header-section {
-  background: linear-gradient(135deg, var(--primary-red) 0%, var(--secondary-orange) 100%);
-  border-radius: 16px;
-  padding: 30px;
-  margin-bottom: 30px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  position: relative;
-  overflow: hidden;
-}
-
-.header-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,0 L100,0 L100,100 Z" fill="rgba(255,255,255,0.1)"/></svg>');
-  background-size: cover;
-}
-
-.section-title {
-  font-size: 2.2rem;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-  position: relative;
-  z-index: 1;
-}
-
-.section-title i {
-  color: var(--white);
-  background: rgba(0, 0, 0, 0.2);
-  padding: 12px;
-  border-radius: 50%;
-}
-
-.section-subtitle {
-  font-size: 1.1rem;
-  opacity: 0.9;
-  position: relative;
-  z-index: 1;
 }
 
 /* Estructura principal mejorada */
@@ -135,7 +366,7 @@ body {
 
 /* Scroller para tabla de clientes asignados */
 .table-container {
-  max-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -180,11 +411,11 @@ body {
 
 /* Tamaños específicos para diferentes tipos de modales */
 .modal-dialog.modal-xxl {
-  max-width: 1600px;
+  max-width: 1400px;
 }
 
 .modal-dialog.modal-xl {
-  max-width: 1400px;
+  max-width: 1200px;
 }
 
 .modal-dialog.modal-lg {
@@ -466,24 +697,6 @@ body {
   flex-direction: column;
 }
 
-.card-header {
-  background: rgba(69, 123, 157, 0.3);
-  padding: 20px 25px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.card-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  font-size: 1.3rem;
-}
-
 .card-body {
   padding: 25px;
   flex: 1;
@@ -562,11 +775,6 @@ body {
 .btn-secondary:hover {
   background: rgba(69, 123, 157, 0.7);
   transform: translateY(-2px);
-}
-
-.btn-sm {
-  padding: 8px 14px;
-  font-size: 0.85rem;
 }
 
 .btn-lg {
@@ -744,7 +952,7 @@ body {
 }
 
 .badge.bg-primary {
-  background: linear-gradient(135deg, #2196F3 0%, #0b7dda 100%);
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--dark-blue) 100%);
   color: white;
   border-color: rgba(33, 150, 243, 0.3);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -752,7 +960,7 @@ body {
 }
 
 .badge.bg-warning {
-  background: linear-gradient(135deg, #FF9800 0%, #e68900 100%);
+  background: linear-gradient(135deg, var(--secondary-orange) 0%, #e68900 100%);
   color: white;
   border-color: rgba(255, 152, 0, 0.3);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -760,7 +968,7 @@ body {
 }
 
 .badge.bg-danger {
-  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+  background: linear-gradient(135deg, var(--primary-red) 0%, #d32f2f 100%);
   color: white;
   border-color: rgba(244, 67, 54, 0.3);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -775,8 +983,19 @@ body {
   box-shadow: 0 2px 4px rgba(23, 162, 184, 0.3);
 }
 
+/* Mejorar la visualización de los detalles de rutina */
 .rutina-details {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
   margin-bottom: 10px;
+}
+
+.rutina-details small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .rutina-meta {
@@ -868,6 +1087,20 @@ body {
   gap: 8px;
 }
 
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ejercicios-count {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
 /* Tablas mejoradas */
 .table {
   margin: 0;
@@ -921,6 +1154,13 @@ body {
 .empty-state p {
   margin-bottom: 20px;
   font-size: 1.1rem;
+}
+
+.empty-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* Sección de ejercicios mejorada */
@@ -1257,86 +1497,6 @@ body {
   margin: 0;
 }
 
-/* Action buttons */
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-/* Clientes asignados - diseño mejorado */
-.clientes-asignados-section {
-  margin-bottom: 24px;
-}
-
-.clientes-asignados-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.cliente-asignado-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.cliente-asignado-card:hover {
-  background: rgba(255, 255, 255, 0.05);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.cliente-asignado-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.cliente-asignado-info {
-  flex: 1;
-}
-
-.cliente-asignado-nombre {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 4px;
-  color: var(--white);
-}
-
-.cliente-asignado-email {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 8px;
-}
-
-.cliente-asignado-details {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.cliente-asignado-detail {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.cliente-asignado-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-
 /* SCROLLBAR PERSONALIZADO */
 .card-content::-webkit-scrollbar,
 .rutinas-list-container::-webkit-scrollbar,
@@ -1372,114 +1532,81 @@ body {
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* Mejoras visuales para los botones en hover */
-.rutina-actions .btn-xs {
-  opacity: 0.8;
-  transition: all 0.2s ease;
-}
-
-.rutina-actions .btn-xs:hover {
-  opacity: 1;
-  transform: scale(1.1);
-}
-
-/* Efecto de pulso para indicar acción */
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 6px rgba(76, 175, 80, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
-  }
-}
-
-.btn-success.pulse {
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse-warning {
-  0% {
-    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 6px rgba(255, 152, 0, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0);
-  }
-}
-
-.btn-warning.pulse {
-  animation: pulse-warning 2s infinite;
-}
-
-/* Estados de carga para los botones */
-.btn-xs:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-.btn-xs.loading {
-  position: relative;
-  color: transparent;
-}
-
-.btn-xs.loading::after {
-  content: '';
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Ajustes responsive para scrollers */
-@media (max-width: 768px) {
-  .card-scrollable .card-content {
-    max-height: 500px;
+/* RESPONSIVE DESIGN MEJORADO */
+@media (max-width: 1200px) {
+  .header-content {
+    flex-direction: column;
+    gap: 15px;
   }
   
-  .rutinas-list-container,
-  .ejercicios-list-container,
-  .clientes-list-container {
-    max-height: 300px;
+  .header-right {
+    align-items: stretch;
+    min-width: auto;
+    width: 100%;
   }
+  
+  .header-actions {
+    justify-content: space-between;
+  }
+  
+  .action-group {
+    flex: 1;
+    justify-content: center;
+  }
+}
 
-  .container-fluid {
+@media (max-width: 768px) {
+  .header-section {
     padding: 15px;
   }
   
-  .header-section {
-    padding: 20px;
-  }
-  
   .section-title {
-    font-size: 1.8rem;
+    font-size: 1.4rem;
   }
   
-  .form-grid {
-    grid-template-columns: 1fr;
+  .section-subtitle {
+    font-size: 0.85rem;
   }
   
-  .parameters-grid {
-    grid-template-columns: 1fr;
+  .header-left {
+    min-width: auto;
   }
   
-  .section-header {
+  .header-stats {
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .action-group {
+    justify-content: space-between;
+  }
+  
+  .btn-header {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .card-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+    padding: 15px 20px;
+  }
+  
+  .rutina-header-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .rutina-meta-info {
+    flex-direction: column;
+    gap: 8px;
   }
   
   .action-buttons {
@@ -1487,75 +1614,74 @@ body {
     justify-content: flex-start;
   }
   
-  .card-header {
-    flex-direction: column;
-    gap: 15px;
-    align-items: flex-start;
+  .btn-group {
+    width: 100%;
   }
   
-  .input-group {
-    flex-direction: column;
+  .btn-sm {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  /* Mejorar la responsividad de las tablas */
+  .clientes-asignados-modal .table-container {
+    overflow-x: auto;
+  }
+  
+  .table {
+    min-width: 600px;
+  }
+  
+  .modal-body .form-grid {
+    grid-template-columns: 1fr;
   }
   
   .rutina-header {
     flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
-  }
-  
-  .ejercicio-header {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .ejercicio-stats {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .cliente-info {
-    flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
   
-  .cliente-details {
-    margin-right: 0;
-    flex-wrap: wrap;
+  .rutina-actions {
+    align-self: flex-end;
   }
   
-  .info-item {
+  .header-stats {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-  
-  .clientes-asignados-grid {
-    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }
 
 @media (max-width: 576px) {
-  .card-scrollable .card-content {
-    max-height: 400px;
-  }
-  
-  .rutinas-list-container,
-  .ejercicios-list-container,
-  .clientes-list-container {
-    max-height: 250px;
-  }
-  
   .container-fluid {
-    padding: 10px;
-  }
-  
-  .header-section {
     padding: 15px;
   }
   
+  .header-section {
+    padding: 12px;
+  }
+  
   .section-title {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
+  }
+  
+  .section-title i {
+    padding: 6px;
+    font-size: 0.8rem;
+  }
+  
+  .clientes-count {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  
+  .btn-header {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+  
+  .btn-text {
+    font-size: 0.7rem;
   }
   
   .card-body {
@@ -1566,16 +1692,94 @@ body {
     flex-direction: column;
   }
   
-  .rutina-header {
-    flex-direction: row;
-    align-items: center;
+  .empty-actions {
+    flex-direction: column;
   }
-  
-  .rutina-info {
-    flex: 1;
-  }
-  
-  .rutina-actions {
-    flex-shrink: 0;
-  }
+}
+
+/* Mejoras para texto largo en títulos */
+.section-title,
+.rutina-title {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Efectos de hover mejorados */
+.btn-header:active {
+  transform: translateY(0);
+}
+
+/* Estados de disabled */
+.btn-header:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Focus states para accesibilidad */
+.btn-header:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Animaciones suaves */
+.header-section {
+  transition: all 0.3s ease;
+}
+
+/* Mejora para el contador cuando está vacío */
+.clientes-count:empty {
+  display: none;
+}
+
+/* Utilidades para espaciado */
+.header-gap-sm {
+  gap: 8px;
+}
+
+.header-gap-md {
+  gap: 12px;
+}
+
+.header-gap-lg {
+  gap: 16px;
+}
+
+/* Asegurar que los scrollbars sean consistentes en todos los navegadores */
+.card-scrollable .card-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
+}
+
+/* Mejorar los estados vacíos */
+.empty-state .action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+/* Asegurar que los colores de los badges sean consistentes */
+.badge.bg-primary {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--dark-blue) 100%);
+}
+
+.badge.bg-success {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+}
+
+.badge.bg-warning {
+  background: linear-gradient(135deg, var(--secondary-orange) 0%, #e68900 100%);
+}
+
+.badge.bg-danger {
+  background: linear-gradient(135deg, var(--primary-red) 0%, #d32f2f 100%);
+}
+
+/* Mejorar la legibilidad del texto */
+.section-title, .card-title, .modal-title {
+  color: var(--white);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
