@@ -4,11 +4,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Actividad, ActividadService } from '../../../services/instructor/ActividadService';
 import Swal from 'sweetalert2';
+import { HeaderInstructorComponent } from "../header-instructor/header-instructor";
 
 @Component({
   selector: 'app-actividades',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, HeaderInstructorComponent],
   templateUrl: './actividades-component.html',
   styleUrls: ['./actividades-component.css']
 })
@@ -50,14 +51,22 @@ export class ActividadesComponent implements OnInit {
   // Instructor fijo
   instructorFijo = 'INS003';
 
-  // NUEVAS PROPIEDADES PARA EL CALENDARIO DESPLEGABLE
-  mostrarCalendario: boolean = false;
+  // NUEVAS PROPIEDADES PARA EL CALENDARIO MODAL
+  mostrarCalendarioModal: boolean = false;
   mesActual: Date = new Date();
   diaSeleccionado: Date | null = null;
   diasDelMes: any[] = [];
   diasSemana: string[] = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
   mostrarSelectorRapido: boolean = false;
-  mesSeleccionadoRapido: string = '';
+  
+  // NUEVAS PROPIEDADES PARA SELECTOR DE AÑO Y MES (CORREGIDAS)
+  anosDisponibles: number[] = [];
+  anoSeleccionado: number = new Date().getFullYear();
+  mesesDelAno: string[] = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+  mesSeleccionadoRapido: number = new Date().getMonth();
 
   // Imágenes por defecto para actividades
   defaultImages = [
@@ -68,7 +77,7 @@ export class ActividadesComponent implements OnInit {
     'https://images.unsplash.com/photo-1574680178050-55c6a6a96e0a?w=400',
   ];
 
-  // Lista de meses para selector rápido
+  // Lista de meses para selector rápido (se mantiene por compatibilidad)
   mesesDisponibles: any[] = [];
 
   constructor(
@@ -77,7 +86,8 @@ export class ActividadesComponent implements OnInit {
   ) {
     this.actividadForm = this.createForm();
     this.generarHorasDisponibles();
-    this.inicializarMesesDisponibles();
+    this.inicializarAnosDisponibles();
+    this.inicializarMesesDisponibles(); // Se mantiene por compatibilidad
   }
 
   ngOnInit(): void {
@@ -86,40 +96,107 @@ export class ActividadesComponent implements OnInit {
     this.generarCalendario();
   }
 
-  // NUEVO MÉTODO PARA MOSTRAR/OCULTAR CALENDARIO
-  toggleCalendario(): void {
-    this.mostrarCalendario = !this.mostrarCalendario;
-    if (this.mostrarCalendario) {
-      console.log('📅 Calendario desplegado');
-      // Regenerar calendario para asegurar datos actualizados
-      this.generarCalendario();
-    } else {
-      console.log('📅 Calendario oculto');
+  // NUEVO MÉTODO PARA INICIALIZAR AÑOS DISPONIBLES (CORREGIDO)
+  inicializarAnosDisponibles(): void {
+    const anoActual = new Date().getFullYear();
+    // Incluir años desde 2020 hasta 5 años en el futuro
+    this.anosDisponibles = [];
+    for (let i = 2020; i <= anoActual + 25; i++) {
+      this.anosDisponibles.push(i);
     }
+    this.anoSeleccionado = anoActual;
+    this.mesSeleccionadoRapido = new Date().getMonth();
   }
 
-  // MÉTODOS PARA EL CALENDARIO
-
+  // MÉTODO EXISTENTE (se mantiene por compatibilidad)
   inicializarMesesDisponibles(): void {
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     
-    const añoActual = new Date().getFullYear();
-    const añoSiguiente = añoActual + 1;
+    const anoActual = new Date().getFullYear();
+    const anoSiguiente = anoActual + 1;
     
     this.mesesDisponibles = [];
     
     // Agregar meses del año actual y siguiente
-    for (let año of [añoActual, añoSiguiente]) {
+    for (let ano of [anoActual, anoSiguiente]) {
       for (let i = 0; i < 12; i++) {
         this.mesesDisponibles.push({
-          value: `${año}-${(i + 1).toString().padStart(2, '0')}`,
-          nombre: `${meses[i]} ${año}`
+          value: `${ano}-${(i + 1).toString().padStart(2, '0')}`,
+          nombre: `${meses[i]} ${ano}`
         });
       }
     }
   }
 
+  // NUEVO MÉTODO PARA SELECCIONAR AÑO (CORREGIDO)
+  seleccionarAno(ano: number): void {
+    this.anoSeleccionado = ano;
+    console.log('📅 Año seleccionado:', ano);
+  }
+
+  // NUEVO MÉTODO PARA SELECCIONAR MES
+  seleccionarMes(mes: number): void {
+    this.mesSeleccionadoRapido = mes;
+    console.log('📅 Mes seleccionado:', this.mesesDelAno[mes]);
+  }
+
+  // NUEVO MÉTODO PARA APLICAR LA SELECCIÓN DE AÑO Y MES (CORREGIDO)
+  aplicarAnioMesSeleccionado(): void {
+    this.mesActual = new Date(this.anoSeleccionado, this.mesSeleccionadoRapido, 1);
+    this.diaSeleccionado = null;
+    this.actividadesFiltradas = [...this.actividades];
+    this.generarCalendario();
+    this.mostrarSelectorRapido = false;
+    console.log('📅 Cambiando a:', this.mesesDelAno[this.mesSeleccionadoRapido], this.anoSeleccionado);
+  }
+
+  // MÉTODO MODIFICADO PARA TOGGLE DEL SELECTOR (nueva versión)
+  toggleSelectorAnioMes(): void {
+    // Al abrir el selector, establecer los valores actuales
+    if (!this.mostrarSelectorRapido) {
+      this.anoSeleccionado = this.mesActual.getFullYear();
+      this.mesSeleccionadoRapido = this.mesActual.getMonth();
+    }
+    this.mostrarSelectorRapido = !this.mostrarSelectorRapido;
+  }
+
+  // MÉTODO EXISTENTE (se mantiene por compatibilidad)
+  toggleSelectorMeses(): void {
+    this.mostrarSelectorRapido = !this.mostrarSelectorRapido;
+  }
+
+  // MÉTODO EXISTENTE (se mantiene por compatibilidad)
+  seleccionarMesRapido(mesValue: string): void {
+    if (mesValue) {
+      const [ano, mes] = mesValue.split('-');
+      this.mesActual = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+      this.diaSeleccionado = null;
+      this.actividadesFiltradas = [...this.actividades];
+      this.generarCalendario();
+      this.mostrarSelectorRapido = false;
+    }
+  }
+
+  // MÉTODO EXISTENTE (se mantiene por compatibilidad)
+ cambiarMesRapido(): void {}
+
+  // MÉTODOS PARA EL MODAL
+  abrirCalendarioModal(): void {
+    this.mostrarCalendarioModal = true;
+    console.log('📅 Modal del calendario abierto');
+    this.generarCalendario();
+  }
+
+  cerrarCalendarioModal(event?: any): void {
+    if (event && event.target.classList.contains('calendar-modal-overlay')) {
+      this.mostrarCalendarioModal = false;
+    } else if (!event) {
+      this.mostrarCalendarioModal = false;
+    }
+  }
+
+  // MÉTODOS EXISTENTES PARA EL CALENDARIO
   generarCalendario(): void {
     this.diasDelMes = [];
     
@@ -252,30 +329,14 @@ export class ActividadesComponent implements OnInit {
     this.seleccionarDia({ fecha: this.diaSeleccionado });
   }
 
-  mostrarSelectorMeses(): void {
-    this.mostrarSelectorRapido = !this.mostrarSelectorRapido;
-  }
-
-  cambiarMesRapido(): void {
-    if (this.mesSeleccionadoRapido) {
-      const [año, mes] = this.mesSeleccionadoRapido.split('-');
-      this.mesActual = new Date(parseInt(año), parseInt(mes) - 1, 1);
-      this.diaSeleccionado = null;
-      this.actividadesFiltradas = [...this.actividades];
-      this.generarCalendario();
-      this.mostrarSelectorRapido = false;
-    }
-  }
-
-  // MÉTODOS EXISTENTES
-
+  // MÉTODOS EXISTENTES DEL FORMULARIO
   createForm(): FormGroup {
     return this.fb.group({
-      idActividad: [''], // Campo oculto, se genera automáticamente en el backend
+      idActividad: [''],
       nombreActividad: ['', [Validators.required, Validators.minLength(3)]],
       fechaActividad: ['', Validators.required],
-      horaInicio: [''], // Campo oculto, se llena desde el calendario
-      horaFin: [''], // Campo oculto, se llena desde el calendario
+      horaInicio: [''],
+      horaFin: [''],
       descripcion: [''],
       cupo: [0, [Validators.required, Validators.min(0), Validators.max(50)]],
       lugar: ['', Validators.required],
@@ -284,7 +345,6 @@ export class ActividadesComponent implements OnInit {
     });
   }
 
-  // MÉTODOS PARA EL SELECTOR DE LUGARES
   onLugarSeleccionado(event: any): void {
     const valor = event.target.value;
     console.log('📍 Lugar seleccionado del dropdown:', valor);
@@ -318,7 +378,6 @@ export class ActividadesComponent implements OnInit {
     console.log('📍 Lugar limpiado');
   }
 
-  // Configurar lugar al editar una actividad
   configurarLugarParaEdicion(lugar: string): void {
     const esLugarPredefinido = this.lugaresPredefinidos.includes(lugar);
     
@@ -357,8 +416,6 @@ export class ActividadesComponent implements OnInit {
         this.actividadesFiltradas = [...this.actividades];
         this.isLoading = false;
         console.log('✅ Actividades del instructor cargadas:', this.actividades.length);
-        
-        // Regenerar calendario con los nuevos datos
         this.generarCalendario();
       },
       error: (error) => {
@@ -378,8 +435,6 @@ export class ActividadesComponent implements OnInit {
         this.actividadesFiltradas = [...this.actividades];
         this.isLoading = false;
         console.log('✅ Actividades filtradas localmente:', this.actividades.length);
-        
-        // Regenerar calendario con los nuevos datos
         this.generarCalendario();
       },
       error: (error) => {
@@ -401,9 +456,8 @@ export class ActividadesComponent implements OnInit {
     this.lugarSeleccionado = '';
     this.mostrarCampoPersonalizado = false;
     
-    // ELIMINADO: Ya no generamos ID automático en el frontend
     this.actividadForm.reset({
-      idActividad: '', // ← Dejar vacío, el backend lo generará automáticamente
+      idActividad: '',
       nombreActividad: '',
       fechaActividad: '',
       horaInicio: '',
@@ -425,13 +479,11 @@ export class ActividadesComponent implements OnInit {
     this.selectedActividad = actividad;
     this.selectedDate = actividad.fechaActividad;
     
-    // Calcular duración basada en las horas de inicio y fin
     const inicio = new Date(`2000-01-01T${actividad.horaInicio}`);
     const fin = new Date(`2000-01-01T${actividad.horaFin}`);
     const diffMs = fin.getTime() - inicio.getTime();
     this.duracionSeleccionada = Math.round(diffMs / (1000 * 60));
     
-    // Establecer horario seleccionado (IMPORTANTE: asegurar formato correcto)
     this.horarioSeleccionado = {
       horaInicio: actividad.horaInicio.endsWith(':00') ? actividad.horaInicio : actividad.horaInicio + ':00',
       horaFin: actividad.horaFin.endsWith(':00') ? actividad.horaFin : actividad.horaFin + ':00'
@@ -442,7 +494,6 @@ export class ActividadesComponent implements OnInit {
       duracion: this.duracionSeleccionada
     });
     
-    // Configurar el lugar
     this.configurarLugarParaEdicion(actividad.lugar);
     
     this.actividadForm.patchValue({
@@ -461,7 +512,6 @@ export class ActividadesComponent implements OnInit {
     this.showForm = true;
     this.showCalendar = !!actividad.fechaActividad;
     
-    // Forzar detección de cambios (opcional, pero útil)
     setTimeout(() => {
       this.generarCalendario();
     }, 100);
@@ -545,11 +595,8 @@ export class ActividadesComponent implements OnInit {
     }
   }
 
-  // NUEVO MÉTODO: Detectar horario cargado en edición
   esHorarioCargado(hora: string): boolean {
     if (!this.horarioSeleccionado) return false;
-    
-    // Comparar solo las horas (sin segundos)
     const horaCargada = this.horarioSeleccionado.horaInicio.substring(0, 5);
     return horaCargada === hora;
   }
@@ -563,7 +610,6 @@ export class ActividadesComponent implements OnInit {
       classes += ' available';
     }
     
-    // Agregar esta condición para detectar horario cargado en edición
     if (this.esHorarioSeleccionado(hora) || this.esHorarioCargado(hora)) {
       classes += ' selected';
     }
@@ -618,146 +664,135 @@ export class ActividadesComponent implements OnInit {
     return `${duracion} min`;
   }
 
-  // NUEVO MÉTODO: Formatear hora para display
   formatearHoraParaDisplay(hora: string): string {
     if (!hora) return '';
-    return hora.substring(0, 5); // Devuelve solo HH:MM
+    return hora.substring(0, 5);
   }
 
- async guardarActividad(): Promise<void> {
-  if (!this.horarioSeleccionado) {
-    this.mostrarAdvertencia('Horario Requerido', 'Por favor selecciona un horario del calendario');
-    return;
-  }
-
-  if (this.actividadForm.valid) {
-    const actividadData: Actividad = this.actividadForm.value;
-
-    // Validar que la fecha no sea en el pasado
-    const fechaActividad = new Date(actividadData.fechaActividad);
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    
-    if (fechaActividad < hoy) {
-      this.mostrarError('Fecha Inválida', 'La fecha de la actividad no puede ser en el pasado');
+  async guardarActividad(): Promise<void> {
+    if (!this.horarioSeleccionado) {
+      this.mostrarAdvertencia('Horario Requerido', 'Por favor selecciona un horario del calendario');
       return;
     }
 
-    try {
-      let tieneConflicto = false;
+    if (this.actividadForm.valid) {
+      const actividadData: Actividad = this.actividadForm.value;
 
-      if (this.isEditing && this.selectedActividad) {
-        // Para EDICIÓN: usar el método que excluye la actividad actual
-        console.log('🔄 Verificando conflicto para edición, excluyendo:', this.selectedActividad.idActividad);
-        
-        tieneConflicto = await this.verificarConflictoHorarioExcluyendo(
-          actividadData.lugar,
-          actividadData.fechaActividad,
-          actividadData.horaInicio,
-          actividadData.horaFin,
-          this.selectedActividad.idActividad
-        );
-      } else {
-        // Para CREACIÓN: usar el método normal
-        console.log('🔄 Verificando conflicto para creación nueva');
-        
-        tieneConflicto = await this.verificarConflictoHorario(
-          actividadData.lugar,
-          actividadData.fechaActividad,
-          actividadData.horaInicio,
-          actividadData.horaFin
-        );
-      }
-
-      if (tieneConflicto) {
-        this.mostrarError('Conflicto de Horario', 'Ya existe una actividad en el mismo lugar y horario');
+      const fechaActividad = new Date(actividadData.fechaActividad);
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      
+      if (fechaActividad < hoy) {
+        this.mostrarError('Fecha Inválida', 'La fecha de la actividad no puede ser en el pasado');
         return;
       }
 
-      if (this.isEditing && this.selectedActividad) {
-        // Para edición: usar el ID existente
-        this.actividadService.actualizarActividad(this.selectedActividad.idActividad, actividadData)
-          .subscribe({
-            next: () => {
-              this.mostrarExito('¡Éxito!', 'Actividad actualizada exitosamente');
-              this.cancelarEdicion();
-              this.cargarActividadesInstructor();
-            },
-            error: (error) => {
-              console.error('❌ Error al actualizar actividad:', error);
-              const errorMessage = error.error?.message || error.error || 'Error desconocido';
-              this.mostrarError('Error al Actualizar', 'Error al actualizar la actividad: ' + errorMessage);
-            }
-          });
-      } else {
-        // Para creación: NO enviar idActividad, el backend lo generará automáticamente
-        const { idActividad, ...actividadSinId } = actividadData;
-        
-        this.actividadService.crearActividad(actividadSinId as Actividad)
-          .subscribe({
-            next: (nuevaActividad) => {
-              this.mostrarExito('¡Éxito!', `Actividad creada exitosamente`);
-              this.cancelarEdicion();
-              this.cargarActividadesInstructor();
-            },
-            error: (error) => {
-              console.error('❌ Error al crear actividad:', error);
-              const errorMessage = error.error?.message || error.error || 'Error desconocido';
-              this.mostrarError('Error al Crear', 'Error al crear la actividad: ' + errorMessage);
-            }
-          });
-      }
-    } catch (error) {
-      console.error('❌ Error al verificar conflicto:', error);
-      this.mostrarError('Error de Verificación', 'Error al verificar disponibilidad de horario');
-    }
-  } else {
-    this.marcarCamposInvalidos();
-    this.mostrarAdvertencia('Formulario Incompleto', 'Por favor complete todos los campos requeridos correctamente');
-  }
-}
+      try {
+        let tieneConflicto = false;
 
-// NUEVO MÉTODO: Verificar conflicto excluyendo una actividad específica
-private verificarConflictoHorarioExcluyendo(
-  lugar: string, 
-  fecha: string, 
-  horaInicio: string, 
-  horaFin: string, 
-  excludeId: string
-): Promise<boolean> {
-  return new Promise((resolve) => {
-    this.actividadService.verificarConflictoHorarioExcluyendo(lugar, fecha, horaInicio, horaFin, excludeId)
-      .subscribe({
-        next: (tieneConflicto) => {
-          console.log('🔍 Resultado verificación backend (excluyendo):', tieneConflicto);
-          resolve(tieneConflicto);
-        },
-        error: (error) => {
-          console.error('❌ Error en verificación excluyendo:', error);
-          resolve(false); // En caso de error, permitir continuar
+        if (this.isEditing && this.selectedActividad) {
+          tieneConflicto = await this.verificarConflictoHorarioExcluyendo(
+            actividadData.lugar,
+            actividadData.fechaActividad,
+            actividadData.horaInicio,
+            actividadData.horaFin,
+            this.selectedActividad.idActividad
+          );
+        } else {
+          tieneConflicto = await this.verificarConflictoHorario(
+            actividadData.lugar,
+            actividadData.fechaActividad,
+            actividadData.horaInicio,
+            actividadData.horaFin
+          );
         }
-      });
-  });
-}
 
-// MÉTODO EXISTENTE (mantener)
-private verificarConflictoHorario(
-  lugar: string, 
-  fecha: string, 
-  horaInicio: string, 
-  horaFin: string
-): Promise<boolean> {
-  return new Promise((resolve) => {
-    this.actividadService.verificarConflictoHorario(lugar, fecha, horaInicio, horaFin)
-      .subscribe({
-        next: (tieneConflicto) => {
-          console.log('🔍 Resultado verificación backend:', tieneConflicto);
-          resolve(tieneConflicto);
-        },
-        error: () => resolve(false)
-      });
-  });
-}
+        if (tieneConflicto) {
+          this.mostrarError('Conflicto de Horario', 'Ya existe una actividad en el mismo lugar y horario');
+          return;
+        }
+
+        if (this.isEditing && this.selectedActividad) {
+          this.actividadService.actualizarActividad(this.selectedActividad.idActividad, actividadData)
+            .subscribe({
+              next: () => {
+                this.mostrarExito('¡Éxito!', 'Actividad actualizada exitosamente');
+                this.cancelarEdicion();
+                this.cargarActividadesInstructor();
+              },
+              error: (error) => {
+                console.error('❌ Error al actualizar actividad:', error);
+                const errorMessage = error.error?.message || error.error || 'Error desconocido';
+                this.mostrarError('Error al Actualizar', 'Error al actualizar la actividad: ' + errorMessage);
+              }
+            });
+        } else {
+          const { idActividad, ...actividadSinId } = actividadData;
+          
+          this.actividadService.crearActividad(actividadSinId as Actividad)
+            .subscribe({
+              next: (nuevaActividad) => {
+                this.mostrarExito('¡Éxito!', `Actividad creada exitosamente`);
+                this.cancelarEdicion();
+                this.cargarActividadesInstructor();
+              },
+              error: (error) => {
+                console.error('❌ Error al crear actividad:', error);
+                const errorMessage = error.error?.message || error.error || 'Error desconocido';
+                this.mostrarError('Error al Crear', 'Error al crear la actividad: ' + errorMessage);
+              }
+            });
+        }
+      } catch (error) {
+        console.error('❌ Error al verificar conflicto:', error);
+        this.mostrarError('Error de Verificación', 'Error al verificar disponibilidad de horario');
+      }
+    } else {
+      this.marcarCamposInvalidos();
+      this.mostrarAdvertencia('Formulario Incompleto', 'Por favor complete todos los campos requeridos correctamente');
+    }
+  }
+
+  private verificarConflictoHorarioExcluyendo(
+    lugar: string, 
+    fecha: string, 
+    horaInicio: string, 
+    horaFin: string, 
+    excludeId: string
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.actividadService.verificarConflictoHorarioExcluyendo(lugar, fecha, horaInicio, horaFin, excludeId)
+        .subscribe({
+          next: (tieneConflicto) => {
+            console.log('🔍 Resultado verificación backend (excluyendo):', tieneConflicto);
+            resolve(tieneConflicto);
+          },
+          error: (error) => {
+            console.error('❌ Error en verificación excluyendo:', error);
+            resolve(false);
+          }
+        });
+    });
+  }
+
+  private verificarConflictoHorario(
+    lugar: string, 
+    fecha: string, 
+    horaInicio: string, 
+    horaFin: string
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.actividadService.verificarConflictoHorario(lugar, fecha, horaInicio, horaFin)
+        .subscribe({
+          next: (tieneConflicto) => {
+            console.log('🔍 Resultado verificación backend:', tieneConflicto);
+            resolve(tieneConflicto);
+          },
+          error: () => resolve(false)
+        });
+    });
+  }
+
   private marcarCamposInvalidos(): void {
     Object.keys(this.actividadForm.controls).forEach(key => {
       const control = this.actividadForm.get(key);
@@ -841,8 +876,6 @@ private verificarConflictoHorario(
             );
             this.actividadesFiltradas = [...this.actividades];
             console.log('🔍 Resultados de búsqueda:', this.actividades.length);
-            
-            // Regenerar calendario con los nuevos datos
             this.generarCalendario();
             
             if (this.actividadesFiltradas.length === 0) {

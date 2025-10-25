@@ -3,11 +3,12 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { Rutina, Ejercicio, EjercicioRutina, RutinaService, Cliente, CrearEjercicioRequest } from '../../../../services/instructor/RutinaService';
+import { HeaderInstructorComponent } from "../../header-instructor/header-instructor";
 
 @Component({
   selector: 'app-rutina',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, HttpClientModule],
+  imports: [CommonModule, ReactiveFormsModule, HttpClientModule, HeaderInstructorComponent],
   templateUrl: './rutina-component.html',
   styleUrls: ['./rutina-component.css']
 })
@@ -77,7 +78,9 @@ export class RutinaComponent implements OnInit {
   // Formularios
   rutinaForm: FormGroup;
   ejercicioForm: FormGroup;
-clientesAsignados: any;
+  
+  // CORREGIDO: Inicializar clientesAsignados como array vacío
+  clientesAsignados: Cliente[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -121,24 +124,69 @@ clientesAsignados: any;
 
   // NUEVOS MÉTODOS PARA MANEJAR CLIENTES POR RUTINA
   showVerClientesAsignados(): void {
-    if (!this.selectedRutina || this.getClientesAsignadosCount(this.selectedRutina.folioRutina) === 0) {
-      this.showAlert('No hay clientes asignados para mostrar', 'warning');
+    if (!this.selectedRutina) {
+      this.showAlert('No hay rutina seleccionada', 'warning');
       return;
     }
-    this.showVerClientesModal = true;
+    
+    // Mostrar estado de carga
+    this.showAlert('Cargando clientes asignados...','success');
+    
+    // Cargar los clientes asignados para el modal y MOSTRAR el modal después
+    this.cargarClientesAsignadosParaModal().then(() => {
+      // Cerrar alerta de carga
+      this.clearAlert();
+      
+      if (this.clientesAsignados.length === 0) {
+        this.showAlert('No hay clientes asignados para mostrar', 'warning');
+        // Pero aún así mostrar el modal vacío para dar opción de asignar
+        this.showVerClientesModal = true;
+      } else {
+        this.showVerClientesModal = true;
+      }
+    }).catch(error => {
+      this.showAlert('Error al cargar clientes asignados', 'danger');
+      console.error('Error:', error);
+    });
+  }
+
+  // Modificar el método para que retorne una Promise
+  cargarClientesAsignadosParaModal(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.selectedRutina) {
+        this.clientesAsignados = [];
+        resolve();
+        return;
+      }
+      
+      this.rutinaService.obtenerClientesAsignadosARutina(this.selectedRutina.folioRutina).subscribe({
+        next: (clientes) => {
+          this.clientesAsignados = clientes || [];
+          // También actualizar el mapa
+          this.clientesPorRutina.set(this.selectedRutina!.folioRutina, this.clientesAsignados);
+          resolve();
+        },
+        error: (error) => {
+          console.error('Error al cargar clientes asignados para modal:', error);
+          this.clientesAsignados = [];
+          this.clientesPorRutina.set(this.selectedRutina!.folioRutina, []);
+          reject(error);
+        }
+      });
+    });
   }
 
   closeVerClientesModal(): void {
     this.showVerClientesModal = false;
   }
 
-  // Método para obtener clientes asignados de una rutina específica
   getClientesAsignados(folioRutina: string): Cliente[] {
+    if (!folioRutina) return []; // Verificación de seguridad
     return this.clientesPorRutina.get(folioRutina) || [];
   }
 
-  // Método para obtener el conteo de clientes asignados
   getClientesAsignadosCount(folioRutina: string): number {
+    if (!folioRutina) return 0; // Verificación de seguridad
     return this.getClientesAsignados(folioRutina).length;
   }
 
@@ -301,6 +349,94 @@ clientesAsignados: any;
     }
   }
 
+  // NUEVO: Calcular tiempo total de la rutina
+  calcularTiempoTotalRutina(): number {
+    if (!this.selectedRutina?.ejercicios) return 0;
+    
+    return this.selectedRutina.ejercicios.reduce((total, ejercicio) => {
+      return total + this.calcularTiempoEjercicioIndividual(ejercicio);
+    }, 0);
+  }
+
+  // NUEVO: Calcular tiempo individual de ejercicio
+  calcularTiempoEjercicioIndividual(ejercicio: any): number {
+    // Calcular tiempo aproximado por ejercicio
+    const tiempoPorSerie = 2; // minutos aproximados por serie
+    const descansoPorSerie = ejercicio.descansoEjercicio / 60; // convertir segundos a minutos
+    
+    return ejercicio.seriesEjercicio * (tiempoPorSerie + descansoPorSerie);
+  }
+
+  // NUEVO: Vista previa de rutina
+  previewRutina(rutina: any): void {
+    // Implementar vista previa de rutina
+    console.log('Vista previa de rutina:', rutina);
+    this.showAlert(`Vista previa de rutina: ${rutina.nombre}`, 'info');
+  }
+
+  // NUEVO: Vista previa de ejercicio
+  previewEjercicio(ejercicio: any): void {
+    // Implementar vista previa de ejercicio
+    console.log('Vista previa de ejercicio:', ejercicio);
+    this.showAlert(`Vista previa de ejercicio: ${ejercicio.nombre}`, 'info');
+  }
+
+  // NUEVO: Seleccionar ejercicio desde tarjeta
+  selectEjercicioCard(idEjercicio: string): void {
+    if (this.isEjercicioEnRutina(idEjercicio)) return;
+    this.ejercicioSeleccionado = idEjercicio;
+  }
+
+  // NUEVO: Funciones de compatibilidad para clientes
+  getCompatibilityClass(cliente: any, rutina: any): string {
+    // Lógica de compatibilidad basada en nivel, objetivos, etc.
+    const nivelCliente = this.getNivelCliente(cliente);
+    const nivelRutina = rutina.nivel;
+    
+    if (nivelCliente === nivelRutina) return 'compatibility-high';
+    if (this.isNivelCompatible(nivelCliente, nivelRutina)) return 'compatibility-medium';
+    return 'compatibility-low';
+  }
+
+  getCompatibilityIcon(cliente: any, rutina: any): string {
+    const compatibilityClass = this.getCompatibilityClass(cliente, rutina);
+    switch (compatibilityClass) {
+      case 'compatibility-high': return 'fa-check-circle';
+      case 'compatibility-medium': return 'fa-exclamation-circle';
+      case 'compatibility-low': return 'fa-times-circle';
+      default: return 'fa-question-circle';
+    }
+  }
+
+  getCompatibilityText(cliente: any, rutina: any): string {
+    const compatibilityClass = this.getCompatibilityClass(cliente, rutina);
+    switch (compatibilityClass) {
+      case 'compatibility-high': return 'Alta';
+      case 'compatibility-medium': return 'Media';
+      case 'compatibility-low': return 'Baja';
+      default: return 'No evaluada';
+    }
+  }
+
+  getNivelCliente(cliente: any): string {
+    // Lógica para determinar el nivel del cliente
+    return cliente.nivel || 'Principiante';
+  }
+
+  isNivelCompatible(nivelCliente: string, nivelRutina: string): boolean {
+    const niveles = ['Principiante', 'Intermedio', 'Avanzado'];
+    const indexCliente = niveles.indexOf(nivelCliente);
+    const indexRutina = niveles.indexOf(nivelRutina);
+    
+    return indexCliente >= indexRutina - 1 && indexCliente <= indexRutina + 1;
+  }
+
+  // NUEVO: Obtener email del cliente
+  getClienteEmail(folioCliente: string): string {
+    const cliente = this.clientesDisponibles.find(c => c.folioCliente === folioCliente);
+    return cliente ? cliente.email : 'Email no encontrado';
+  }
+
   showAsignarClientes() {
     if (!this.selectedRutina) return;
     
@@ -391,6 +527,8 @@ clientesAsignados: any;
             
             // Recargar los clientes asignados para esta rutina
             this.cargarClientesAsignadosParaRutina(this.selectedRutina!.folioRutina);
+            // También actualizar el modal si está abierto
+            this.cargarClientesAsignadosParaModal();
             this.closeAsignarModal();
           } else {
             this.showAlert('Error al asignar la rutina: ' + response.message, 'danger');
@@ -414,6 +552,8 @@ clientesAsignados: any;
               this.showAlert('Cliente desasignado exitosamente', 'success');
               // Recargar los clientes asignados para esta rutina
               this.cargarClientesAsignadosParaRutina(this.selectedRutina!.folioRutina);
+              // También actualizar el modal si está abierto
+              this.cargarClientesAsignadosParaModal();
             } else {
               this.showAlert('Error al desasignar cliente: ' + response.message, 'danger');
             }
@@ -902,7 +1042,7 @@ clientesAsignados: any;
     }
   }
 
-  showAlert(message: string, type: 'success' | 'danger' | 'warning') {
+  showAlert(message: string, type: 'success' | 'danger' | 'warning' | 'info') {
     this.alertMessage = message;
     this.alertType = `alert-${type}`;
     
