@@ -1,13 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CommonModule } from '@angular/common'; // ← CORRECTO
+import { CommonModule } from '@angular/common';
 import { PagoService, Pago } from '../../../services/pagos/pago';
+import { HeaderRecepcionistaComponent } from '../../recepcionista/header-recepcionista/header-recepcionista';
 
 @Component({
   selector: 'app-pago-details',
+  standalone: true,
+  imports: [CommonModule, HeaderRecepcionistaComponent],
   templateUrl: './pago-details.html',
-  styleUrls: ['./pago-details.css'],
-  imports: [CommonModule]
+  styleUrls: ['./pago-details.css']
 })
 export class PagoDetails implements OnInit {
   pago: Pago | null = null;

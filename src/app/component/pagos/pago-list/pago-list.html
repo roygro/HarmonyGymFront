@@ -1,94 +1,136 @@
+<div><app-header-recepcionista></app-header-recepcionista></div>
+
 <div class="container mt-4">
   <!-- Header con estadísticas -->
-  <div class="row mb-4">
-    <div class="col-md-8">
-      <h2>
+  <div class="header">
+    <div class="header-content">
+      <h1>
         <i class="fas fa-history me-2"></i>
         Historial de Pagos
-      </h2>
-      <p class="text-muted">Gestión y consulta de todos los pagos registrados</p>
+      </h1>
+      <p class="header-subtitle">Gestión y consulta de todos los pagos registrados</p>
     </div>
-    <div class="col-md-4 text-end">
-      <button class="btn btn-primary" (click)="crearPago()">
-        <i class="fas fa-plus me-1"></i> Nuevo Pago
-      </button>
-      <button class="btn btn-outline-secondary ms-2" (click)="recargar()" [disabled]="cargando">
-        <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i>
-      </button>
+    
+    <!-- Botones movidos aquí, debajo del encabezado -->
+    <div class="header-actions">
+      <div class="filters">
+        <button class="btn btn-primary" (click)="crearPago()">
+          <i class="fas fa-plus-circle"></i> Nuevo Pago
+        </button>
+        <button class="btn btn-secondary" (click)="recargar()" [disabled]="cargando">
+          <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i> Actualizar
+        </button>
+        <button class="btn btn-secondary" (click)="exportarPagos()">
+          <i class="fas fa-file-export"></i> Exportar
+        </button>
+      </div>
     </div>
   </div>
 
   <!-- Tarjetas de estadísticas -->
-  <div class="row mb-4">
-    <div class="col-md-6">
-      <div class="card bg-primary text-white">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="card-title">VENTAS DEL DÍA</h6>
-              <h3 class="mb-0">
-                {{ cargandoEstadisticas ? '...' : formatearMoneda(estadisticas.totalVentas) }}
-              </h3>
-            </div>
-            <div class="align-self-center">
-              <i class="fas fa-dollar-sign fa-2x"></i>
-            </div>
-          </div>
+  <div class="stats-section">
+    <div class="stats-container">
+      <div class="stats-card">
+        <div class="stats-icon total">
+          <i class="fas fa-dollar-sign"></i>
+        </div>
+        <div class="stats-info">
+          <h4>VENTAS DEL DÍA</h4>
+          <p class="stats-number">
+            {{ cargandoEstadisticas ? '...' : formatearMoneda(estadisticas.totalVentas) }}
+          </p>
         </div>
       </div>
-    </div>
-    <div class="col-md-6">
-      <div class="card bg-success text-white">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="card-title">TRANSACCIONES HOY</h6>
-              <h3 class="mb-0">
-                {{ cargandoEstadisticas ? '...' : estadisticas.cantidadVentas }}
-              </h3>
-            </div>
-            <div class="align-self-center">
-              <i class="fas fa-receipt fa-2x"></i>
-            </div>
-          </div>
+      <div class="stats-card">
+        <div class="stats-icon active">
+          <i class="fas fa-receipt"></i>
+        </div>
+        <div class="stats-info">
+          <h4>TRANSACCIONES HOY</h4>
+          <p class="stats-number">
+            {{ cargandoEstadisticas ? '...' : estadisticas.cantidadVentas }}
+          </p>
+        </div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-icon inactive">
+          <i class="fas fa-user-friends"></i>
+        </div>
+        <div class="stats-info">
+          <h4>CLIENTES ÚNICOS</h4>
+          <p class="stats-number">
+            {{ cargandoEstadisticas ? '...' : clientesUnicos }}
+          </p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Filtros -->
-  <div class="card mb-4">
-    <div class="card-body">
-      <h6 class="card-title">
-        <i class="fas fa-filter me-2"></i>Filtros
-      </h6>
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label">Filtrar por Cliente</label>
+  <!-- Filtros mejorados -->
+  <div class="filters-card">
+    <div class="filters-header">
+      <h3><i class="fas fa-filter me-2"></i>Filtros Avanzados</h3>
+    </div>
+    <div class="filters-content">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label class="filter-label">
+            <i class="fas fa-user"></i> Cliente
+          </label>
           <input 
             type="text" 
-            class="form-control" 
+            class="filter-input" 
             placeholder="Ej: CLI001"
-            [(ngModel)]="filtroCliente">
+            [(ngModel)]="filtroCliente"
+            (input)="aplicarFiltros()">
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Filtrar por Recepcionista</label>
+        
+        <div class="filter-group">
+          <label class="filter-label">
+            <i class="fas fa-user-tie"></i> Recepcionista
+          </label>
           <input 
             type="text" 
-            class="form-control" 
+            class="filter-input" 
             placeholder="Ej: REC001"
-            [(ngModel)]="filtroRecepcionista">
+            [(ngModel)]="filtroRecepcionista"
+            (input)="aplicarFiltros()">
         </div>
-        <div class="col-md-4 d-flex align-items-end">
-          <button class="btn btn-outline-secondary w-100" (click)="limpiarFiltros()">
-            <i class="fas fa-times me-1"></i> Limpiar Filtros
-          </button>
+        
+        <div class="filter-group">
+          <label class="filter-label">
+            <i class="fas fa-calendar"></i> Fecha Inicio
+          </label>
+          <input 
+            type="date" 
+            class="filter-input" 
+            [(ngModel)]="filtroFechaInicio"
+            (change)="aplicarFiltros()">
+        </div>
+        
+        <div class="filter-group">
+          <label class="filter-label">
+            <i class="fas fa-calendar"></i> Fecha Fin
+          </label>
+          <input 
+            type="date" 
+            class="filter-input" 
+            [(ngModel)]="filtroFechaFin"
+            (change)="aplicarFiltros()">
         </div>
       </div>
-      <div class="mt-2" *ngIf="filtroCliente || filtroRecepcionista">
+      
+      <div class="filters-actions">
+        <button class="btn btn-secondary" (click)="limpiarFiltros()">
+          <i class="fas fa-times me-1"></i> Limpiar Filtros
+        </button>
+      </div>
+      
+      <div class="filters-info" *ngIf="filtroCliente || filtroRecepcionista || filtroFechaInicio || filtroFechaFin">
         <small class="text-muted">
+          <i class="fas fa-info-circle"></i>
           Mostrando {{ pagosFiltrados.length }} de {{ pagos.length }} pagos
-          <span *ngIf="filtroCliente || filtroRecepcionista">
+          <span *ngIf="filtroCliente || filtroRecepcionista || filtroFechaInicio || filtroFechaFin">
             | Total filtrado: {{ formatearMoneda(totalFiltrado) }}
           </span>
         </small>
@@ -96,84 +138,123 @@
     </div>
   </div>
 
-  <!-- Loading -->
-  <div *ngIf="cargando" class="text-center py-5">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Cargando...</span>
+  <!-- Loading mejorado -->
+  <div *ngIf="cargando" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Cargando pagos...</p>
+    <div class="loading-dots">
+      <span></span>
+      <span></span>
+      <span></span>
     </div>
-    <p class="mt-2">Cargando pagos...</p>
   </div>
 
-  <!-- Error -->
-  <div *ngIf="error && !cargando" class="alert alert-danger">
-    <i class="fas fa-exclamation-triangle me-2"></i>
-    {{ error }}
-    <button class="btn btn-sm btn-outline-danger ms-2" (click)="cargarPagos()">Reintentar</button>
+  <!-- Error mejorado -->
+  <div *ngIf="error && !cargando" class="error-container">
+    <div class="error-content">
+      <i class="fas fa-exclamation-triangle error-icon"></i>
+      <div class="error-text">
+        <h4>Error al cargar los pagos</h4>
+        <p>{{ error }}</p>
+      </div>
+      <button class="btn btn-primary" (click)="cargarPagos()">
+        <i class="fas fa-redo"></i> Reintentar
+      </button>
+    </div>
   </div>
 
-  <!-- Tabla de pagos -->
-  <div *ngIf="!cargando && !error" class="card">
-    <div class="card-body">
-      <div class="table-responsive">
-        <table class="table table-striped table-hover">
-          <thead class="table-dark">
-            <tr>
-              <th>ID Venta</th>
-              <th>Cliente</th>
-              <th>Producto</th>
-              <th>Cantidad</th>
-              <th>Total</th>
-              <th>Fecha</th>
-              <th>Recepcionista</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let pago of pagosFiltrados" class="align-middle">
-              <td>
-                <strong>#{{ pago.idVenta }}</strong>
-              </td>
-              <td>
-                <span class="badge bg-secondary">{{ pago.folioCliente }}</span>
-              </td>
-              <td>
-                <span class="badge" [ngClass]="getBadgeClass(pago.codigoProducto)">
-                  {{ pago.codigoProducto }}
-                </span>
-              </td>
-              <td>{{ pago.cantidad }}</td>
-              <td class="fw-bold text-success">{{ formatearMoneda(pago.total) }}</td>
-              <td>
-                <small>{{ formatearFecha(pago.fechaVenta!) }}</small>
-              </td>
-              <td>
-                <span class="badge bg-info">{{ pago.idRecepcionista }}</span>
-              </td>
-              <td>
-                <button 
-                  class="btn btn-sm btn-outline-primary"
-                  (click)="verDetalles(pago)"
-                  title="Ver detalles">
-                  <i class="fas fa-eye"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+  <!-- Lista de pagos mejorada -->
+  <div *ngIf="!cargando && !error" class="pagos-section">
+    <div class="section-header">
+      <h2><i class="fas fa-clipboard-list"></i> Lista de Pagos</h2>
+      <span class="pagos-count">{{ pagosFiltrados.length }} pago{{ pagosFiltrados.length !== 1 ? 's' : '' }}</span>
+    </div>
+
+    <div class="pagos-list" [class.scrollable]="pagosFiltrados.length > 3">
+      <div *ngIf="pagosFiltrados.length === 0" class="no-pagos">
+        <div class="no-pagos-icon">
+          <i class="fas fa-receipt"></i>
+        </div>
+        <h3>No se encontraron pagos</h3>
+        <p *ngIf="filtroCliente || filtroRecepcionista || filtroFechaInicio || filtroFechaFin">
+          No hay pagos que coincidan con los filtros aplicados
+        </p>
+        <p *ngIf="!filtroCliente && !filtroRecepcionista && !filtroFechaInicio && !filtroFechaFin">
+          No hay pagos registrados en el sistema
+        </p>
+        <button class="btn btn-primary" (click)="crearPago()">
+          <i class="fas fa-plus-circle"></i> Registrar Primer Pago
+        </button>
       </div>
 
-      <!-- Mensaje si no hay pagos -->
-      <div *ngIf="pagosFiltrados.length === 0" class="text-center py-4">
-        <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
-        <p class="text-muted" *ngIf="filtroCliente || filtroRecepcionista">
-          No se encontraron pagos con los filtros aplicados
-        </p>
-        <p class="text-muted" *ngIf="!filtroCliente && !filtroRecepcionista">
-          No hay pagos registrados
-        </p>
-        <button class="btn btn-primary mt-2" (click)="crearPago()">
-          <i class="fas fa-plus me-1"></i> Registrar Primer Pago
-        </button>
+      <div *ngFor="let pago of pagosFiltrados; let i = index" class="pago-card" [style.animation-delay]="i * 0.1 + 's'">
+        <div class="pago-header">
+          <div class="pago-amount">
+            <span class="amount">{{ formatearMoneda(pago.total) }}</span>
+          </div>
+        </div>
+        
+        <div class="pago-content">
+          <div class="pago-info">
+            <div class="info-grid">
+              <div class="info-item">
+                <i class="fas fa-user"></i>
+                <div class="info-content">
+                  <span class="info-label">Cliente</span>
+                  <span class="info-value">{{ pago.folioCliente }}</span>
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <i class="fas fa-cube"></i>
+                <div class="info-content">
+                  <span class="info-label">Producto</span>
+                  <span class="info-value">{{ pago.codigoProducto }}</span>
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <i class="fas fa-hashtag"></i>
+                <div class="info-content">
+                  <span class="info-label">Cantidad</span>
+                  <span class="info-value">{{ pago.cantidad }}</span>
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <i class="fas fa-calendar-day"></i>
+                <div class="info-content">
+                  <span class="info-label">Fecha</span>
+                  <span class="info-value">{{ formatearFecha(pago.fechaVenta!) }}</span>
+                </div>
+              </div>
+              
+              <div class="info-item">
+                <i class="fas fa-user-tie"></i>
+                <div class="info-content">
+                  <span class="info-label">Recepcionista</span>
+                  <span class="info-value">{{ pago.idRecepcionista }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pago-actions">
+            <button 
+              class="btn btn-sm btn-primary"
+              (click)="verDetalles(pago)"
+              title="Ver detalles">
+              <i class="fas fa-eye"></i> Ver Detalles
+            </button>
+            
+            <button 
+              class="btn btn-sm btn-secondary"
+              (click)="descargarRecibo(pago)"
+              title="Descargar recibo">
+              <i class="fas fa-download"></i> Recibo PDF
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

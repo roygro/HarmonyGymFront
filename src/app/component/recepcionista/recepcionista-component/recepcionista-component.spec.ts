@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { Recepcionista } from './recepcionista';
+import { RecepcionistaComponent } from './recepcionista-component';
 
-describe('Recepcionista', () => {
-  let component: Recepcionista;
-  let fixture: ComponentFixture<Recepcionista>;
+describe('RecepcionistaComponent', () => {
+  let component: RecepcionistaComponent;
+  let fixture: ComponentFixture<RecepcionistaComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Recepcionista]
+      imports: [RecepcionistaComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(Recepcionista);
+    fixture = TestBed.createComponent(RecepcionistaComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

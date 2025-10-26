@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MembresiaService, Membresia } from '../../../services/membresia/membresia';
 import { Chart, registerables } from 'chart.js';
+import { HeaderAdministradorComponent } from '../../Administrador/header-admin/header-admin';
 
 // Registrar todos los componentes de Chart.js
 Chart.register(...registerables);
 
 @Component({
   selector: 'app-membresia-list',
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule,HeaderAdministradorComponent],
   templateUrl: './membresia-list.html',
   styleUrl: './membresia-list.css'
 })
