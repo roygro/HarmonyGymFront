@@ -401,21 +401,29 @@ export class ClienteComponent implements OnInit {
     return ['Masculino', 'Femenino', 'Otro'];
   }
 
-  get totalClientes(): number {
-    return this.clientesFiltrados.length;
-  }
+  
+get totalClientes(): number {
+  console.log('Total clientes calculado:', this.clientesFiltrados.length);
+  return this.clientesFiltrados.length;
+}
 
-  get clientesActivos(): number {
-    return this.clientesFiltrados.filter(c => c.estatus === 'Activo').length;
-  }
+get clientesActivos(): number {
+  const activos = this.clientesFiltrados.filter(c => c.estatus === 'Activo').length;
+  console.log('Clientes activos calculados:', activos);
+  return activos;
+}
 
-  get clientesInactivos(): number {
-    return this.clientesFiltrados.filter(c => c.estatus === 'Inactivo').length;
-  }
+get clientesInactivos(): number {
+  const inactivos = this.clientesFiltrados.filter(c => c.estatus === 'Inactivo').length;
+  console.log('Clientes inactivos calculados:', inactivos);
+  return inactivos;
+}
 
-  get porcentajeActivos(): number {
-    return this.totalClientes > 0 ? (this.clientesActivos / this.totalClientes) * 100 : 0;
-  }
+get porcentajeActivos(): number {
+  const porcentaje = this.totalClientes > 0 ? (this.clientesActivos / this.totalClientes) * 100 : 0;
+  console.log('Porcentaje activos calculado:', porcentaje);
+  return porcentaje;
+}
 
   get clientesRecientes(): Cliente[] {
     return this.clientesFiltrados

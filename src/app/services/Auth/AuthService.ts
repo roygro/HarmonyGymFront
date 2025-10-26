@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
@@ -18,6 +18,7 @@ export interface RegisterRequest {
 export interface AuthResponse {
   success: boolean;
   message: string;
+  token?: string;
   idUsuario?: string;
   username?: string;
   tipoUsuario?: string;
@@ -48,7 +49,22 @@ export class AuthService {
   }
 
   login(loginRequest: LoginRequest): Observable<AuthResponse> {
+    console.log('🔐 Enviando solicitud de login a:', `${this.apiUrl}/login`);
+    
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, loginRequest)
+      .pipe(
+        tap(response => {
+          console.log('📥 Respuesta del login recibida:', response);
+          if (response.success) {
+            this.saveUserData(response);
+            console.log('✅ Usuario guardado en localStorage');
+          }
+        })
+      );
+  }
+
+  register(registerRequest: RegisterRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, registerRequest)
       .pipe(
         tap(response => {
           if (response.success) {
@@ -58,20 +74,23 @@ export class AuthService {
       );
   }
 
-  
-
   checkUsernameAvailability(username: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/check-username/${username}`);
+    const params = new HttpParams().set('username', username);
+    return this.http.get(`${this.apiUrl}/verificar-username`, { params });
   }
 
-  changePassword(username: string, newPassword: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/change-password`, { username, newPassword });
+  changePassword(username: string, nuevaPassword: string): Observable<any> {
+    const params = new HttpParams()
+      .set('username', username)
+      .set('nuevaPassword', nuevaPassword);
+    
+    return this.http.post(`${this.apiUrl}/cambiar-password`, null, { params });
   }
 
   logout(): void {
     localStorage.removeItem('currentUser');
-    localStorage.removeItem('authToken');
     this.currentUserSubject.next(null);
+    console.log('🚪 Usuario cerró sesión');
   }
 
   isLoggedIn(): boolean {
@@ -87,7 +106,8 @@ export class AuthService {
     this.currentUserSubject.next(user);
   }
 
-  getAuthToken(): string | null {
-    return localStorage.getItem('authToken');
+  // Método para verificar el estado del servidor
+  checkServerStatus(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/status`);
   }
 }

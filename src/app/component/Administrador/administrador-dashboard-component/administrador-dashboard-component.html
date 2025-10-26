@@ -1,0 +1,254 @@
+<div class="dashboard-container">
+  <!-- Header del Dashboard -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h1><i class="fas fa-tachometer-alt"></i> Dashboard Administrador</h1>
+      <p class="header-subtitle">Panel de control completo del gimnasio Harmony</p>
+    </div>
+    <div class="header-actions">
+      <div class="user-info">
+        <div class="user-avatar">
+          <i class="fas fa-user-shield"></i>
+        </div>
+        <div class="user-details">
+          <span class="user-name">Administrador</span>
+          <span class="user-role">Super Admin</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estadísticas Principales -->
+  <div class="stats-grid">
+    <div class="stat-card primary">
+      <div class="stat-icon">
+        <i class="fas fa-users"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ formatearNumero(estadisticas.totalClientes) }}</h3>
+        <p>Total Clientes</p>
+        <small>+{{ estadisticas.clientesNuevosMes }} este mes</small>
+      </div>
+    </div>
+
+    <div class="stat-card success">
+      <div class="stat-icon">
+        <i class="fas fa-user-tie"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ estadisticas.totalInstructores }}</h3>
+        <p>Instructores</p>
+        <small>Personal activo</small>
+      </div>
+    </div>
+
+    <div class="stat-card info">
+      <div class="stat-icon">
+        <i class="fas fa-user-headset"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ estadisticas.totalRecepcionistas }}</h3>
+        <p>Recepcionistas</p>
+        <small>Staff de atención</small>
+      </div>
+    </div>
+
+    <div class="stat-card warning">
+      <div class="stat-icon">
+        <i class="fas fa-id-card"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ formatearNumero(estadisticas.membresiasActivas) }}</h3>
+        <p>Membresías Activas</p>
+        <small>{{ (estadisticas.membresiasActivas / estadisticas.totalClientes * 100).toFixed(1) }}% activación</small>
+      </div>
+    </div>
+
+    <div class="stat-card danger">
+      <div class="stat-icon">
+        <i class="fas fa-chart-line"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ formatearMoneda(estadisticas.ventasMes) }}</h3>
+        <p>Ventas del Mes</p>
+        <small>+12% vs mes anterior</small>
+      </div>
+    </div>
+
+    <div class="stat-card secondary">
+      <div class="stat-icon">
+        <i class="fas fa-box"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ estadisticas.productosStock }}</h3>
+        <p>Productos en Stock</p>
+        <small>Inventario actual</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenido Principal -->
+  <div class="dashboard-content">
+    <!-- Módulos de Gestión -->
+    <div class="modules-section">
+      <h2><i class="fas fa-th-large"></i> Módulos de Gestión</h2>
+      <div class="modules-grid">
+        @for (modulo of modulos; track modulo.titulo) {
+          <div class="module-card" 
+               [class]="'module-' + modulo.color"
+               [routerLink]="modulo.ruta">
+            <div class="module-icon">
+              <i [class]="modulo.icono"></i>
+            </div>
+            <div class="module-content">
+              <h3>{{ modulo.titulo }}</h3>
+              <p>{{ modulo.descripcion }}</p>
+              <span class="module-stat">{{ modulo.estadistica }}</span>
+            </div>
+            <div class="module-arrow">
+              <i class="fas fa-chevron-right"></i>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Gráficos y Estadísticas -->
+    <div class="charts-section">
+      <div class="chart-row">
+        <!-- Ventas Mensuales -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3><i class="fas fa-chart-line"></i> Ventas Mensuales</h3>
+            <select class="chart-filter">
+              <option>Últimos 6 meses</option>
+              <option>Este año</option>
+              <option>Todo el historial</option>
+            </select>
+          </div>
+          <div class="chart-container">
+            <div class="bar-chart">
+              @for (venta of ventasMensuales; track venta.mes) {
+                <div class="bar-container">
+                  <div class="bar" [style.height]="calcularAlturaBarra(venta.ventas)">
+                    <span class="bar-value">{{ formatearMoneda(venta.ventas) }}</span>
+                  </div>
+                  <span class="bar-label">{{ venta.mes }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Distribución de Membresías -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3><i class="fas fa-chart-pie"></i> Tipos de Membresía</h3>
+          </div>
+          <div class="chart-container">
+            <div class="pie-chart-container">
+              <div class="pie-chart">
+                @for (membresia of tiposMembresias; track membresia.tipo; let i = $index) {
+                  <div class="pie-segment" [style]="getPieSegmentStyle(i)">
+                    <div class="segment-info">
+                      <span class="segment-label">{{ membresia.tipo }}</span>
+                      <span class="segment-value">{{ membresia.cantidad }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+              <div class="pie-legend">
+                @for (membresia of tiposMembresias; track membresia.tipo; let i = $index) {
+                  <div class="legend-item">
+                    <span class="legend-color" [style.background]="getColorForIndex(i)"></span>
+                    <span class="legend-text">{{ membresia.tipo }} ({{ membresia.cantidad }})</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-row">
+        <!-- Actividades Populares -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3><i class="fas fa-running"></i> Actividades Más Populares</h3>
+          </div>
+          <div class="chart-container">
+            <div class="activity-list">
+              @for (actividad of actividadesPopulares; track actividad.actividad) {
+                <div class="activity-item">
+                  <div class="activity-info">
+                    <span class="activity-name">{{ actividad.actividad }}</span>
+                    <span class="activity-participants">{{ actividad.participantes }} participantes</span>
+                  </div>
+                  <div class="activity-bar">
+                    <div class="progress" [style.width]="calcularPorcentajeActividad(actividad.participantes)"></div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Notificaciones Recientes -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3><i class="fas fa-bell"></i> Notificaciones Recientes</h3>
+          </div>
+          <div class="chart-container">
+            <div class="notifications-list">
+              @for (notificacion of notificaciones; track notificacion.mensaje) {
+                <div class="notification-item">
+                  <div class="notification-icon">
+                    <i [class]="notificacion.icono"></i>
+                  </div>
+                  <div class="notification-content">
+                    <p class="notification-message">{{ notificacion.mensaje }}</p>
+                    <span class="notification-time">{{ notificacion.tiempo }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+            <button class="btn-view-all">
+              <i class="fas fa-list"></i> Ver Todas las Notificaciones
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen Rápido -->
+    <div class="quick-actions-section">
+      <h2><i class="fas fa-bolt"></i> Acciones Rápidas</h2>
+      <div class="actions-grid">
+        <button class="quick-action" routerLink="/admin/clientes/nuevo">
+          <i class="fas fa-user-plus"></i>
+          <span>Nuevo Cliente</span>
+        </button>
+        <button class="quick-action" routerLink="/admin/ventas/nueva">
+          <i class="fas fa-cash-register"></i>
+          <span>Registrar Venta</span>
+        </button>
+        <button class="quick-action" routerLink="/admin/membresias/nueva">
+          <i class="fas fa-id-card-alt"></i>
+          <span>Crear Membresía</span>
+        </button>
+        <button class="quick-action" routerLink="/admin/productos/nuevo">
+          <i class="fas fa-box-open"></i>
+          <span>Agregar Producto</span>
+        </button>
+        <button class="quick-action" routerLink="/admin/instructores/nuevo">
+          <i class="fas fa-chalkboard-teacher"></i>
+          <span>Contratar Instructor</span>
+        </button>
+        <button class="quick-action" routerLink="/admin/reportes">
+          <i class="fas fa-file-alt"></i>
+          <span>Generar Reporte</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

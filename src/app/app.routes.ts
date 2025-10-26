@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { Recepcionista } from './component/recepcionista/recepcionista';
+import { RecepcionistaComponent } from './component/recepcionista/recepcionista-component/recepcionista-component';
 import { MembresiaList } from './component/membresias/membresia-list/membresia-list';
 import { MembresiaForm } from './component/membresias/membresia-form/membresia-form';
 import { InstructorComponent } from './component/instructor/instructor-component/instructor-component';
@@ -18,7 +18,12 @@ export const routes: Routes = [
     component: LoginComponent 
   },
 
-
+  //Rutas del cliente
+    // Ruta para dashboard del cliente
+  { 
+    path: 'cliente/dashboard', 
+    loadComponent: () => import('./component/Cliente/cliente-dashboard-component/cliente-dashboard-component').then(m => m.ClienteDashboardComponent)
+  },
   // Rutas de Pagos
   { 
     path: 'pagos', 
@@ -56,7 +61,7 @@ export const routes: Routes = [
   // Ruta para recepcionista
   {
     path: 'recepcionista', 
-    loadComponent: () => import('./component/recepcionista/recepcionista').then(m => m.Recepcionista)
+    loadComponent: () => import('./component/recepcionista/recepcionista-component/recepcionista-component').then(m => m.RecepcionistaComponent)
   },
   
 // Ruta para instructor
@@ -68,6 +73,16 @@ export const routes: Routes = [
   { 
     path: 'instructores', 
     component: InstructorComponent 
+  },
+
+  // RUTAS DE ADMINISTRADOR 
+  { 
+    path: 'administradores', 
+    loadComponent: () => import('./component/Administrador/administrador-component/administrador-component').then(m => m.AdministradorComponent)
+  },
+  { 
+    path: 'administradores/dashboard', 
+    loadComponent: () => import('./component/Administrador/administrador-dashboard-component/administrador-dashboard-component').then(m => m.AdministradorDashboardComponent)
   },
   
   // Ruta por defecto

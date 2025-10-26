@@ -1,0 +1,393 @@
+<div class="recepcionista-container">
+  @if (mensaje) {
+    <div [class]="'alert alert-' + tipoMensaje">
+      {{ mensaje }}
+    </div>
+  }
+
+  <!-- Header Mejorado con Tema Gimnasio -->
+  <div class="header">
+    <div class="header-content">
+      <h1><i class="fas fa-user-headset"></i> Gestión de Recepcionistas</h1>
+      <p class="header-subtitle">Administra y organiza el personal de recepción</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="prepararNuevoRecepcionista()" [disabled]="cargando">
+        <i class="fas fa-plus-circle"></i> Nuevo Recepcionista
+      </button>
+    </div>
+  </div>
+
+  <!-- FILTROS MEJORADOS CON DEBOUNCE -->
+  <div class="filtros-section">
+    <div class="filtros-row">
+      <div class="filtro-group">
+        <label><i class="fas fa-filter"></i> Estatus:</label>
+        <select [(ngModel)]="filtroEstatus" (change)="onFiltroEstatusChange()" [disabled]="cargando">
+          <option value="">Todos los estatus</option>
+          <option value="Activo">Activo</option>
+          <option value="Inactivo">Inactivo</option>
+        </select>
+      </div>
+
+      <div class="filtro-group">
+        <label><i class="fas fa-search"></i> Buscar por nombre:</label>
+        <input type="text" [(ngModel)]="terminoBusqueda" 
+               (input)="onBuscarNombreChange()" 
+               placeholder="Escribe el nombre..." 
+               [disabled]="cargando">
+      </div>
+
+      <button class="btn btn-secondary" (click)="limpiarFiltros()" [disabled]="cargando">
+        <i class="fas fa-undo"></i> Limpiar
+      </button>
+    </div>
+  </div>
+
+  @if (cargando) {
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <p>Cargando recepcionistas...</p>
+      <div class="loading-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  }
+
+  @if (!cargando) {
+    <div class="recepcionistas-section">
+      <div class="section-header">
+        <h2><i class="fas fa-clipboard-list"></i> Lista de Recepcionistas</h2>
+        <span class="recepcionistas-count">{{ recepcionistasFiltrados.length }} recepcionista{{ recepcionistasFiltrados.length !== 1 ? 's' : '' }}</span>
+      </div>
+      
+      <div class="table-container">
+        <table class="recepcionistas-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Teléfono</th>
+              <th>Email</th>
+              <th>Fecha Contratación</th>
+              <th>Estatus</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (recepcionista of recepcionistasFiltrados; track recepcionista.idRecepcionista) {
+              <tr>
+                <td><strong>{{ recepcionista.idRecepcionista }}</strong></td>
+                <td>
+                  <div class="recepcionista-info">
+                    <div class="recepcionista-avatar">
+                      <i class="fas fa-user-headset"></i>
+                    </div>
+                    <div class="recepcionista-name">
+                      {{ recepcionista.nombre }}
+                    </div>
+                  </div>
+                </td>
+                <td>{{ recepcionista.telefono || 'No asignado' }}</td>
+                <td>{{ recepcionista.email || 'No asignado' }}</td>
+                <td>{{ formatearFecha(recepcionista.fechaContratacion) }}</td>
+                <td>
+                  <span [class]="'estatus-badge ' + obtenerClaseEstatus(recepcionista.estatus)">
+                    <i class="fas fa-circle"></i> {{ recepcionista.estatus }}
+                  </span>
+                </td>
+                <td class="acciones">
+                  <button class="btn btn-sm btn-warning" 
+                          (click)="seleccionarRecepcionista(recepcionista)"
+                          title="Editar recepcionista">
+                    <i class="fas fa-edit"></i> Editar
+                  </button>
+                  
+                  <button class="btn btn-sm btn-info" 
+                          (click)="verEstadisticas(recepcionista)"
+                          title="Ver estadísticas">
+                    <i class="fas fa-chart-line"></i> Estadísticas
+                  </button>
+                  
+                  @if (recepcionista.estatus === 'Activo') {
+                    <button class="btn btn-sm btn-danger" 
+                            (click)="eliminarRecepcionista(recepcionista.idRecepcionista)"
+                            title="Desactivar recepcionista">
+                      <i class="fas fa-trash-alt"></i> Desactivar
+                    </button>
+                  } @else {
+                    <button class="btn btn-sm btn-success" 
+                            (click)="activarRecepcionista(recepcionista.idRecepcionista)"
+                            title="Activar recepcionista">
+                      <i class="fas fa-play-circle"></i> Activar
+                    </button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="no-data">
+                  <div class="no-recepcionistas">
+                    <div class="no-recepcionistas-icon">
+                      <i class="fas fa-user-headset"></i>
+                    </div>
+                    <h3>No se encontraron recepcionistas</h3>
+                    <p>No hay recepcionistas disponibles en este momento.</p>
+                    <button class="btn btn-primary" (click)="prepararNuevoRecepcionista()">
+                      <i class="fas fa-plus-circle"></i> Crear Primer Recepcionista
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- FORMULARIO NUEVO RECEPCIONISTA -->
+  @if (mostrarFormulario && !modoEdicion) {
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2><i class="fas fa-user-plus"></i> Nuevo Recepcionista</h2>
+          <button class="btn-close" (click)="cerrarFormulario()" [disabled]="cargando">
+            <span class="close-icon">×</span>
+          </button>
+        </div>
+
+        <form (ngSubmit)="crearRecepcionista()" class="modal-body">
+          <div class="form-info">
+            <p class="folio-info">
+              <i class="fas fa-id-card"></i> 
+              <strong>ID generado automáticamente:</strong> {{ idGenerado }}
+            </p>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> Nombre *</label>
+              <input type="text" 
+                     [(ngModel)]="nuevoRecepcionista.nombre" 
+                     name="nombreNuevo" 
+                     required
+                     [disabled]="cargando"
+                     placeholder="Nombre completo del recepcionista"
+                     (input)="validarNombre()">
+              @if (nombreInvalido) {
+                <small class="error-text">El nombre es requerido</small>
+              }
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="fas fa-phone"></i> Teléfono</label>
+              <input type="tel" 
+                     [(ngModel)]="nuevoRecepcionista.telefono" 
+                     name="telefonoNuevo"
+                     [disabled]="cargando"
+                     placeholder="Número de teléfono">
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-envelope"></i> Email</label>
+              <input type="email" 
+                     [(ngModel)]="nuevoRecepcionista.email" 
+                     name="emailNuevo"
+                     [disabled]="cargando"
+                     placeholder="Correo electrónico">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="fas fa-calendar"></i> Fecha de Contratación</label>
+              <input type="date" 
+                     [(ngModel)]="nuevoRecepcionista.fechaContratacion" 
+                     name="fechaContratacionNuevo"
+                     [disabled]="cargando">
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-circle"></i> Estatus</label>
+              <select [(ngModel)]="nuevoRecepcionista.estatus" name="estatusNuevo" [disabled]="cargando">
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" 
+                    class="btn btn-secondary" 
+                    (click)="cerrarFormulario()"
+                    [disabled]="cargando">
+              <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button type="submit" 
+                    class="btn btn-primary" 
+                    [disabled]="cargando || !nuevoRecepcionista.nombre.trim()">
+              <i class="fas fa-save"></i> {{ cargando ? 'Creando...' : 'Crear Recepcionista' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- FORMULARIO EDITAR RECEPCIONISTA -->
+  @if (mostrarFormulario && modoEdicion) {
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2><i class="fas fa-user-edit"></i> Editar Recepcionista</h2>
+          <button class="btn-close" (click)="cerrarFormulario()" [disabled]="cargando">
+            <span class="close-icon">×</span>
+          </button>
+        </div>
+
+        <form (ngSubmit)="actualizarRecepcionista()" class="modal-body">
+          <div class="form-info">
+            <p class="folio-info">
+              <i class="fas fa-id-card"></i> 
+              <strong>ID del recepcionista:</strong> {{ recepcionistaSeleccionado.idRecepcionista }}
+            </p>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> Nombre *</label>
+              <input type="text" 
+                     [(ngModel)]="recepcionistaSeleccionado.nombre" 
+                     name="nombreEdit" 
+                     required
+                     [disabled]="cargando"
+                     placeholder="Nombre completo del recepcionista">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="fas fa-phone"></i> Teléfono</label>
+              <input type="tel" 
+                     [(ngModel)]="recepcionistaSeleccionado.telefono" 
+                     name="telefonoEdit"
+                     [disabled]="cargando"
+                     placeholder="Número de teléfono">
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-envelope"></i> Email</label>
+              <input type="email" 
+                     [(ngModel)]="recepcionistaSeleccionado.email" 
+                     name="emailEdit"
+                     [disabled]="cargando"
+                     placeholder="Correo electrónico">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="fas fa-calendar"></i> Fecha de Contratación</label>
+              <input type="date" 
+                     [(ngModel)]="recepcionistaSeleccionado.fechaContratacion" 
+                     name="fechaContratacionEdit"
+                     [disabled]="cargando">
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-circle"></i> Estatus</label>
+              <select [(ngModel)]="recepcionistaSeleccionado.estatus" name="estatusEdit" [disabled]="cargando">
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" 
+                    class="btn btn-secondary" 
+                    (click)="cerrarFormulario()"
+                    [disabled]="cargando">
+              <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button type="submit" 
+                    class="btn btn-primary" 
+                    [disabled]="cargando">
+              <i class="fas fa-save"></i> {{ cargando ? 'Actualizando...' : 'Actualizar Recepcionista' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL ESTADÍSTICAS -->
+  @if (mostrarEstadisticas) {
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2><i class="fas fa-chart-line"></i> Estadísticas - {{ recepcionistaSeleccionado.nombre }}</h2>
+          <button class="btn-close" (click)="cerrarFormulario()">
+            <span class="close-icon">×</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="estadisticas-grid">
+            <div class="estadistica-card">
+              <div class="stats-icon total">
+                <i class="fas fa-user-plus"></i>
+              </div>
+              <div class="stats-info">
+                <h4>Total Registros</h4>
+                <p class="stats-number">{{ estadisticas.totalRegistros }}</p>
+                <small>Clientes registrados</small>
+              </div>
+            </div>
+            <div class="estadistica-card">
+              <div class="stats-icon active">
+                <i class="fas fa-shopping-cart"></i>
+              </div>
+              <div class="stats-info">
+                <h4>Total Ventas</h4>
+                <p class="stats-number">{{ estadisticas.totalVentas }}</p>
+                <small>Ventas realizadas</small>
+              </div>
+            </div>
+            <div class="estadistica-card">
+              <div class="stats-icon inactive">
+                <i class="fas fa-money-bill-wave"></i>
+              </div>
+              <div class="stats-info">
+                <h4>Total Ingresos</h4>
+                <p class="stats-number">${{ estadisticas.totalIngresos | number:'1.2-2' }}</p>
+                <small>Ingresos generados</small>
+              </div>
+            </div>
+            <div class="estadistica-card">
+              <div class="stats-icon total">
+                <i class="fas fa-chart-bar"></i>
+              </div>
+              <div class="stats-info">
+                <h4>Registros Último Mes</h4>
+                <p class="stats-number">{{ estadisticas.registrosUltimoMes }}</p>
+                <small>Clientes nuevos</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-primary" (click)="cerrarFormulario()">
+              <i class="fas fa-times"></i> Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
