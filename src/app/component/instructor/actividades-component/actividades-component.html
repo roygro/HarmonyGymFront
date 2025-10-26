@@ -4,47 +4,64 @@
 
  <!-- Header Actividades -->
 <div class="header">
-  <div class="header-content">
- 
-  </div>
-  
-  <!-- Barra de búsqueda en el lado izquierdo -->
-  <div class="search-bar-header">
-    <div class="search-container">
-      <i class="fas fa-search search-icon"></i>
-      <input
-        type="text"
-        [(ngModel)]="searchTerm"
-        (input)="buscarActividades()"
-        placeholder="Buscar actividades por nombre o lugar..."
-        class="search-input"
-      >
-      <button *ngIf="searchTerm" class="btn btn-clear" (click)="limpiarBusqueda()">
-        <i class="fas fa-times"></i>
-      </button>
+  <!-- Contenedor principal del header -->
+  <div class="header-main">
+    <!-- Logo o título a la izquierda -->
+    <div class="header-brand">
+      <h1 class="header-title">
+        <i class="fas fa-dumbbell"></i>
+        Actividades
+      </h1>
     </div>
-  </div>
-
-  <div class="header-actions">
-    <!-- Botones de filtros incluyendo "Nueva Actividad" -->
-    <div class="filters">
-      <button class="btn btn-secondary" (click)="mostrarFormularioNuevo()">
+    
+    <!-- Barra de búsqueda centrada -->
+    <div class="search-bar-header">
+      <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (input)="buscarActividades()"
+          placeholder="Buscar actividades por nombre o lugar..."
+          class="search-input"
+        >
+        <button *ngIf="searchTerm" class="btn btn-clear" (click)="limpiarBusqueda()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Botones de acción a la derecha -->
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="mostrarFormularioNuevo()">
         <i class="fas fa-plus-circle"></i> Nueva Actividad
       </button>
       <button class="btn btn-secondary" (click)="abrirCalendarioModal()">
-        <i class="fas fa-calendar-alt"></i> Ver Calendario
+        <i class="fas fa-calendar-alt"></i> Calendario
       </button>
-      <button class="btn btn-secondary" (click)="cargarActividadesInstructor()">
-        <i class="fas fa-check-circle"></i> Activas
-      </button>
-      <button class="btn btn-secondary" (click)="cargarTodasActividades()">
+    </div>
+  </div>
+  
+  <!-- Filtros en una fila separada -->
+  <div class="header-filters">
+    <div class="filters-container">
+      <button class="filter-btn active" (click)="cargarTodasActividades()">
         <i class="fas fa-list"></i> Todas
       </button>
+      <button class="filter-btn" (click)="cargarActividadesInstructor()">
+        <i class="fas fa-check-circle"></i> Activas
+      </button>
+ 
+    </div>
+    
+    <!-- Contador de actividades -->
+    <div class="activities-counter">
+      <span class="counter-badge">{{actividades.length}} actividades</span>
     </div>
   </div>
 </div>
 
-  <!-- Loading Spinner Mejorado -->
+<!-- Loading Spinner Mejorado -->
   <div *ngIf="isLoading" class="loading-spinner">
     <div class="spinner"></div>
     <p>Cargando actividades...</p>
@@ -552,7 +569,7 @@
               (click)="desactivarActividad(actividad.idActividad)"
               [disabled]="isLoading"
             >
-              <i class="fas fa-trash-alt"></i> Eliminar
+              <i class="fas fa-ban"></i> Desactivar
             </button>
 
             <button 
@@ -569,37 +586,4 @@
     </div>
   </div>
 
-  <!-- Estadísticas Mejoradas -->
-  <div class="stats-section" *ngIf="actividadesFiltradasParaMostrar.length > 0">
-    <h3><i class="fas fa-chart-line"></i> Resumen de Actividades</h3>
-    <div class="stats-container">
-      <div class="stats-card">
-        <div class="stats-icon total">
-          <i class="fas fa-dumbbell"></i>
-        </div>
-        <div class="stats-info">
-          <h4>Total de Actividades</h4>
-          <p class="stats-number">{{ totalActividades }}</p>
-        </div>
-      </div>
-      <div class="stats-card">
-        <div class="stats-icon active">
-          <i class="fas fa-running"></i>
-        </div>
-        <div class="stats-info">
-          <h4>Activas</h4>
-          <p class="stats-number">{{ totalActivas }}</p>
-        </div>
-      </div>
-      <div class="stats-card">
-        <div class="stats-icon inactive">
-          <i class="fas fa-bed"></i>
-        </div>
-        <div class="stats-info">
-          <h4>Inactivas</h4>
-          <p class="stats-number">{{ totalActividades - totalActivas }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+  

@@ -75,7 +75,7 @@
         <table class="instructores-table">
           <thead>
             <tr>
-              <th>Folio</th>
+              <th></th>
               <th>Nombre Completo</th>
               <th>Especialidad</th>
               <th>Horario</th>
@@ -87,24 +87,9 @@
           <tbody>
             @for (instructor of instructoresFiltrados; track instructor.folioInstructor) {
               <tr>
-                <td><strong>{{ instructor.folioInstructor }}</strong></td>
                 <td>
-                  <div class="instructor-info">
-                    @if (instructor.nombreArchivoFoto) {
-                      <div class="instructor-avatar">
-                        <img [src]="'http://localhost:8081/api/instructores/' + instructor.folioInstructor + '/foto'" 
-                             [alt]="instructor.nombre" 
-                             class="avatar-img"
-                             (error)="handleImageError($event)">
-                      </div>
-                    } @else {
-                      <div class="instructor-avatar no-photo">
-                        <i class="fas fa-user-tie"></i>
-                      </div>
-                    }
-                    <div class="instructor-name">
-                      {{ instructor.nombre }} {{ instructor.app }} {{ instructor.apm }}
-                    </div>
+                  <div class="instructor-name">
+                    {{ instructor.nombre }} {{ instructor.app }} {{ instructor.apm }}
                   </div>
                 </td>
                 <td>{{ instructor.especialidad || 'Sin especialidad' }}</td>
@@ -132,7 +117,7 @@
                     <button class="btn btn-sm btn-danger" 
                             (click)="eliminarInstructor(instructor.folioInstructor)"
                             title="Desactivar instructor">
-                      <i class="fas fa-trash-alt"></i> Desactivar
+                      <i class="fas fa-ban"></i> Desactivar
                     </button>
                   } @else {
                     <button class="btn btn-sm btn-success" 
@@ -145,7 +130,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="7" class="no-data">
+                <td colspan="6" class="no-data">
                   <div class="no-instructores">
                     <div class="no-instructores-icon">
                       <i class="fas fa-user-tie"></i>
@@ -177,8 +162,6 @@
         </div>
 
         <form (ngSubmit)="crearInstructor()" class="modal-body">
- 
-
           <div class="form-row">
             <div class="form-group">
               <label><i class="fas fa-user"></i> Nombre *</label>
@@ -291,43 +274,6 @@
         </div>
 
         <form (ngSubmit)="actualizarInstructor()" class="modal-body">
-          <!-- SECCIÓN FOTO -->
-          <div class="foto-section">
-            <h3><i class="fas fa-camera"></i> Foto del Instructor</h3>
-            <div class="foto-upload-container">
-              <div class="foto-preview">
-                @if (fotoPrevia) {
-                  <img [src]="fotoPrevia" alt="Vista previa" class="foto-preview-img">
-                } @else if (cargandoFoto) {
-                  <div class="foto-loading">
-                    <div class="spinner-small"></div>
-                    <span>Cargando foto...</span>
-                  </div>
-                } @else {
-                  <div class="foto-placeholder">
-                    <i class="fas fa-user-tie"></i>
-                    <span>Sin foto</span>
-                  </div>
-                }
-              </div>
-              <div class="foto-actions">
-                <label class="btn btn-secondary btn-sm">
-                  <i class="fas fa-upload"></i> {{ instructorSeleccionado.nombreArchivoFoto ? 'Cambiar' : 'Seleccionar' }}
-                  <input type="file" 
-                         accept="image/*" 
-                         (change)="onFileSelected($event, true)"
-                         style="display: none;">
-                </label>
-                @if (fotoPrevia || instructorSeleccionado.nombreArchivoFoto) {
-                  <button type="button" class="btn btn-danger btn-sm" (click)="eliminarFotoSeleccionada(true)">
-                    <i class="fas fa-trash"></i> Eliminar
-                  </button>
-                }
-              </div>
-              <small class="text-muted">Formatos: JPG, PNG, GIF, WebP. Máximo 5MB</small>
-            </div>
-          </div>
-
           <div class="form-row">
             <div class="form-group">
               <label><i class="fas fa-user"></i> Nombre *</label>
