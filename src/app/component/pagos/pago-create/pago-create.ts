@@ -6,12 +6,13 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PagoService, Pago } from '../../../services/pagos/pago';
 import { ProductoService, Producto } from '../../../services/productos/producto';
 import { ClienteService,Cliente } from '../../../services/cliente/ClienteService';
+import { HeaderRecepcionistaComponent } from '../../recepcionista/header-recepcionista/header-recepcionista';
 
 @Component({
   selector: 'app-pago-create',
   templateUrl: './pago-create.html',
   styleUrls: ['./pago-create.css'],
-  imports: [CommonModule, FormsModule, ReactiveFormsModule]
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, HeaderRecepcionistaComponent]
 })
 export class PagoCreate implements OnInit {
   pagoForm: FormGroup;
@@ -181,4 +182,8 @@ cargarClientes(): Promise<void> {
       currency: 'MXN'
     }).format(monto);
   }
+
+  volverALista(): void {
+  this.router.navigate(['/pagos']);
+}
 }

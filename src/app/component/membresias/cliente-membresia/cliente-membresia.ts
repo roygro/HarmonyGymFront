@@ -2,8 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClienteMembresiaService, ClienteMembresia } from '../../../services/membresia/cliente-membresia';
+import { HeaderRecepcionistaComponent } from '../../recepcionista/header-recepcionista/header-recepcionista';
 
-// Nueva interfaz que coincide con tu backend
 export interface ClienteMembresiaBackend {
   idMembresiaCliente: number;
   cliente: {
@@ -31,7 +31,7 @@ export interface ClienteMembresiaBackend {
 
 @Component({
   selector: 'app-cliente-membresia',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HeaderRecepcionistaComponent],
   templateUrl: './cliente-membresia.html',
   styleUrl: './cliente-membresia.css'
 })
@@ -72,7 +72,6 @@ export class ClienteMembresiaComponent implements OnInit {
       next: (data: any) => {
         console.log('Datos recibidos del servicio:', data);
         
-        // Mapear los datos del backend a nuestra interfaz
         if (data && data.membresias && Array.isArray(data.membresias)) {
           this.membresias = data.membresias.map((item: ClienteMembresiaBackend) => this.mapearMembresiaBackend(item));
           console.log('Membresías mapeadas:', this.membresias);
@@ -94,7 +93,6 @@ export class ClienteMembresiaComponent implements OnInit {
     });
   }
 
-  // Método para mapear la estructura del backend a nuestra interfaz
   private mapearMembresiaBackend(backendData: ClienteMembresiaBackend): ClienteMembresia {
     return {
       id_membresia_cliente: backendData.idMembresiaCliente,
@@ -269,6 +267,42 @@ export class ClienteMembresiaComponent implements OnInit {
   }
 
   // Métodos auxiliares para la UI
+  getImagenMembresia(membresia: ClienteMembresia): string {
+    if (membresia.id_membresia === 'MEM_VIP') {
+      return 'assets/images/membresia-vip.jpg';
+    } else if (membresia.id_membresia === 'MEM_PREMIUM') {
+      return 'assets/images/membresia-premium.jpg';
+    }
+    return 'assets/images/membresia-basica.jpg';
+  }
+
+  handleImageError(event: any): void {
+    event.target.src = 'assets/images/membresia-default.jpg';
+  }
+
+  getEstatusBadgeClass(membresia: ClienteMembresia): string {
+    const estatus = membresia.estatus?.toLowerCase() || '';
+    if (estatus.includes('activa')) return 'estatus-activa';
+    if (estatus.includes('inactiva')) return 'estatus-inactiva';
+    if (estatus.includes('expirada')) return 'estatus-expirada';
+    if (estatus.includes('cancelada')) return 'estatus-cancelada';
+    return 'estatus-activa';
+  }
+
+  getTipoMembresiaClass(membresia: ClienteMembresia): string {
+    return this.obtenerClaseMembresia(membresia.id_membresia);
+  }
+
+  getEstatusColor(estatus: string): string {
+    const colores: { [key: string]: string } = {
+      'Activa': '#4CAF50',
+      'Inactiva': '#FF9800',
+      'Expirada': '#F44336',
+      'Cancelada': '#9E9E9E'
+    };
+    return colores[estatus] || '#FFFFFF';
+  }
+
   obtenerClaseEstatus(estatus: string): string {
     if (!estatus) return 'estatus-default';
     

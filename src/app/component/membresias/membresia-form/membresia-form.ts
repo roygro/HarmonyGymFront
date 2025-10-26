@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MembresiaService, Membresia, TipoMembresia } from '../../../services/membresia/membresia';
+import { HeaderAdministradorComponent } from '../../Administrador/header-admin/header-admin';
 
 @Component({
   selector: 'app-membresia-form',
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, HeaderAdministradorComponent],
   templateUrl: './membresia-form.html',
   styleUrl: './membresia-form.css'
 })

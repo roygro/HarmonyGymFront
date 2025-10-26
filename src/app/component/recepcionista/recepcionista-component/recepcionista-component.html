@@ -1,0 +1,127 @@
+<div class="recepcionista-container">
+  <!-- Header del recepcionista -->
+  <app-header-recepcionista></app-header-recepcionista>
+  
+  <!-- Contenido principal -->
+  <main class="main-content">
+    <!-- Header de la página -->
+    <section class="page-header">
+      <div class="header-content">
+        <h1 class="page-title">DASHBOARD RECEPCIÓN</h1>
+        <p class="page-subtitle">Gestiona y controla las operaciones diarias del gimnasio</p>
+      </div>
+    </section>
+
+    <!-- Filtros y controles -->
+    <section class="controls-section">
+      <div class="filters-container">
+        <div class="filter-options">
+          <label class="filter-checkbox">
+            <input type="checkbox" checked>
+            <span class="checkmark"></span>
+            Ventas del Día
+          </label>
+          <label class="filter-checkbox">
+            <input type="checkbox">
+            <span class="checkmark"></span>
+            Ver Reportes
+          </label>
+          <label class="filter-checkbox">
+            <input type="checkbox" checked>
+            <span class="checkmark"></span>
+            Activas
+          </label>
+          <label class="filter-checkbox">
+            <input type="checkbox">
+            <span class="checkmark"></span>
+            Todas
+          </label>
+        </div>
+        
+        <button class="new-activity-btn">
+          <span>+</span>
+          Nueva Transacción
+        </button>
+      </div>
+    </section>
+
+    <!-- Separador -->
+    <div class="section-divider">
+      <div class="divider-line"></div>
+    </div>
+
+    <!-- Estadísticas principales -->
+    <section class="stats-section">
+      <div class="stats-grid">
+        <!-- Ventas del Día -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <h3 class="stat-title">VENTAS DEL DÍA</h3>
+            <div class="stat-badge today">HOY</div>
+          </div>
+          <div class="stat-value">$0.00</div>
+          <div class="stat-trend">
+            <span class="trend-indicator up">↑</span>
+            <span class="trend-text">0% vs ayer</span>
+          </div>
+        </div>
+
+        <!-- Transacciones Hoy -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <h3 class="stat-title">TRANSACCIONES HOY</h3>
+            <div class="stat-badge today">HOY</div>
+          </div>
+          <div class="stat-value">0</div>
+          <div class="stat-trend">
+            <span class="trend-indicator neutral">→</span>
+            <span class="trend-text">Sin cambios</span>
+          </div>
+        </div>
+
+        <!-- Clientes Únicos -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <h3 class="stat-title">CLIENTES ÚNICOS</h3>
+            <div class="stat-badge today">HOY</div>
+          </div>
+          <div class="stat-value">0</div>
+          <div class="stat-trend">
+            <span class="trend-indicator down">↓</span>
+            <span class="trend-text">0% vs ayer</span>
+          </div>
+        </div>
+
+        <!-- Membresías Activas -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <h3 class="stat-title">MEMBRESÍAS ACTIVAS</h3>
+            <div class="stat-badge total">TOTAL</div>
+          </div>
+          <div class="stat-value">3</div>
+          <div class="stat-trend">
+            <span class="trend-indicator up">↑</span>
+            <span class="trend-text">12% este mes</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Separador -->
+    <div class="section-divider">
+      <div class="divider-line"></div>
+    </div>
+
+    <!-- Lista de actividades recientes -->
+    <section class="activities-section">
+      <h2 class="section-title">OPERACIONES RECIENTES</h2>
+      <div class="activities-list">
+        <div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <h3>No hay operaciones recientes</h3>
+          <p>Las transacciones y actividades aparecerán aquí</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
