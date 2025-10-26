@@ -1,15 +1,104 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Actividad, ActividadService } from '../../../services/instructor/ActividadService';
-import Swal from 'sweetalert2';
+
+// Angular Material imports
+import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+
 import { HeaderInstructorComponent } from "../header-instructor/header-instructor";
+
+// Componente de diálogo para confirmaciones
+@Component({
+  selector: 'app-confirm-dialog',
+  standalone: true,
+  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
+  template: `
+    <div class="p-4">
+      <h2 class="text-xl font-bold mb-4">{{ data.title }}</h2>
+      <p class="mb-6">{{ data.message }}</p>
+      <div class="flex justify-end gap-2">
+        <button mat-button (click)="onCancel()">
+          {{ data.cancelText || 'Cancelar' }}
+        </button>
+        <button 
+          mat-raised-button 
+          [color]="data.confirmColor || 'primary'" 
+          (click)="onConfirm()"
+        >
+          {{ data.confirmText || 'Confirmar' }}
+        </button>
+      </div>
+    </div>
+  `
+})
+export class ConfirmDialogComponent {
+  constructor(
+    public dialogRef: MatDialogRef<ConfirmDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any
+  ) {}
+
+  onConfirm(): void {
+    this.dialogRef.close(true);
+  }
+
+  onCancel(): void {
+    this.dialogRef.close(false);
+  }
+}
+
+// Componente de diálogo para alertas simples
+@Component({
+  selector: 'app-alert-dialog',
+  standalone: true,
+  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
+  template: `
+    <div class="p-4">
+      <div class="flex items-center mb-4">
+        <mat-icon [color]="data.iconColor" class="mr-2">{{ data.icon }}</mat-icon>
+        <h2 class="text-xl font-bold">{{ data.title }}</h2>
+      </div>
+      <p class="mb-6">{{ data.message }}</p>
+      <div class="flex justify-end">
+        <button 
+          mat-raised-button 
+          [color]="data.buttonColor || 'primary'" 
+          (click)="onClose()"
+        >
+          {{ data.buttonText || 'Aceptar' }}
+        </button>
+      </div>
+    </div>
+  `
+})
+export class AlertDialogComponent {
+  constructor(
+    public dialogRef: MatDialogRef<AlertDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any
+  ) {}
+
+  onClose(): void {
+    this.dialogRef.close();
+  }
+}
 
 @Component({
   selector: 'app-actividades',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, HeaderInstructorComponent],
+  imports: [
+    CommonModule, 
+    ReactiveFormsModule, 
+    FormsModule, 
+    HeaderInstructorComponent,
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
+    MatSnackBarModule
+  ],
   templateUrl: './actividades-component.html',
   styleUrls: ['./actividades-component.css']
 })
@@ -82,12 +171,14 @@ export class ActividadesComponent implements OnInit {
 
   constructor(
     private actividadService: ActividadService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar
   ) {
     this.actividadForm = this.createForm();
     this.generarHorasDisponibles();
     this.inicializarAnosDisponibles();
-    this.inicializarMesesDisponibles(); // Se mantiene por compatibilidad
+    this.inicializarMesesDisponibles();
   }
 
   ngOnInit(): void {
@@ -641,6 +732,43 @@ export class ActividadesComponent implements OnInit {
     });
   }
 
+  formatearFechaCorta(fecha: string): string {
+    if (!fecha) return '';
+    const date = new Date(fecha + 'T00:00:00');
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit'
+    });
+  }
+
+  calcularDuracion(horaInicio: string, horaFin: string): string {
+    if (!horaInicio || !horaFin) return '';
+    
+    const inicio = new Date(`2000-01-01T${horaInicio}`);
+    const fin = new Date(`2000-01-01T${horaFin}`);
+    const diffMs = fin.getTime() - inicio.getTime();
+    const diffMin = Math.round(diffMs / (1000 * 60));
+    
+    if (diffMin < 60) {
+      return `${diffMin} min`;
+    } else {
+      const horas = Math.floor(diffMin / 60);
+      const minutos = diffMin % 60;
+      return minutos > 0 ? `${horas}h ${minutos}min` : `${horas}h`;
+    }
+  }
+
+  // Método para manejar la selección de actividad en la lista
+  onActividadSeleccionada(actividad: Actividad): void {
+    this.selectedActividad = actividad;
+    console.log('📅 Actividad seleccionada:', actividad.nombreActividad);
+  }
+
+  // Método para limpiar selección
+  limpiarSeleccion(): void {
+    this.selectedActividad = null;
+  }
+
   calcularHoraFin(horaInicio: string, duracion: number): string {
     const [horas, minutos] = horaInicio.split(':').map(Number);
     const totalMinutos = horas * 60 + minutos + duracion;
@@ -810,7 +938,7 @@ export class ActividadesComponent implements OnInit {
       'Sí, desactivar',
       'Cancelar'
     ).then((result) => {
-      if (result.isConfirmed) {
+      if (result) {
         this.actividadService.desactivarActividad(id)
           .subscribe({
             next: () => {
@@ -834,7 +962,7 @@ export class ActividadesComponent implements OnInit {
       'Sí, activar',
       'Cancelar'
     ).then((result) => {
-      if (result.isConfirmed) {
+      if (result) {
         this.actividadService.activarActividad(id)
           .subscribe({
             next: () => {
@@ -986,46 +1114,65 @@ export class ActividadesComponent implements OnInit {
     return this.actividadesFiltradasParaMostrar.length;
   }
 
-  // MÉTODOS SWEETALERT2
+  // MÉTODOS ANGULAR MATERIAL - REEMPLAZO DE SWEETALERT2
   private mostrarExito(titulo: string, mensaje: string): void {
-    Swal.fire({
-      title: titulo,
-      text: mensaje,
-      icon: 'success',
-      confirmButtonColor: '#3085d6',
-      confirmButtonText: 'Aceptar',
-      timer: 3000,
-      timerProgressBar: true
+    this.dialog.open(AlertDialogComponent, {
+      width: '400px',
+      data: {
+        title: titulo,
+        message: mensaje,
+        icon: 'check_circle',
+        iconColor: 'primary',
+        buttonColor: 'primary'
+      }
     });
   }
 
   private mostrarError(titulo: string, mensaje: string): void {
-    Swal.fire({
-      title: titulo,
-      text: mensaje,
-      icon: 'error',
-      confirmButtonColor: '#d33',
-      confirmButtonText: 'Aceptar'
+    this.dialog.open(AlertDialogComponent, {
+      width: '400px',
+      data: {
+        title: titulo,
+        message: mensaje,
+        icon: 'error',
+        iconColor: 'warn',
+        buttonColor: 'warn'
+      }
     });
   }
 
   private mostrarAdvertencia(titulo: string, mensaje: string): void {
-    Swal.fire({
-      title: titulo,
-      text: mensaje,
-      icon: 'warning',
-      confirmButtonColor: '#ffc107',
-      confirmButtonText: 'Entendido'
+    this.dialog.open(AlertDialogComponent, {
+      width: '400px',
+      data: {
+        title: titulo,
+        message: mensaje,
+        icon: 'warning',
+        iconColor: 'accent',
+        buttonColor: 'accent'
+      }
     });
   }
 
   private mostrarInfo(titulo: string, mensaje: string): void {
-    Swal.fire({
-      title: titulo,
-      text: mensaje,
-      icon: 'info',
-      confirmButtonColor: '#17a2b8',
-      confirmButtonText: 'Aceptar'
+    this.dialog.open(AlertDialogComponent, {
+      width: '400px',
+      data: {
+        title: titulo,
+        message: mensaje,
+        icon: 'info',
+        iconColor: 'primary',
+        buttonColor: 'primary'
+      }
+    });
+  }
+
+  private mostrarSnackbar(mensaje: string, tipo: 'success' | 'error' | 'warning' | 'info' = 'success'): void {
+    this.snackBar.open(mensaje, 'Cerrar', {
+      duration: 3000,
+      panelClass: [`snackbar-${tipo}`],
+      horizontalPosition: 'end',
+      verticalPosition: 'top'
     });
   }
 
@@ -1035,17 +1182,30 @@ export class ActividadesComponent implements OnInit {
     icon: 'warning' | 'question' | 'info' | 'success' | 'error' = 'question',
     confirmButtonText: string = 'Confirmar',
     cancelButtonText: string = 'Cancelar'
-  ): Promise<any> {
-    return Swal.fire({
-      title: titulo,
-      text: mensaje,
-      icon: icon,
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: confirmButtonText,
-      cancelButtonText: cancelButtonText,
-      reverseButtons: true
+  ): Promise<boolean> {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: titulo,
+        message: mensaje,
+        confirmText: confirmButtonText,
+        cancelText: cancelButtonText,
+        confirmColor: this.getConfirmColor(icon)
+      }
     });
+
+    return dialogRef.afterClosed().toPromise() || Promise.resolve(false);
+  }
+
+  private getConfirmColor(icon: string): string {
+    switch (icon) {
+      case 'warning':
+      case 'error':
+        return 'warn';
+      case 'success':
+        return 'primary';
+      default:
+        return 'primary';
+    }
   }
 }
