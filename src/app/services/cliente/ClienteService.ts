@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 
 export interface Cliente {
   folioCliente: string;
@@ -11,24 +11,26 @@ export interface Cliente {
   genero: string;
   fechaRegistro: string;
   estatus: string;
+  nombreArchivoFoto?: string;
   edad?: number; 
 }
 
 export interface CrearClienteRequest {
-  folioCliente: string;
   nombre: string;
   telefono?: string;
   email?: string;
   fechaNacimiento?: string;
   genero?: string;
+  estatus?: string; // AÑADIDO
 }
 
 export interface ActualizarClienteRequest {
-  nombre: string;
+  nombre?: string; // Hacer opcional
   telefono?: string;
   email?: string;
   fechaNacimiento?: string;
   genero?: string;
+  estatus?: string; // AÑADIDO
 }
 
 @Injectable({
@@ -80,14 +82,43 @@ export class ClienteService {
    * Dar de baja cliente (cambiar estatus a Inactivo)
    */
   darDeBajaCliente(folioCliente: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${folioCliente}/baja`, {});
+    return this.http.put(`${this.apiUrl}/${folioCliente}/estatus`, null, {
+      params: { estatus: 'Inactivo' }
+    });
   }
 
   /**
    * Activar cliente (cambiar estatus a Activo)
    */
   activarCliente(folioCliente: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${folioCliente}/activar`, {});
+    return this.http.put(`${this.apiUrl}/${folioCliente}/estatus`, null, {
+      params: { estatus: 'Activo' }
+    });
+  }
+
+  // ===== NUEVOS MÉTODOS PARA FOTOS =====
+
+  /**
+   * Crear cliente con foto
+   */
+  crearClienteConFoto(formData: FormData): Observable<any> {
+    return this.http.post<any>(this.apiUrl, formData);
+  }
+
+  /**
+   * Actualizar cliente con foto
+   */
+  actualizarClienteConFoto(folioCliente: string, formData: FormData): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${folioCliente}`, formData);
+  }
+
+  /**
+   * Obtener foto del cliente
+   */
+  obtenerFotoCliente(folioCliente: string): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${folioCliente}/foto`, {
+      responseType: 'blob'
+    });
   }
 
   // ===== MÉTODOS DE BÚSQUEDA Y FILTRADO =====
@@ -96,8 +127,8 @@ export class ClienteService {
    * Buscar clientes por término (nombre)
    */
   buscarClientes(termino: string): Observable<Cliente[]> {
-    return this.http.get<Cliente[]>(`${this.apiUrl}/search`, {
-      params: { searchTerm: termino }
+    return this.http.get<Cliente[]>(`${this.apiUrl}/buscar`, {
+      params: { nombre: termino }
     });
   }
 
@@ -105,22 +136,22 @@ export class ClienteService {
    * Obtener clientes por estatus
    */
   obtenerClientesPorEstatus(estatus: string): Observable<Cliente[]> {
-    return this.http.get<Cliente[]>(`${this.apiUrl}/estatus/${estatus}`);
+    const params = new HttpParams().set('estatus', estatus);
+    return this.http.get<Cliente[]>(`${this.apiUrl}/filtros`, { params });
   }
-  
 
   /**
    * Obtener solo clientes activos
    */
   obtenerClientesActivos(): Observable<Cliente[]> {
-    return this.obtenerClientesPorEstatus('Activo');
+    return this.http.get<Cliente[]>(`${this.apiUrl}/activos`);
   }
 
   /**
-   * Obtener solo clientes inactivos
+   * Obtener clientes con membresía activa
    */
-  obtenerClientesInactivos(): Observable<Cliente[]> {
-    return this.obtenerClientesPorEstatus('Inactivo');
+  obtenerClientesConMembresiaActiva(): Observable<Cliente[]> {
+    return this.http.get<Cliente[]>(`${this.apiUrl}/con-membresia-activa`);
   }
 
   // ===== MÉTODOS DE VALIDACIÓN =====
@@ -145,6 +176,14 @@ export class ClienteService {
   }
 
   /**
+   * Verificar disponibilidad de username (placeholder)
+   */
+  verificarDisponibilidadUsername(username: string): Observable<any> {
+    // Este es un placeholder - el backend genera el username automáticamente
+    return of({ disponible: true });
+  }
+
+  /**
    * Verificar si un email ya está registrado
    */
   verificarEmailExistente(email: string, folioClienteExcluir?: string): Observable<boolean> {
@@ -157,6 +196,43 @@ export class ClienteService {
             return emailCoincide && !esMismoCliente;
           });
           observer.next(emailExistente);
+          observer.complete();
+        },
+        error: (error) => observer.error(error)
+      });
+    });
+  }
+
+  // ===== MÉTODOS PARA ESTADÍSTICAS =====
+
+  /**
+   * Obtener estadísticas generales de clientes
+   */
+  obtenerEstadisticasClientes(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/estadisticas-generales`);
+  }
+
+  /**
+   * Obtener estadísticas de un cliente específico
+   */
+  obtenerEstadisticasCliente(folioCliente: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${folioCliente}/estadisticas`);
+  }
+
+  /**
+   * Obtener distribución por género
+   */
+  obtenerDistribucionGenero(): Observable<any> {
+    return new Observable(observer => {
+      this.obtenerTodosLosClientes().subscribe({
+        next: (clientes) => {
+          const distribucion = clientes.reduce((acc, cliente) => {
+            const genero = cliente.genero || 'No especificado';
+            acc[genero] = (acc[genero] || 0) + 1;
+            return acc;
+          }, {} as { [key: string]: number });
+          
+          observer.next(distribucion);
           observer.complete();
         },
         error: (error) => observer.error(error)
@@ -215,55 +291,6 @@ export class ClienteService {
   validarTelefono(telefono: string): boolean {
     const telefonoRegex = /^[0-9]{10}$/;
     return telefonoRegex.test(telefono.replace(/\D/g, ''));
-  }
-
-  // ===== MÉTODOS PARA ESTADÍSTICAS =====
-
-  /**
-   * Obtener estadísticas generales de clientes
-   */
-  obtenerEstadisticasClientes(): Observable<any> {
-    return new Observable(observer => {
-      this.obtenerTodosLosClientes().subscribe({
-        next: (clientes) => {
-          const totalClientes = clientes.length;
-          const clientesActivos = clientes.filter(c => c.estatus === 'Activo').length;
-          const clientesInactivos = clientes.filter(c => c.estatus === 'Inactivo').length;
-          
-          const estadisticas = {
-            totalClientes,
-            clientesActivos,
-            clientesInactivos,
-            porcentajeActivos: totalClientes > 0 ? (clientesActivos / totalClientes) * 100 : 0
-          };
-          
-          observer.next(estadisticas);
-          observer.complete();
-        },
-        error: (error) => observer.error(error)
-      });
-    });
-  }
-
-  /**
-   * Obtener distribución por género
-   */
-  obtenerDistribucionGenero(): Observable<any> {
-    return new Observable(observer => {
-      this.obtenerTodosLosClientes().subscribe({
-        next: (clientes) => {
-          const distribucion = clientes.reduce((acc, cliente) => {
-            const genero = cliente.genero || 'No especificado';
-            acc[genero] = (acc[genero] || 0) + 1;
-            return acc;
-          }, {} as { [key: string]: number });
-          
-          observer.next(distribucion);
-          observer.complete();
-        },
-        error: (error) => observer.error(error)
-      });
-    });
   }
 
   // ===== MÉTODOS PARA EXPORTACIÓN =====

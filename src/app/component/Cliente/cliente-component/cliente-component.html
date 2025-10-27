@@ -65,45 +65,45 @@
     </div>
   </div>
 
- <!-- Estadísticas Rápidas -->
-<div class="estadisticas">
-  <div class="stat-card">
-    <div class="stat-icon">
-      <i class="fas fa-users"></i>
+  <!-- Estadísticas Rápidas -->
+  <div class="estadisticas">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="fas fa-users"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ totalClientes }}</h3>
+        <p>Total Clientes</p>
+      </div>
     </div>
-    <div class="stat-content">
-      <h3>{{ totalClientes }}</h3>
-      <p>Total Clientes</p>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #2EC4B6, #34D1BF);">
+        <i class="fas fa-user-check"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ clientesActivos }}</h3>
+        <p>Clientes Activos</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #FFD166, #FFDF8E);">
+        <i class="fas fa-user-clock"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ clientesInactivos }}</h3>
+        <p>Clientes Inactivos</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #E63946, #EB5669);">
+        <i class="fas fa-percentage"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ porcentajeActivos | number:'1.0-0' }}%</h3>
+        <p>Tasa de Activos</p>
+      </div>
     </div>
   </div>
-  <div class="stat-card">
-    <div class="stat-icon" style="background: linear-gradient(135deg, #2EC4B6, #34D1BF);">
-      <i class="fas fa-user-check"></i>
-    </div>
-    <div class="stat-content">
-      <h3>{{ clientesActivos }}</h3>
-      <p>Clientes Activos</p>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon" style="background: linear-gradient(135deg, #FFD166, #FFDF8E);">
-      <i class="fas fa-user-clock"></i>
-    </div>
-    <div class="stat-content">
-      <h3>{{ clientesInactivos }}</h3>
-      <p>Clientes Inactivos</p>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon" style="background: linear-gradient(135deg, #E63946, #EB5669);">
-      <i class="fas fa-percentage"></i>
-    </div>
-    <div class="stat-content">
-      <h3>{{ porcentajeActivos | number:'1.0-0' }}%</h3>
-      <p>Tasa de Activos</p>
-    </div>
-  </div>
-</div>
 
   @if (cargando) {
     <div class="loading-spinner">
@@ -248,46 +248,35 @@
         <form (ngSubmit)="crearCliente()" class="modal-body">
           <div class="form-row">
             <div class="form-group">
-              <label><i class="fas fa-id-card"></i> Folio de Cliente</label>
-              <input type="text" 
-                     [(ngModel)]="nuevoCliente.folioCliente" 
-                     name="folioCliente" 
-                     [disabled]="cargando"
-                     placeholder="Ej: CLI-001"
-                     (blur)="verificarFolioExistente()">
-              <div *ngIf="erroresValidacion['folioCliente']" class="error-text">
-                {{ erroresValidacion['folioCliente'] }}
-              </div>
-              <span class="help-text">Formato: 3 letras, guión, 3 números (ej: CLI-001)</span>
-            </div>
-
-            <div class="form-group">
               <label><i class="fas fa-user"></i> Nombre Completo *</label>
               <input type="text" 
                      [(ngModel)]="nuevoCliente.nombre" 
                      name="nombre" 
                      required
                      [disabled]="cargando"
-                     placeholder="Nombre completo del cliente"
-                     (input)="validarCliente(nuevoCliente)">
-              <div *ngIf="erroresValidacion['nombre']" class="error-text">
-                {{ erroresValidacion['nombre'] }}
-              </div>
+                     placeholder="Nombre completo del cliente">
+              @if (erroresValidacion['nombre']) {
+                <div class="error-text">
+                  {{ erroresValidacion['nombre'] }}
+                </div>
+              }
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label><i class="fas fa-envelope"></i> Email</label>
+              <label><i class="fas fa-envelope"></i> Email *</label>
               <input type="email" 
-                     [(ngModel)]="nuevoCliente.email" 
+                     [(ngModel)]="emailUsuario" 
                      name="email"
                      [disabled]="cargando"
                      placeholder="correo@ejemplo.com"
-                     (blur)="verificarEmailExistente()">
-              <div *ngIf="erroresValidacion['email']" class="error-text">
-                {{ erroresValidacion['email'] }}
-              </div>
+                     required>
+              @if (erroresValidacion['emailUsuario']) {
+                <div class="error-text">
+                  {{ erroresValidacion['emailUsuario'] }}
+                </div>
+              }
             </div>
 
             <div class="form-group">
@@ -296,11 +285,12 @@
                      [(ngModel)]="nuevoCliente.telefono" 
                      name="telefono"
                      [disabled]="cargando"
-                     placeholder="10 dígitos"
-                     (input)="validarCliente(nuevoCliente)">
-              <div *ngIf="erroresValidacion['telefono']" class="error-text">
-                {{ erroresValidacion['telefono'] }}
-              </div>
+                     placeholder="10 dígitos">
+              @if (erroresValidacion['telefono']) {
+                <div class="error-text">
+                  {{ erroresValidacion['telefono'] }}
+                </div>
+              }
             </div>
           </div>
 
@@ -317,9 +307,20 @@
               <label><i class="fas fa-venus-mars"></i> Género</label>
               <select [(ngModel)]="nuevoCliente.genero" name="genero" [disabled]="cargando" class="form-select">
                 <option value="">Seleccionar...</option>
-                <option *ngFor="let genero of generos" [value]="genero">{{ genero }}</option>
+                @for (genero of generos; track genero) {
+                  <option [value]="genero">{{ genero }}</option>
+                }
               </select>
             </div>
+          </div>
+
+          <div class="form-group">
+            <label><i class="fas fa-toggle-on"></i> Estatus</label>
+            <select [(ngModel)]="nuevoCliente.estatus" name="estatus" [disabled]="cargando" class="form-select">
+              @for (estatus of estatusOpciones; track estatus) {
+                <option [value]="estatus">{{ estatus }}</option>
+              }
+            </select>
           </div>
 
           <div class="modal-actions">
@@ -331,7 +332,7 @@
             </button>
             <button type="submit" 
                     class="btn btn-primary" 
-                    [disabled]="cargando || !nuevoCliente.nombre.trim()">
+                    [disabled]="cargando || !nuevoCliente.nombre.trim() || !emailUsuario.trim()">
               <i class="fas fa-save"></i> {{ cargando ? 'Creando...' : 'Crear Cliente' }}
             </button>
           </div>
@@ -460,9 +461,11 @@
                      required
                      [disabled]="cargando"
                      placeholder="Nombre completo del cliente">
-              <div *ngIf="erroresValidacion['nombre']" class="error-text">
-                {{ erroresValidacion['nombre'] }}
-              </div>
+              @if (erroresValidacion['nombre']) {
+                <div class="error-text">
+                  {{ erroresValidacion['nombre'] }}
+                </div>
+              }
             </div>
           </div>
 
@@ -470,13 +473,15 @@
             <div class="form-group">
               <label><i class="fas fa-envelope"></i> Email</label>
               <input type="email" 
-                     [(ngModel)]="clienteEditado.email" 
+                     [(ngModel)]="emailUsuario" 
                      name="emailEdit"
                      [disabled]="cargando"
                      placeholder="correo@ejemplo.com">
-              <div *ngIf="erroresValidacion['email']" class="error-text">
-                {{ erroresValidacion['email'] }}
-              </div>
+              @if (erroresValidacion['emailUsuario']) {
+                <div class="error-text">
+                  {{ erroresValidacion['emailUsuario'] }}
+                </div>
+              }
             </div>
 
             <div class="form-group">
@@ -486,9 +491,11 @@
                      name="telefonoEdit"
                      [disabled]="cargando"
                      placeholder="10 dígitos">
-              <div *ngIf="erroresValidacion['telefono']" class="error-text">
-                {{ erroresValidacion['telefono'] }}
-              </div>
+              @if (erroresValidacion['telefono']) {
+                <div class="error-text">
+                  {{ erroresValidacion['telefono'] }}
+                </div>
+              }
             </div>
           </div>
 
@@ -505,9 +512,20 @@
               <label><i class="fas fa-venus-mars"></i> Género</label>
               <select [(ngModel)]="clienteEditado.genero" name="generoEdit" [disabled]="cargando" class="form-select">
                 <option value="">Seleccionar...</option>
-                <option *ngFor="let genero of generos" [value]="genero">{{ genero }}</option>
+                @for (genero of generos; track genero) {
+                  <option [value]="genero">{{ genero }}</option>
+                }
               </select>
             </div>
+          </div>
+
+          <div class="form-group">
+            <label><i class="fas fa-toggle-on"></i> Estatus</label>
+            <select [(ngModel)]="clienteEditado.estatus" name="estatusEdit" [disabled]="cargando" class="form-select">
+              @for (estatus of estatusOpciones; track estatus) {
+                <option [value]="estatus">{{ estatus }}</option>
+              }
+            </select>
           </div>
 
           <div class="modal-actions">

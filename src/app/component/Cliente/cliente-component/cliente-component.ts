@@ -22,6 +22,15 @@ export class ClienteComponent implements OnInit {
   nuevoCliente: CrearClienteRequest = this.inicializarCliente();
   clienteEditado: ActualizarClienteRequest = this.inicializarClienteEditado();
   
+  // Campos específicos para usuario
+  emailUsuario: string = '';
+  usernameSugerido: string = '';
+  
+  // Archivos
+  fotoSeleccionada: File | null = null;
+  vistaPreviaFoto: string | ArrayBuffer | null = null;
+  eliminarFotoExistente: boolean = false;
+  
   // Filtros y búsquedas
   filtroNombre: string = '';
   filtroEstatus: string = '';
@@ -75,44 +84,83 @@ export class ClienteComponent implements OnInit {
   // ===== MÉTODOS DE GESTIÓN DE CLIENTES =====
   crearCliente(): void {
     // Validar antes de crear
-    if (!this.validarCliente(this.nuevoCliente)) return;
+    if (!this.validarClienteParaCreacion()) return;
 
     this.cargando = true;
-    this.clienteService.crearCliente(this.nuevoCliente).subscribe({
-      next: (cliente) => {
-        this.mostrarMensaje('Cliente creado exitosamente', 'success');
-        this.cargarClientes();
-        this.vistaActual = 'lista';
-        this.nuevoCliente = this.inicializarCliente();
+    
+    // Crear FormData para enviar archivos
+    const formData = new FormData();
+    formData.append('nombre', this.nuevoCliente.nombre);
+    formData.append('telefono', this.nuevoCliente.telefono || '');
+    formData.append('email', this.emailUsuario);
+    formData.append('fechaNacimiento', this.nuevoCliente.fechaNacimiento || '');
+    formData.append('genero', this.nuevoCliente.genero || '');
+    formData.append('estatus', this.nuevoCliente.estatus || 'Activo');
+    
+    if (this.fotoSeleccionada) {
+      formData.append('foto', this.fotoSeleccionada);
+    }
+
+    this.clienteService.crearClienteConFoto(formData).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          this.mostrarMensaje('Cliente creado exitosamente. Se han enviado las credenciales al email: ' + this.emailUsuario, 'success');
+          this.cargarClientes();
+          this.vistaActual = 'lista';
+          this.limpiarFormularioCreacion();
+        } else {
+          this.mostrarMensaje('Error: ' + response.message, 'error');
+        }
         this.cargando = false;
       },
-      error: (error) => {
-        this.mostrarMensaje('Error al crear el cliente: ' + error.error, 'error');
+      error: (error: any) => {
+        this.mostrarMensaje('Error al crear el cliente: ' + this.obtenerMensajeError(error), 'error');
         this.cargando = false;
       }
     });
   }
 
   actualizarCliente(): void {
-    if (!this.clienteSeleccionado) return;
+  if (!this.clienteSeleccionado) return;
 
-    // Validar antes de actualizar
-    if (!this.validarCliente(this.clienteEditado)) return;
+  if (!this.validarClienteParaEdicion()) return;
 
-    this.cargando = true;
-    this.clienteService.actualizarCliente(this.clienteSeleccionado.folioCliente, this.clienteEditado).subscribe({
-      next: (cliente) => {
+  this.cargando = true;
+  
+  const formData = new FormData();
+  formData.append('nombre', this.clienteEditado.nombre || '');
+  formData.append('telefono', this.clienteEditado.telefono || '');
+  formData.append('fechaNacimiento', this.clienteEditado.fechaNacimiento || '');
+  formData.append('genero', this.clienteEditado.genero || '');
+  formData.append('estatus', this.clienteEditado.estatus || 'Activo');
+  formData.append('eliminarFoto', this.eliminarFotoExistente.toString());
+  
+  if (this.emailUsuario && this.emailUsuario !== this.clienteSeleccionado.email) {
+    formData.append('email', this.emailUsuario);
+  }
+  
+  if (this.fotoSeleccionada) {
+    formData.append('foto', this.fotoSeleccionada);
+  }
+
+  this.clienteService.actualizarClienteConFoto(this.clienteSeleccionado.folioCliente, formData).subscribe({
+    next: (response: any) => {
+      if (response.success) {
         this.mostrarMensaje('Cliente actualizado exitosamente', 'success');
         this.cargarClientes();
         this.vistaActual = 'detalle';
-        this.cargando = false;
-      },
-      error: (error) => {
-        this.mostrarMensaje('Error al actualizar el cliente: ' + error.error, 'error');
-        this.cargando = false;
+        this.limpiarFormularioEdicion();
+      } else {
+        this.mostrarMensaje('Error: ' + response.message, 'error');
       }
-    });
-  }
+      this.cargando = false;
+    },
+    error: (error: any) => {
+      this.mostrarMensaje('Error al actualizar el cliente: ' + this.obtenerMensajeError(error), 'error');
+      this.cargando = false;
+    }
+  });
+}
 
   eliminarCliente(folioCliente: string): void {
     if (confirm('¿Estás seguro de que quieres eliminar permanentemente este cliente?')) {
@@ -128,31 +176,41 @@ export class ClienteComponent implements OnInit {
     }
   }
 
-  darDeBajaCliente(folioCliente: string): void {
-    if (confirm('¿Estás seguro de que quieres dar de baja este cliente?')) {
-      this.clienteService.darDeBajaCliente(folioCliente).subscribe({
-        next: () => {
+  // En el método darDeBajaCliente
+darDeBajaCliente(folioCliente: string): void {
+  if (confirm('¿Estás seguro de que quieres dar de baja este cliente?')) {
+    this.clienteService.darDeBajaCliente(folioCliente).subscribe({
+      next: (response: any) => {
+        if (response.success) {
           this.mostrarMensaje('Cliente dado de baja exitosamente', 'success');
           this.cargarClientes();
-        },
-        error: (error) => {
-          this.mostrarMensaje('Error al dar de baja el cliente: ' + error.error, 'error');
+        } else {
+          this.mostrarMensaje('Error: ' + response.message, 'error');
         }
-      });
-    }
-  }
-
-  activarCliente(folioCliente: string): void {
-    this.clienteService.activarCliente(folioCliente).subscribe({
-      next: () => {
-        this.mostrarMensaje('Cliente activado exitosamente', 'success');
-        this.cargarClientes();
       },
       error: (error) => {
-        this.mostrarMensaje('Error al activar el cliente: ' + error.error, 'error');
+        this.mostrarMensaje('Error al dar de baja el cliente: ' + this.obtenerMensajeError(error), 'error');
       }
     });
   }
+}
+
+  // En el método activarCliente
+activarCliente(folioCliente: string): void {
+  this.clienteService.activarCliente(folioCliente).subscribe({
+    next: (response: any) => {
+      if (response.success) {
+        this.mostrarMensaje('Cliente activado exitosamente', 'success');
+        this.cargarClientes();
+      } else {
+        this.mostrarMensaje('Error: ' + response.message, 'error');
+      }
+    },
+    error: (error) => {
+      this.mostrarMensaje('Error al activar el cliente: ' + this.obtenerMensajeError(error), 'error');
+    }
+  });
+}
 
   // ===== MÉTODOS DE BÚSQUEDA Y FILTRADO =====
   buscarClientes(): void {
@@ -201,70 +259,151 @@ export class ClienteComponent implements OnInit {
     this.mostrarMensaje('Filtros limpiados', 'info');
   }
 
-  // ===== MÉTODOS DE VALIDACIÓN =====
-  validarCliente(cliente: any): boolean {
+  // ===== MÉTODOS DE VALIDACIÓN ESPECÍFICOS =====
+  validarClienteParaCreacion(): boolean {
     this.erroresValidacion = {};
 
-    // Validar nombre
-    if (!cliente.nombre || cliente.nombre.trim().length < 2) {
+    // Validar nombre (obligatorio)
+    if (!this.nuevoCliente.nombre || this.nuevoCliente.nombre.trim().length < 2) {
       this.erroresValidacion['nombre'] = 'El nombre es requerido y debe tener al menos 2 caracteres';
     }
 
-    // Validar email si está presente
-    if (cliente.email && !this.clienteService.validarEmail(cliente.email)) {
-      this.erroresValidacion['email'] = 'El formato del email no es válido';
+    // Validar email (obligatorio para crear usuario)
+    if (!this.emailUsuario || this.emailUsuario.trim() === '') {
+      this.erroresValidacion['emailUsuario'] = 'El email es obligatorio para crear las credenciales de acceso';
+    } else if (!this.validarEmail(this.emailUsuario)) {
+      this.erroresValidacion['emailUsuario'] = 'El formato del email no es válido';
     }
 
     // Validar teléfono si está presente
-    if (cliente.telefono && !this.clienteService.validarTelefono(cliente.telefono)) {
+    if (this.nuevoCliente.telefono && !this.validarTelefono(this.nuevoCliente.telefono)) {
       this.erroresValidacion['telefono'] = 'El teléfono debe tener 10 dígitos';
-    }
-
-    // Validar folio (solo para creación)
-    if (cliente.folioCliente && !this.validarFormatoFolio(cliente.folioCliente)) {
-      this.erroresValidacion['folioCliente'] = 'El folio debe tener un formato válido (ej: CLI-001)';
     }
 
     return Object.keys(this.erroresValidacion).length === 0;
   }
 
-  validarFormatoFolio(folio: string): boolean {
-    const folioRegex = /^[A-Z]{3}-[0-9]{3}$/;
-    return folioRegex.test(folio);
+  validarClienteParaEdicion(): boolean {
+    this.erroresValidacion = {};
+
+    // Validar nombre (obligatorio)
+    if (!this.clienteEditado.nombre || this.clienteEditado.nombre.trim().length < 2) {
+      this.erroresValidacion['nombre'] = 'El nombre es requerido y debe tener al menos 2 caracteres';
+    }
+
+    // Validar email si se está cambiando
+    if (this.emailUsuario && this.emailUsuario !== this.clienteSeleccionado?.email) {
+      if (!this.validarEmail(this.emailUsuario)) {
+        this.erroresValidacion['emailUsuario'] = 'El formato del email no es válido';
+      }
+    }
+
+    // Validar teléfono si está presente
+    if (this.clienteEditado.telefono && !this.validarTelefono(this.clienteEditado.telefono)) {
+      this.erroresValidacion['telefono'] = 'El teléfono debe tener 10 dígitos';
+    }
+
+    return Object.keys(this.erroresValidacion).length === 0;
   }
 
-  verificarFolioExistente(): void {
-    if (this.nuevoCliente.folioCliente) {
-      this.clienteService.verificarFolioExistente(this.nuevoCliente.folioCliente).subscribe({
-        next: (existe) => {
-          if (existe) {
-            this.erroresValidacion['folioCliente'] = 'El folio de cliente ya existe';
-          } else {
-            delete this.erroresValidacion['folioCliente'];
-          }
-        },
-        error: (error) => {
-          console.error('Error al verificar folio:', error);
-        }
-      });
+  // ===== MÉTODOS PARA GENERAR USERNAME =====
+  generarUsernameDesdeEmail(): void {
+    if (this.emailUsuario && this.validarEmail(this.emailUsuario)) {
+      // Extraer la parte antes del @ del email
+      const usernameBase = this.emailUsuario.split('@')[0];
+      this.usernameSugerido = usernameBase.toLowerCase();
+      
+      // Verificar disponibilidad del username
+      this.verificarDisponibilidadUsername(this.usernameSugerido);
     }
   }
 
-  verificarEmailExistente(): void {
-    if (this.nuevoCliente.email) {
-      this.clienteService.verificarEmailExistente(this.nuevoCliente.email).subscribe({
-        next: (existe) => {
-          if (existe) {
-            this.erroresValidacion['email'] = 'El email ya está registrado';
-          } else {
-            delete this.erroresValidacion['email'];
-          }
-        },
-        error: (error) => {
-          console.error('Error al verificar email:', error);
-        }
-      });
+  generarUsernameDesdeNombre(): void {
+    if (this.nuevoCliente.nombre) {
+      const nombreLimpio = this.nuevoCliente.nombre
+        .toLowerCase()
+        .replace(/\s+/g, '.')
+        .replace(/[^a-z0-9.]/g, '');
+      this.usernameSugerido = nombreLimpio;
+      
+      // Verificar disponibilidad
+      this.verificarDisponibilidadUsername(this.usernameSugerido);
     }
+  }
+
+  verificarDisponibilidadUsername(username: string): void {
+    this.clienteService.verificarDisponibilidadUsername(username).subscribe({
+      next: (response: any) => {
+        if (!response.disponible) {
+          this.erroresValidacion['username'] = 'El username no está disponible. Se generará uno único automáticamente.';
+        } else {
+          delete this.erroresValidacion['username'];
+        }
+      },
+      error: (error: any) => {
+        console.error('Error al verificar username:', error);
+      }
+    });
+  }
+
+  // ===== MÉTODOS PARA MANEJO DE ARCHIVOS =====
+  onFotoSeleccionada(event: any): void {
+    const archivo = event.target.files[0];
+    if (archivo) {
+      // Validar tipo de archivo
+      if (!this.validarTipoArchivo(archivo)) {
+        this.mostrarMensaje('Solo se permiten imágenes (JPG, PNG, GIF, WebP)', 'error');
+        return;
+      }
+
+      // Validar tamaño (5MB máximo)
+      if (archivo.size > 5 * 1024 * 1024) {
+        this.mostrarMensaje('La imagen no debe superar los 5MB', 'error');
+        return;
+      }
+
+      this.fotoSeleccionada = archivo;
+
+      // Crear vista previa
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.vistaPreviaFoto = e.target?.result || null;
+      };
+      reader.readAsDataURL(archivo);
+    }
+  }
+
+  eliminarFotoSeleccionada(): void {
+    this.fotoSeleccionada = null;
+    this.vistaPreviaFoto = null;
+    
+    // Si estamos en edición, marcar para eliminar la foto existente
+    if (this.vistaActual === 'editar') {
+      this.eliminarFotoExistente = true;
+    }
+  }
+
+  validarTipoArchivo(archivo: File): boolean {
+    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    return tiposPermitidos.includes(archivo.type);
+  }
+
+  // ===== MÉTODOS DE UTILIDAD =====
+  validarEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  validarTelefono(telefono: string): boolean {
+    const telefonoRegex = /^\d{10}$/;
+    return telefonoRegex.test(telefono);
+  }
+
+  obtenerMensajeError(error: any): string {
+    if (error.error && error.error.message) {
+      return error.error.message;
+    }
+    return error.message || 'Error desconocido';
   }
 
   // ===== MÉTODOS DE NAVEGACIÓN =====
@@ -277,10 +416,11 @@ export class ClienteComponent implements OnInit {
     this.clienteEditado = {
       nombre: cliente.nombre,
       telefono: cliente.telefono || '',
-      email: cliente.email || '',
       fechaNacimiento: cliente.fechaNacimiento || '',
-      genero: cliente.genero || ''
+      genero: cliente.genero || '',
+      estatus: cliente.estatus || 'Activo'
     };
+    this.emailUsuario = cliente.email || '';
     this.vistaActual = 'editar';
   }
 
@@ -288,18 +428,35 @@ export class ClienteComponent implements OnInit {
     this.vistaActual = 'lista';
     this.clienteSeleccionado = null;
     this.erroresValidacion = {};
-    this.nuevoCliente = this.inicializarCliente();
+    this.limpiarFormularioCreacion();
   }
 
-  // ===== MÉTODOS AUXILIARES =====
+  // ===== MÉTODOS DE LIMPIEZA =====
+  limpiarFormularioCreacion(): void {
+    this.nuevoCliente = this.inicializarCliente();
+    this.emailUsuario = '';
+    this.usernameSugerido = '';
+    this.fotoSeleccionada = null;
+    this.vistaPreviaFoto = null;
+    this.erroresValidacion = {};
+  }
+
+  limpiarFormularioEdicion(): void {
+    this.clienteEditado = this.inicializarClienteEditado();
+    this.emailUsuario = '';
+    this.fotoSeleccionada = null;
+    this.vistaPreviaFoto = null;
+    this.eliminarFotoExistente = false;
+    this.erroresValidacion = {};
+  }
+
   inicializarCliente(): CrearClienteRequest {
     return {
-      folioCliente: '',
       nombre: '',
       telefono: '',
-      email: '',
       fechaNacimiento: '',
-      genero: ''
+      genero: '',
+      estatus: 'Activo'
     };
   }
 
@@ -307,9 +464,9 @@ export class ClienteComponent implements OnInit {
     return {
       nombre: '',
       telefono: '',
-      email: '',
       fechaNacimiento: '',
-      genero: ''
+      genero: '',
+      estatus: 'Activo'
     };
   }
 
@@ -401,29 +558,21 @@ export class ClienteComponent implements OnInit {
     return ['Masculino', 'Femenino', 'Otro'];
   }
 
-  
-get totalClientes(): number {
-  console.log('Total clientes calculado:', this.clientesFiltrados.length);
-  return this.clientesFiltrados.length;
-}
+  get totalClientes(): number {
+    return this.clientesFiltrados.length;
+  }
 
-get clientesActivos(): number {
-  const activos = this.clientesFiltrados.filter(c => c.estatus === 'Activo').length;
-  console.log('Clientes activos calculados:', activos);
-  return activos;
-}
+  get clientesActivos(): number {
+    return this.clientesFiltrados.filter(c => c.estatus === 'Activo').length;
+  }
 
-get clientesInactivos(): number {
-  const inactivos = this.clientesFiltrados.filter(c => c.estatus === 'Inactivo').length;
-  console.log('Clientes inactivos calculados:', inactivos);
-  return inactivos;
-}
+  get clientesInactivos(): number {
+    return this.clientesFiltrados.filter(c => c.estatus === 'Inactivo').length;
+  }
 
-get porcentajeActivos(): number {
-  const porcentaje = this.totalClientes > 0 ? (this.clientesActivos / this.totalClientes) * 100 : 0;
-  console.log('Porcentaje activos calculado:', porcentaje);
-  return porcentaje;
-}
+  get porcentajeActivos(): number {
+    return this.totalClientes > 0 ? (this.clientesActivos / this.totalClientes) * 100 : 0;
+  }
 
   get clientesRecientes(): Cliente[] {
     return this.clientesFiltrados
@@ -433,48 +582,39 @@ get porcentajeActivos(): number {
 
   // ===== MÉTODOS PARA GESTIÓN DE MEMBRESÍAS (FUTURO) =====
   asignarMembresia(folioCliente: string, idMembresia: string): void {
-    // Implementar cuando tengas el servicio de membresías
     this.mostrarMensaje('Funcionalidad de membresías en desarrollo', 'info');
   }
 
   renovarMembresia(folioCliente: string): void {
-    // Implementar cuando tengas el servicio de membresías
     this.mostrarMensaje('Funcionalidad de renovación en desarrollo', 'info');
   }
 
   // ===== MÉTODOS PARA GESTIÓN DE RUTINAS (INTEGRACIÓN) =====
   verRutinasCliente(folioCliente: string): void {
-    // Implementar integración con el servicio de rutinas
     this.mostrarMensaje('Redirigiendo a rutinas del cliente...', 'info');
-    // Aquí podrías navegar a un componente de rutinas o mostrar un modal
-  }
-
-  // ===== MÉTODOS DE LIMPIEZA =====
-  ngOnDestroy(): void {
-    // Limpiar cualquier suscripción si es necesario
   }
 
   // ===== MÉTODOS DE PRUEBA Y DESARROLLO =====
   generarClientePrueba(): void {
-    const folio = `CLI-${Math.random().toString(36).substr(2, 3).toUpperCase()}`;
     const nombres = ['Juan', 'María', 'Carlos', 'Ana', 'Luis', 'Laura', 'Pedro', 'Sofia'];
     const apellidos = ['Pérez', 'García', 'López', 'Martínez', 'González', 'Rodríguez'];
     
     this.nuevoCliente = {
-      folioCliente: folio,
       nombre: `${nombres[Math.floor(Math.random() * nombres.length)]} ${apellidos[Math.floor(Math.random() * apellidos.length)]}`,
       telefono: `55${Math.floor(10000000 + Math.random() * 90000000)}`,
-      email: `cliente${Math.floor(Math.random() * 1000)}@gmail.com`,
       fechaNacimiento: this.generarFechaNacimientoAleatoria(),
-      genero: Math.random() > 0.5 ? 'Masculino' : 'Femenino'
+      genero: Math.random() > 0.5 ? 'Masculino' : 'Femenino',
+      estatus: 'Activo'
     };
+
+    this.emailUsuario = `cliente${Math.floor(Math.random() * 1000)}@gmail.com`;
     
     this.vistaActual = 'crear';
     this.mostrarMensaje('Cliente de prueba generado. Completa y guarda.', 'info');
   }
 
   private generarFechaNacimientoAleatoria(): string {
-    const año = 1980 + Math.floor(Math.random() * 30); // Entre 1980 y 2010
+    const año = 1980 + Math.floor(Math.random() * 30);
     const mes = 1 + Math.floor(Math.random() * 12);
     const dia = 1 + Math.floor(Math.random() * 28);
     return `${año}-${mes.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
@@ -493,5 +633,10 @@ get porcentajeActivos(): number {
 
   ordenarPorEstatus(): void {
     this.clientesFiltrados.sort((a, b) => a.estatus.localeCompare(b.estatus));
+  }
+
+  // ===== MÉTODOS DE LIMPIEZA =====
+  ngOnDestroy(): void {
+    // Limpiar cualquier suscripción si es necesario
   }
 }
