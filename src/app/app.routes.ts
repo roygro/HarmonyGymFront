@@ -10,6 +10,7 @@ import { PagoDetails } from './component/pagos/pago-details/pago-details';
 import { PagoCreate } from './component/pagos/pago-create/pago-create';
 import { LoginComponent } from './component/Auth/login-component/login-component';
 import { ClienteMembresiaComponent } from './component/membresias/cliente-membresia/cliente-membresia';
+import { HeaderRecepcionistaComponent } from './component/recepcionista/header-recepcionista/header-recepcionista';
 
 export const routes: Routes = [
 
@@ -19,7 +20,11 @@ export const routes: Routes = [
     component: LoginComponent 
   },
 
-
+ {
+   path: 'header', 
+    component: HeaderRecepcionistaComponent 
+  },
+  
   // Rutas de Pagos
   { 
     path: 'pagos', 
@@ -77,6 +82,7 @@ export const routes: Routes = [
     path: 'instructores', 
     component: InstructorComponent 
   },
+ 
   
   // Ruta por defecto
   { 
