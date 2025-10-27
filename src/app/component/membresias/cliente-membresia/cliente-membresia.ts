@@ -66,6 +66,14 @@ historialData: any[] = [];
 clienteHistorial: string = '';
 loadingHistorial: boolean = false;
 
+
+// Propiedades para los nombres
+  clientes: any[] = [];
+  recepcionistas: any[] = [];
+  productos: any[] = [];
+
+  
+
   constructor(
     private clienteMembresiaService: ClienteMembresiaService,
     private http: HttpClient // Inyecta HttpClient
@@ -74,7 +82,56 @@ loadingHistorial: boolean = false;
   ngOnInit(): void {
     this.verificarMembresiasDisponibles(); // Primero verifica las membresías disponibles
     this.cargarMembresiasActivas();
+    this.cargarNombres(); // <- Agregar esta línea
   }
+
+// Método para cargar los nombres
+cargarNombres(): void {
+  // Necesitarás agregar estos métodos a tu servicio o usar HttpClient directamente
+  this.http.get('http://localhost:8081/api/clientes').subscribe({
+    next: (clientes: any) => {
+      this.clientes = clientes;
+    },
+    error: (error: any) => {
+      console.error('Error al cargar clientes:', error);
+    }
+  });
+
+  this.http.get('http://localhost:8081/api/recepcionistas').subscribe({
+    next: (recepcionistas: any) => {
+      this.recepcionistas = recepcionistas;
+    },
+    error: (error: any) => {
+      console.error('Error al cargar recepcionistas:', error);
+    }
+  });
+
+  this.http.get('http://localhost:8081/api/productos').subscribe({
+    next: (productos: any) => {
+      this.productos = productos;
+    },
+    error: (error: any) => {
+      console.error('Error al cargar productos:', error);
+    }
+  });
+}
+// Métodos para obtener nombres
+obtenerNombreCliente(folio: string): string {
+  const cliente = this.clientes.find((c: any) => c.folioCliente === folio);
+  return cliente ? cliente.nombre : folio;
+}
+
+obtenerNombreRecepcionista(id: string): string {
+  const recepcionista = this.recepcionistas.find((r: any) => r.idRecepcionista === id);
+  return recepcionista ? recepcionista.nombre : id;
+}
+
+obtenerNombreProducto(codigo: string): string {
+  const producto = this.productos.find((p: any) => p.codigo === codigo);
+  return producto ? producto.nombre : codigo;
+}
+
+
 
   // NUEVO MÉTODO: Verificar membresías disponibles en el backend
   verificarMembresiasDisponibles(): void {
