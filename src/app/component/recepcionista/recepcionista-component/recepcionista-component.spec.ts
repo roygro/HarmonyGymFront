@@ -1,7 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-<<<<<<<< HEAD:src/app/component/recepcionista/recepcionista-component/recepcionista-component.spec.ts
+
 import { RecepcionistaComponent } from './recepcionista-component';
+import { HeaderAdministradorComponent } from '../../Administrador/header-admin/header-admin';
 
 describe('RecepcionistaComponent', () => {
   let component: RecepcionistaComponent;
@@ -14,21 +15,20 @@ describe('RecepcionistaComponent', () => {
     .compileComponents();
 
     fixture = TestBed.createComponent(RecepcionistaComponent);
-========
-import { HeaderAdmin } from './header-admin';
+  
 
 describe('HeaderAdmin', () => {
-  let component: HeaderAdmin;
-  let fixture: ComponentFixture<HeaderAdmin>;
+  let component: HeaderAdministradorComponent;
+  let fixture: ComponentFixture<HeaderAdministradorComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [HeaderAdmin]
+      imports: [HeaderAdministradorComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(HeaderAdmin);
->>>>>>>> f056985985515725b9b9bde9eb50f6262bd07cfd:src/app/component/Administrador/header-admin/header-admin.spec.ts
+    fixture = TestBed.createComponent(HeaderAdministradorComponent);
+
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -36,4 +36,5 @@ describe('HeaderAdmin', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
-});
+
+})})});

@@ -8,7 +8,7 @@
       <p class="header-subtitle">Administra y consulta las membresías activas de los clientes</p>
     </div>
     <div class="header-actions">
-      <button class="btn btn-primary" (click)="abrirDialogoAsignar()">
+      <button class="btn btn-primary" (click)="abrirDialogoAsignar()" [disabled]="tipoMembresias.length === 0">
         <i class="fas fa-plus-circle"></i> Asignar Membresía
       </button>
       <button class="btn btn-secondary" (click)="cargarMembresiasPorExpirar()">
@@ -16,6 +16,11 @@
       </button>
       <button class="btn btn-secondary" (click)="verEstadisticas()">
         <i class="fas fa-chart-bar"></i> Estadísticas
+      </button>
+      
+      <!-- Botón temporal para crear membresías si no existen -->
+      <button class="btn btn-warning" (click)="crearMembresiasDePrueba()" *ngIf="tipoMembresias.length === 0">
+        <i class="fas fa-vial"></i> Crear Membresías de Prueba
       </button>
     </div>
   </div>
@@ -116,20 +121,27 @@
         </div>
         <h3>No se encontraron membresías</h3>
         <p *ngIf="filtro">
-          No hay membresías que coincidan con los filtros aplicados
+          No hay membresías que coincidan con "{{filtro}}"
         </p>
-        <p *ngIf="!filtro">
-          No hay membresías registradas en el sistema
+        <p *ngIf="!filtro && membresias.length === 0">
+          No hay membresías activas registradas en el sistema.
+          <br><strong>Para comenzar, asigna una membresía a un cliente.</strong>
         </p>
-        <button class="btn btn-primary" (click)="abrirDialogoAsignar()">
-          <i class="fas fa-plus-circle"></i> Asignar Primera Membresía
-        </button>
+        <p *ngIf="!filtro && membresias.length > 0">
+          Todas las membresías están filtradas. 
+        </p>
+        <div class="action-buttons">
+          <button class="btn btn-primary" (click)="abrirDialogoAsignar()" [disabled]="tipoMembresias.length === 0">
+            <i class="fas fa-plus-circle"></i> Asignar Primera Membresía
+          </button>
+          <button class="btn btn-secondary" (click)="limpiarFiltro()" *ngIf="filtro">
+            <i class="fas fa-times"></i> Limpiar Filtro
+          </button>
+        </div>
       </div>
 
       <div *ngFor="let membresia of membresiasFiltradas; let i = index" class="actividad-card" [style.animation-delay]="i * 0.1 + 's'">
         <div class="actividad-image">
-      
-          
           <div class="image-overlay">
             <span class="image-badge" [class]="getEstatusBadgeClass(membresia)">
               <i class="fas" [class.fa-check-circle]="membresia.estatus === 'Activa'" 
@@ -143,7 +155,7 @@
         
         <div class="actividad-content">
           <div class="actividad-header">
-            <h4>Cliente: {{ membresia.folio_cliente }}</h4>
+            <h4>Cliente: {{ obtenerNombreCliente(membresia.folio_cliente) }}</h4>
             <span [class]="'estatus-badge ' + getTipoMembresiaClass(membresia)">
               <i class="fas fa-star"></i> {{ obtenerEtiquetaMembresia(membresia.id_membresia) }}
             </span>
@@ -229,98 +241,183 @@
       </div>
     </div>
   </div>
-</div>
 
-<!-- Diálogo para asignar membresía -->
-<div *ngIf="showAsignarDialog" class="form-container">
-  <div class="form-card">
-    <div class="form-header">
-      <h3><i class="fas fa-id-card"></i> Asignar Nueva Membresía</h3>
-      <button class="btn-close" (click)="showAsignarDialog = false" title="Cancelar">
-        <span class="close-icon">×</span>
+  <!-- Modal de Historial CORREGIDO - DENTRO del contenedor principal -->
+  <div *ngIf="showHistorialModal" class="form-container historial-modal">
+    <div class="form-card historial-card" style="max-width: 900px;">
+      <div class="form-header historial-modal-header">
+        <h3><i class="fas fa-history"></i> Historial de Membresías - {{ clienteHistorial }}</h3>
+        <button class="btn-close" (click)="cerrarModalHistorial()">×</button>
+      </div>
+      
+      <div class="historial-content">
+        
+        <!-- Loading -->
+        <div *ngIf="loadingHistorial" class="loading-spinner historial-loading">
+          <div class="spinner"></div>
+          <p>Cargando historial...</p>
+        </div>
+        
+        <!-- Lista de historial -->
+        <div *ngIf="!loadingHistorial" class="historial-list">
+          <div *ngFor="let item of historialData; let i = index" 
+               class="historial-item" 
+               [style.animation-delay]="i * 0.1 + 's'">
+            
+            <div class="historial-item-header">
+              <div class="historial-tipo">
+                <strong>{{ obtenerEtiquetaMembresia(item.id_membresia || item.membresia?.idMembresia) }}</strong>
+              </div>
+              <span class="estatus-badge historial-badge" [class]="obtenerClaseEstatus(item.estatus)">
+                <i class="fas" [class.fa-check-circle]="item.estatus === 'Activa'" 
+                            [class.fa-pause-circle]="item.estatus === 'Inactiva'"
+                            [class.fa-times-circle]="item.estatus === 'Cancelada'"
+                            [class.fa-clock]="item.estatus === 'Expirada'"></i>
+                {{ item.estatus }}
+              </span>
+            </div>
+            
+            <div class="historial-details">
+              <div class="historial-date">
+                <i class="fas fa-calendar-alt"></i>
+                {{ formatearFecha(item.fecha_inicio || item.fechaInicio) }} - 
+                {{ formatearFecha(item.fecha_fin || item.fechaFin) }}
+              </div>
+              
+              <div class="historial-meta">
+                <span class="historial-meta-item">
+                  <i class="fas fa-calendar-plus"></i>
+                  Registro: {{ formatearFecha(item.fecha_registro || item.fechaRegistro) }}
+                </span>
+                <span class="historial-meta-item" *ngIf="item.fecha_actualizacion || item.fechaActualizacion">
+                  <i class="fas fa-edit"></i>
+                  Actualizado: {{ formatearFecha(item.fecha_actualizacion || item.fechaActualizacion) }}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Sin datos -->
+          <div *ngIf="historialData.length === 0" class="no-data historial-no-data">
+            <i class="fas fa-inbox"></i>
+            <p>No hay historial de membresías para este cliente</p>
+          </div>
+        </div>
+        
+        <!-- Resumen -->
+        <div *ngIf="!loadingHistorial && historialData.length > 0" class="historial-summary">
+          <div class="summary-item">
+            <strong>Total: </strong>{{ historialData.length }} membresía(s)
+          </div>
+          <div class="summary-item">
+            <strong>Activas: </strong>{{ contarActivas() }}
+          </div>
+          <div class="summary-item">
+            <strong>Históricas: </strong>{{ contarHistoricas() }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Diálogo para asignar membresía -->
+  <div *ngIf="showAsignarDialog" class="form-container">
+    <div class="form-card">
+      <div class="form-header">
+        <h3><i class="fas fa-id-card"></i> Asignar Nueva Membresía</h3>
+        <button class="btn-close" (click)="showAsignarDialog = false" title="Cancelar">
+          <span class="close-icon">×</span>
+        </button>
+      </div>
+      
+      <form (ngSubmit)="asignarMembresia()" #asignarForm="ngForm" class="payment-form">
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-user"></i> Folio Cliente *
+          </label>
+          <input 
+            type="text" 
+            class="form-control"
+            [(ngModel)]="asignarFormData.folioCliente" 
+            name="folioCliente" 
+            required
+            placeholder="Ingresa el folio del cliente (ej: CLI001)">
+          <small *ngIf="asignarForm.submitted && !asignarFormData.folioCliente" class="error-text">
+            <i class="fas fa-exclamation-triangle"></i> El folio del cliente es requerido
+          </small>
+        </div>
+
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-crown"></i> Tipo de Membresía *
+          </label>
+          <select 
+            class="form-control"
+            [(ngModel)]="asignarFormData.idMembresia" 
+            name="idMembresia" 
+            required>
+            <option value="" disabled selected>-- Selecciona un tipo de membresía --</option>
+            <option *ngFor="let tipo of tipoMembresias" [value]="tipo.value">
+              {{ tipo.label }}
+            </option>
+          </select>
+          <small *ngIf="asignarForm.submitted && !asignarFormData.idMembresia" class="error-text">
+            <i class="fas fa-exclamation-triangle"></i> El tipo de membresía es requerido
+          </small>
+          
+          <!-- Mensaje informativo si no hay membresías -->
+          <div *ngIf="tipoMembresias.length === 0" class="form-info warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>No hay tipos de membresía configurados. Contacta al administrador.</span>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-calendar-alt"></i> Fecha Inicio *
+          </label>
+          <input 
+            type="date" 
+            class="form-control"
+            [(ngModel)]="asignarFormData.fechaInicio" 
+            name="fechaInicio" 
+            required>
+          <small *ngIf="asignarForm.submitted && !asignarFormData.fechaInicio" class="error-text">
+            <i class="fas fa-exclamation-triangle"></i> La fecha de inicio es requerida
+          </small>
+        </div>
+
+        <div class="form-info">
+          <i class="fas fa-info-circle"></i>
+          <span>La membresía se asignará con vigencia según el tipo seleccionado</span>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="showAsignarDialog = false" [disabled]="loading">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="loading || !asignarForm.form.valid || tipoMembresias.length === 0">
+            <i class="fas" [class.fa-save]="!loading" [class.fa-spinner]="loading" [class.fa-spin]="loading"></i>
+            {{ loading ? 'Asignando...' : 'Asignar Membresía' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Snackbar Mejorado -->
+  <div *ngIf="snackbar.show" 
+       class="snackbar-overlay"
+       [class.snackbar-success]="snackbar.type === 'success'"
+       [class.snackbar-error]="snackbar.type === 'error'"
+       [class.snackbar-warning]="snackbar.type === 'warning'">
+    <div class="snackbar-content">
+      <i class="fas" [class.fa-check-circle]="snackbar.type === 'success'" 
+                  [class.fa-exclamation-triangle]="snackbar.type === 'error' || snackbar.type === 'warning'"></i>
+      <span class="snackbar-message">{{ snackbar.message }}</span>
+      <button class="snackbar-close" (click)="cerrarSnackbar()">
+        <i class="fas fa-times"></i>
       </button>
     </div>
-    
-    <form (ngSubmit)="asignarMembresia()" #asignarForm="ngForm" class="payment-form">
-      <div class="form-group full-width">
-        <label>
-          <i class="fas fa-user"></i> Folio Cliente *
-        </label>
-        <input 
-          type="text" 
-          class="form-control"
-          [(ngModel)]="asignarFormData.folioCliente" 
-          name="folioCliente" 
-          required
-          placeholder="Ingresa el folio del cliente">
-        <small *ngIf="asignarForm.submitted && !asignarFormData.folioCliente" class="error-text">
-          <i class="fas fa-exclamation-triangle"></i> El folio del cliente es requerido
-        </small>
-      </div>
-
-      <div class="form-group full-width">
-        <label>
-          <i class="fas fa-crown"></i> Tipo de Membresía *
-        </label>
-        <select 
-          class="form-control"
-          [(ngModel)]="asignarFormData.idMembresia" 
-          name="idMembresia" 
-          required>
-          <option value="" disabled selected>-- Selecciona un tipo de membresía --</option>
-          <option *ngFor="let tipo of tipoMembresias" [value]="tipo.value">
-            {{ tipo.label }}
-          </option>
-        </select>
-        <small *ngIf="asignarForm.submitted && !asignarFormData.idMembresia" class="error-text">
-          <i class="fas fa-exclamation-triangle"></i> El tipo de membresía es requerido
-        </small>
-      </div>
-
-      <div class="form-group full-width">
-        <label>
-          <i class="fas fa-calendar-alt"></i> Fecha Inicio *
-        </label>
-        <input 
-          type="date" 
-          class="form-control"
-          [(ngModel)]="asignarFormData.fechaInicio" 
-          name="fechaInicio" 
-          required>
-        <small *ngIf="asignarForm.submitted && !asignarFormData.fechaInicio" class="error-text">
-          <i class="fas fa-exclamation-triangle"></i> La fecha de inicio es requerida
-        </small>
-      </div>
-
-      <div class="form-info">
-        <i class="fas fa-info-circle"></i>
-        <span>La membresía se asignará con vigencia según el tipo seleccionado</span>
-      </div>
-
-      <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="showAsignarDialog = false" [disabled]="loading">
-          <i class="fas fa-times"></i> Cancelar
-        </button>
-        <button type="submit" class="btn btn-primary" [disabled]="loading || !asignarForm.form.valid">
-          <i class="fas" [class.fa-save]="!loading" [class.fa-spinner]="loading" [class.fa-spin]="loading"></i>
-          {{ loading ? 'Asignando...' : 'Asignar Membresía' }}
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Snackbar Mejorado -->
-<div *ngIf="snackbar.show" 
-     class="snackbar-overlay"
-     [class.snackbar-success]="snackbar.type === 'success'"
-     [class.snackbar-error]="snackbar.type === 'error'">
-  <div class="snackbar-content">
-    <i class="fas" [class.fa-check-circle]="snackbar.type === 'success'" 
-                [class.fa-exclamation-triangle]="snackbar.type === 'error'"></i>
-    <span class="snackbar-message">{{ snackbar.message }}</span>
-    <button class="snackbar-close" (click)="cerrarSnackbar()">
-      <i class="fas fa-times"></i>
-    </button>
   </div>
 </div>

@@ -3,17 +3,19 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HeaderRecepcionistaComponent } from '../../recepcionista/header-recepcionista/header-recepcionista';
+import { forkJoin } from 'rxjs';
 
 // Importar las librerías de PDF
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-import { PagoService, Pago, EstadisticasDia } from '../../../services/pagos/pago';
+import { PagoService, Pago, EstadisticasDia, Cliente, Producto, Recepcionista } from '../../../services/pagos/pago';
 
 @Component({
   selector: 'app-pago-list',
   templateUrl: './pago-list.html',
   styleUrls: ['./pago-list.css'],
+  standalone: true,
   imports: [CommonModule, FormsModule, HeaderRecepcionistaComponent]
 })
 export class PagoList implements OnInit {
@@ -36,6 +38,12 @@ export class PagoList implements OnInit {
   filtroFechaInicio: string = '';
   filtroFechaFin: string = '';
 
+
+   // AGREGAR estas propiedades para los nombres
+  clientesMap: Map<string, string> = new Map();
+  recepcionistasMap: Map<string, string> = new Map();
+  productosMap: Map<string, string> = new Map();
+
   constructor(
     private pagoService: PagoService,
     private router: Router
@@ -44,8 +52,11 @@ export class PagoList implements OnInit {
   ngOnInit(): void {
     this.cargarPagos();
     this.cargarEstadisticas();
+    this.cargarNombres(); // <- AGREGAR esta línea
   }
 
+
+  
   cargarPagos(): void {
     this.cargando = true;
     this.error = '';
@@ -64,6 +75,53 @@ export class PagoList implements OnInit {
       }
     });
   }
+
+
+   // AGREGAR este método simple
+  // Reemplaza tu método cargarNombres() por este:
+// Propiedades
+clientes: any[] = [];
+recepcionistas: any[] = [];
+productos: any[] = [];
+
+cargarNombres(): void {
+  this.pagoService.obtenerClientes().subscribe({
+    next: (clientes: any) => {
+      this.clientes = clientes;
+      console.log('Clientes cargados:', this.clientes);
+    }
+  });
+
+  this.pagoService.obtenerRecepcionistas().subscribe({
+    next: (recepcionistas: any) => {
+      this.recepcionistas = recepcionistas;
+      console.log('Recepcionistas cargados:', this.recepcionistas);
+    }
+  });
+
+  this.pagoService.obtenerProductos().subscribe({
+    next: (productos: any) => {
+      this.productos = productos;
+      console.log('Productos cargados:', this.productos);
+    }
+  });
+}
+
+// Métodos corregidos
+obtenerNombreCliente(folio: string): string {
+  const cliente = this.clientes.find((c: any) => c.folioCliente === folio);
+  return cliente ? cliente.nombre : folio;
+}
+
+obtenerNombreRecepcionista(id: string): string {
+  const recepcionista = this.recepcionistas.find((r: any) => r.idRecepcionista === id);
+  return recepcionista ? recepcionista.nombre : id;
+}
+
+obtenerNombreProducto(codigo: string): string {
+  const producto = this.productos.find((p: any) => p.codigo === codigo);
+  return producto ? producto.nombre : codigo;
+}
 
   cargarEstadisticas(): void {
     this.cargandoEstadisticas = true;
@@ -271,7 +329,7 @@ export class PagoList implements OnInit {
     reciboDiv.innerHTML = `
       <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
         <h1 style="color: #E63946; margin: 0; font-size: 24px;">HARMONY GYM</h1>
-        <p style="margin: 5px 0; color: #666;">Sistema de Gestión Deportiva</p>
+        <p style="margin: 5px 0; color: #666;">Sistema de Gestión Pagos</p>
         <h2 style="color: #1D3557; margin: 10px 0; font-size: 18px;">RECIBO DE PAGO</h2>
       </div>
 
