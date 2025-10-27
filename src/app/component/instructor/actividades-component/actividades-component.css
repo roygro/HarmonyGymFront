@@ -1,3 +1,6 @@
+/* ===== IMPORTAR FUENTES ===== */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Roboto+Condensed:wght@400;500;600;700&display=swap');
+
 /* ===== VARIABLES DE COLORES Y FUENTES ===== */
 :root {
   --primary-red: #E63946;
@@ -11,8 +14,7 @@
   --neon-glow: 0 0 20px var(--neon-red), 0 0 30px var(--neon-red), 0 0 40px var(--neon-red);
 }
 
-/* ===== IMPORTAR FUENTES ===== */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Roboto+Condensed:wght@400;500;600;700&display=swap');
+
 
 
 /* Estilos para los diálogos de Material */

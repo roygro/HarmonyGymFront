@@ -14,6 +14,7 @@ import { PagoService, Pago, EstadisticasDia } from '../../../services/pagos/pago
   selector: 'app-pago-list',
   templateUrl: './pago-list.html',
   styleUrls: ['./pago-list.css'],
+  standalone: true,
   imports: [CommonModule, FormsModule, HeaderRecepcionistaComponent]
 })
 export class PagoList implements OnInit {
@@ -271,7 +272,7 @@ export class PagoList implements OnInit {
     reciboDiv.innerHTML = `
       <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
         <h1 style="color: #E63946; margin: 0; font-size: 24px;">HARMONY GYM</h1>
-        <p style="margin: 5px 0; color: #666;">Sistema de Gestión Deportiva</p>
+        <p style="margin: 5px 0; color: #666;">Sistema de Gestión Pagos</p>
         <h2 style="color: #1D3557; margin: 10px 0; font-size: 18px;">RECIBO DE PAGO</h2>
       </div>
 
