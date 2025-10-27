@@ -1,18 +1,18 @@
+// cliente-membresia.component.spec.ts
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ClienteMembresiaComponent } from './cliente-membresia';
 
-import { ClienteMembresia } from './cliente-membresia';
-
-describe('ClienteMembresia', () => {
-  let component: ClienteMembresia;
-  let fixture: ComponentFixture<ClienteMembresia>;
+describe('ClienteMembresiaComponent', () => {
+  let component: ClienteMembresiaComponent;
+  let fixture: ComponentFixture<ClienteMembresiaComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ClienteMembresia]
+      declarations: [ClienteMembresiaComponent] // ✅ aquí van los componentes
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(ClienteMembresia);
+    fixture = TestBed.createComponent(ClienteMembresiaComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

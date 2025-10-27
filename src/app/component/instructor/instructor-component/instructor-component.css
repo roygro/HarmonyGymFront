@@ -1,3 +1,5 @@
+/* ===== IMPORTAR FUENTES ===== */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Roboto+Condensed:wght@400;500;600;700&display=swap');
 /* ===== VARIABLES DE COLORES MEJORADAS CON NEON ===== */
 :root {
   --primary-red: #E63946;
@@ -19,8 +21,7 @@
   --neon-black: #0a0a0a;
 }
 
-/* ===== IMPORTAR FUENTES ===== */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Roboto+Condensed:wght@400;500;600;700&display=swap');
+
 
 /* ===== ESTILOS GENERALES Y RESET ===== */
 * {
