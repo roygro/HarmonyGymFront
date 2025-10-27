@@ -1,18 +1,25 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CommonModule } from '@angular/common'; // ← CORRECTO
+import { CommonModule } from '@angular/common';
 import { PagoService, Pago } from '../../../services/pagos/pago';
+import { HeaderRecepcionistaComponent } from '../../recepcionista/header-recepcionista/header-recepcionista';
 
 @Component({
   selector: 'app-pago-details',
+  standalone: true,
+  imports: [CommonModule, HeaderRecepcionistaComponent],
   templateUrl: './pago-details.html',
-  styleUrls: ['./pago-details.css'],
-  imports: [CommonModule]
+  styleUrls: ['./pago-details.css']
 })
 export class PagoDetails implements OnInit {
   pago: Pago | null = null;
   cargando: boolean = true;
   error: string = '';
+
+  // Propiedades para los nombres
+  clientes: any[] = [];
+  recepcionistas: any[] = [];
+  productos: any[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -22,6 +29,7 @@ export class PagoDetails implements OnInit {
 
   ngOnInit(): void {
     this.cargarPago();
+    this.cargarNombres(); // <- Agregar esta línea
   }
 
   cargarPago(): void {
@@ -47,6 +55,52 @@ export class PagoDetails implements OnInit {
         console.error('Error:', error);
       }
     });
+  }
+
+  // Método para cargar los nombres
+  cargarNombres(): void {
+    this.pagoService.obtenerClientes().subscribe({
+      next: (clientes: any) => {
+        this.clientes = clientes;
+      },
+      error: (error: any) => {
+        console.error('Error al cargar clientes:', error);
+      }
+    });
+
+    this.pagoService.obtenerRecepcionistas().subscribe({
+      next: (recepcionistas: any) => {
+        this.recepcionistas = recepcionistas;
+      },
+      error: (error: any) => {
+        console.error('Error al cargar recepcionistas:', error);
+      }
+    });
+
+    this.pagoService.obtenerProductos().subscribe({
+      next: (productos: any) => {
+        this.productos = productos;
+      },
+      error: (error: any) => {
+        console.error('Error al cargar productos:', error);
+      }
+    });
+  }
+
+  // Métodos para obtener nombres
+  obtenerNombreCliente(folio: string): string {
+    const cliente = this.clientes.find((c: any) => c.folioCliente === folio);
+    return cliente ? cliente.nombre : folio;
+  }
+
+  obtenerNombreRecepcionista(id: string): string {
+    const recepcionista = this.recepcionistas.find((r: any) => r.idRecepcionista === id);
+    return recepcionista ? recepcionista.nombre : id;
+  }
+
+  obtenerNombreProducto(codigo: string): string {
+    const producto = this.productos.find((p: any) => p.codigo === codigo);
+    return producto ? producto.nombre : codigo;
   }
 
   // Navegar de regreso a la lista
@@ -112,5 +166,6 @@ export class PagoDetails implements OnInit {
   // Recargar datos
   recargar(): void {
     this.cargarPago();
+    this.cargarNombres();
   }
 }

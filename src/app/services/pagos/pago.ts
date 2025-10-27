@@ -106,4 +106,21 @@ export class PagoService {
   obtenerPagosPorRangoFechas(fechaInicio: string, fechaFin: string): Observable<Pago[]> {
     return this.http.get<Pago[]>(`${this.apiUrl}/rango-fechas?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`);
   }
+
+
+  // Obtener todos los clientes
+obtenerClientes(): Observable<Cliente[]> {
+  return this.http.get<Cliente[]>(`http://localhost:8081/api/clientes`);
 }
+
+// Obtener todos los recepcionistas
+obtenerRecepcionistas(): Observable<Recepcionista[]> {
+  return this.http.get<Recepcionista[]>(`http://localhost:8081/api/recepcionistas`);
+}
+
+// Obtener todos los productos
+obtenerProductos(): Observable<Producto[]> {
+  return this.http.get<Producto[]>(`http://localhost:8081/api/productos`);
+}
+}
+

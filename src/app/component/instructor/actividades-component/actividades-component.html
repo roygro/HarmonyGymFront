@@ -1,18 +1,67 @@
+  <div> <app-header-instructor></app-header-instructor></div>
 <div class="actividades-container">
-  <!-- Header Mejorado con Tema Gimnasio -->
-  <div class="header">
-    <div class="header-content">
-      <h1><i class="fas fa-dumbbell"></i> Mis Actividades</h1>
-      <p class="header-subtitle">Gestiona y organiza tus actividades deportivas</p>
+
+
+ <!-- Header Actividades -->
+<div class="header">
+  <!-- Contenedor principal del header -->
+  <div class="header-main">
+    <!-- Logo o título a la izquierda -->
+    <div class="header-brand">
+      <h1 class="header-title">
+        <i class="fas fa-dumbbell"></i>
+        Actividades
+      </h1>
     </div>
+    
+    <!-- Barra de búsqueda centrada -->
+    <div class="search-bar-header">
+      <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (input)="buscarActividades()"
+          placeholder="Buscar actividades por nombre o lugar..."
+          class="search-input"
+        >
+        <button *ngIf="searchTerm" class="btn btn-clear" (click)="limpiarBusqueda()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Botones de acción a la derecha -->
     <div class="header-actions">
       <button class="btn btn-primary" (click)="mostrarFormularioNuevo()">
         <i class="fas fa-plus-circle"></i> Nueva Actividad
       </button>
+      <button class="btn btn-secondary" (click)="abrirCalendarioModal()">
+        <i class="fas fa-calendar-alt"></i> Calendario
+      </button>
     </div>
   </div>
+  
+  <!-- Filtros en una fila separada -->
+  <div class="header-filters">
+    <div class="filters-container">
+      <button class="filter-btn active" (click)="cargarTodasActividades()">
+        <i class="fas fa-list"></i> Todas
+      </button>
+      <button class="filter-btn" (click)="cargarActividadesInstructor()">
+        <i class="fas fa-check-circle"></i> Activas
+      </button>
+ 
+    </div>
+    
+    <!-- Contador de actividades -->
+    <div class="activities-counter">
+      <span class="counter-badge">{{actividades.length}} actividades</span>
+    </div>
+  </div>
+</div>
 
-  <!-- Loading Spinner Mejorado -->
+<!-- Loading Spinner Mejorado -->
   <div *ngIf="isLoading" class="loading-spinner">
     <div class="spinner"></div>
     <p>Cargando actividades...</p>
@@ -23,127 +72,154 @@
     </div>
   </div>
 
-  <!-- Barra de búsqueda y botón de calendario -->
-  <div class="search-bar">
-    <div class="search-container">
-      <i class="fas fa-search search-icon"></i>
-      <input
-        type="text"
-        [(ngModel)]="searchTerm"
-        (input)="buscarActividades()"
-        placeholder="Buscar actividades por nombre o lugar..."
-        class="search-input"
-      >
-      <button *ngIf="searchTerm" class="btn btn-clear" (click)="limpiarBusqueda()">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-
-    <div class="filters">
-      <!-- Botón para mostrar/ocultar calendario -->
-      <button class="btn btn-secondary" (click)="toggleCalendario()">
-        <i class="fas fa-calendar-alt"></i> 
-        {{ mostrarCalendario ? 'Ocultar Calendario' : 'Ver Calendario' }}
-      </button>
-      
-      <button class="btn btn-secondary" (click)="cargarActividadesInstructor()">
-        <i class="fas fa-user"></i> Mis Actividades
-      </button>
-      <button class="btn btn-secondary" (click)="cargarTodasActividades()">
-        <i class="fas fa-list"></i> Todas
-      </button>
-    </div>
-  </div>
-
-  <!-- Calendario Desplegable -->
-  <div *ngIf="mostrarCalendario" class="calendar-dropdown">
-    <div class="calendar-container-expandable">
-      <div class="calendar-header">
-        <button class="btn btn-calendar-nav" (click)="mesAnterior()" title="Mes anterior">
-          <i class="fas fa-chevron-left"></i>
-        </button>
-        
-        <div class="calendar-title">
-          <h3>{{ mesActual | date:'MMMM yyyy':'es-ES' | titlecase }}</h3>
-          <div class="calendar-actions">
-            <button class="btn btn-sm btn-secondary" (click)="irAHoy()" title="Ir a hoy">
-              <i class="fas fa-calendar-day"></i> Hoy
-            </button>
-            <button class="btn btn-sm btn-secondary" (click)="mostrarSelectorMeses()" title="Seleccionar mes">
-              <i class="fas fa-calendar-alt"></i>
-            </button>
-          </div>
-        </div>
-        
-        <button class="btn btn-calendar-nav" (click)="mesSiguiente()" title="Mes siguiente">
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
-
-      <!-- Selector rápido de meses -->
-      <div *ngIf="mostrarSelectorRapido" class="month-selector-quick">
-        <select [(ngModel)]="mesSeleccionadoRapido" (change)="cambiarMesRapido()" class="month-quick-select">
-          <option *ngFor="let mes of mesesDisponibles" [value]="mes.value">
-            {{ mes.nombre }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Grid del Calendario -->
-      <div class="calendar-grid">
-        <!-- Días de la semana -->
-        <div class="calendar-weekdays">
-          <div *ngFor="let dia of diasSemana" class="weekday-header">
-            {{ dia }}
-          </div>
+ 
+  <!-- MODAL DEL CALENDARIO -->
+  <div *ngIf="mostrarCalendarioModal" class="calendar-modal-overlay" (click)="cerrarCalendarioModal($event)">
+    <div class="calendar-modal-container">
+      <div class="calendar-modal-content">
+        <!-- Header del Modal -->
+        <div class="calendar-modal-header">
+          <h2><i class="fas fa-calendar-alt"></i> Calendario de Actividades</h2>
+          <button class="btn-close-modal" (click)="cerrarCalendarioModal()" title="Cerrar calendario">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
 
-        <!-- Días del mes -->
-        <div class="calendar-days">
-          <div 
-            *ngFor="let dia of diasDelMes" 
-            [class]="getClaseDia(dia)"
-            (click)="seleccionarDia(dia)"
-            [title]="getTooltipDia(dia)"
-          >
-            <div class="day-number">{{ dia?.fecha | date:'d' }}</div>
-            <div class="day-activities" *ngIf="dia && dia.actividades > 0">
-              <span class="activity-count" [class]="getClaseContador(dia.actividades)">
-                {{ dia.actividades }}
-              </span>
+        <!-- Contenido del Calendario -->
+        <div class="calendar-container-expandable">
+          <div class="calendar-header">
+            <button class="btn btn-calendar-nav" (click)="mesAnterior()" title="Mes anterior">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            
+            <div class="calendar-title">
+              <h3>{{ mesActual | date:'MMMM yyyy':'es-ES' | titlecase }}</h3>
+              <div class="calendar-actions">
+                <button class="btn btn-sm btn-secondary" (click)="irAHoy()" title="Ir a hoy">
+                  <i class="fas fa-calendar-day"></i> Hoy
+                </button>
+                <!-- Selector de año y mes mejorado -->
+                <div class="year-month-selector-container">
+                  <button class="btn btn-sm btn-secondary year-month-selector-btn" (click)="toggleSelectorAnioMes()" title="Seleccionar año y mes">
+                    <i class="fas fa-calendar-week"></i> Año/Mes
+                  </button>
+                  
+                  <div *ngIf="mostrarSelectorRapido" class="year-month-selector-dropdown">
+                    <div class="year-month-selector-header">
+                      <span>Seleccionar Año y Mes</span>
+                      <button class="btn-close-selector" (click)="toggleSelectorAnioMes()">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                    
+                    <!-- Selector de Año -->
+                    <div class="year-selector-section">
+                      <h4>Año</h4>
+                      <div class="year-selector-grid">
+                        <div 
+                          *ngFor="let ano of anosDisponibles" 
+                          class="year-option"
+                          [class.selected]="anoSeleccionado === ano"
+                          (click)="seleccionarAno(ano)"
+                        >
+                          <span class="year-name">{{ ano }}</span>
+                          <i *ngIf="anoSeleccionado === ano" class="fas fa-check"></i>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Selector de Mes -->
+                    <div class="month-selector-section">
+                      <h4>Mes</h4>
+                      <div class="month-selector-grid">
+                        <div 
+                          *ngFor="let mes of mesesDelAno; let i = index" 
+                          class="month-option"
+                          [class.selected]="mesSeleccionadoRapido === i"
+                          (click)="seleccionarMes(i)"
+                        >
+                          <span class="month-name">{{ mes }}</span>
+                          <i *ngIf="mesSeleccionadoRapido === i" class="fas fa-check"></i>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Botón de aplicar -->
+                    <div class="selector-actions">
+                      <button class="btn btn-primary btn-sm" (click)="aplicarAnioMesSeleccionado()">
+                        <i class="fas fa-check"></i> Aplicar
+                      </button>
+                      <button class="btn btn-secondary btn-sm" (click)="toggleSelectorAnioMes()">
+                        <i class="fas fa-times"></i> Cancelar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="day-today" *ngIf="dia?.esHoy">●</div>
+            
+            <button class="btn btn-calendar-nav" (click)="mesSiguiente()" title="Mes siguiente">
+              <i class="fas fa-chevron-right"></i>
+            </button>
           </div>
-        </div>
-      </div>
 
-      <!-- Información del día seleccionado -->
-      <div *ngIf="diaSeleccionado" class="selected-day-info">
-        <div class="selected-day-header">
-          <i class="fas fa-calendar-check"></i>
-          <h4>{{ diaSeleccionado | date:'fullDate':'es-ES' | titlecase }}</h4>
-        </div>
-        <p *ngIf="contarActividadesPorDia(diaSeleccionado) > 0" class="selected-day-activities">
-          {{ contarActividadesPorDia(diaSeleccionado) }} actividad{{ contarActividadesPorDia(diaSeleccionado) !== 1 ? 'es' : '' }} programada{{ contarActividadesPorDia(diaSeleccionado) !== 1 ? 's' : '' }}
-        </p>
-        <p *ngIf="contarActividadesPorDia(diaSeleccionado) === 0" class="selected-day-no-activities">
-          No hay actividades programadas para este día
-        </p>
-      </div>
+          <!-- Grid del Calendario -->
+          <div class="calendar-grid">
+            <!-- Días de la semana -->
+            <div class="calendar-weekdays">
+              <div *ngFor="let dia of diasSemana" class="weekday-header">
+                {{ dia }}
+              </div>
+            </div>
 
-      <!-- Leyenda del calendario -->
-      <div class="calendar-legend">
-        <div class="legend-item">
-          <span class="legend-color today"></span>
-          <span>Hoy</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color selected"></span>
-          <span>Seleccionado</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color has-activities"></span>
-          <span>Con actividades</span>
+            <!-- Días del mes -->
+            <div class="calendar-days">
+              <div 
+                *ngFor="let dia of diasDelMes" 
+                [class]="getClaseDia(dia)"
+                (click)="seleccionarDia(dia)"
+                [title]="getTooltipDia(dia)"
+              >
+                <div class="day-number">{{ dia?.fecha | date:'d' }}</div>
+                <div class="day-activities" *ngIf="dia && dia.actividades > 0">
+                  <span class="activity-count" [class]="getClaseContador(dia.actividades)">
+                    {{ dia.actividades }}
+                  </span>
+                </div>
+                <div class="day-today" *ngIf="dia?.esHoy">●</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información del día seleccionado -->
+          <div *ngIf="diaSeleccionado" class="selected-day-info">
+            <div class="selected-day-header">
+              <i class="fas fa-calendar-check"></i>
+              <h4>{{ diaSeleccionado | date:'fullDate':'es-ES' | titlecase }}</h4>
+            </div>
+            <p *ngIf="contarActividadesPorDia(diaSeleccionado) > 0" class="selected-day-activities">
+              {{ contarActividadesPorDia(diaSeleccionado) }} actividad{{ contarActividadesPorDia(diaSeleccionado) !== 1 ? 'es' : '' }} programada{{ contarActividadesPorDia(diaSeleccionado) !== 1 ? 's' : '' }}
+            </p>
+            <p *ngIf="contarActividadesPorDia(diaSeleccionado) === 0" class="selected-day-no-activities">
+              No hay actividades programadas para este día
+            </p>
+          </div>
+
+          <!-- Leyenda del calendario -->
+          <div class="calendar-legend">
+            <div class="legend-item">
+              <span class="legend-color today"></span>
+              <span>Hoy</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color selected"></span>
+              <span>Seleccionado</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color has-activities"></span>
+              <span>Con actividades</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -160,14 +236,7 @@
       </div>
       
       <form [formGroup]="actividadForm" (ngSubmit)="guardarActividad()">
-        <!-- ID solo visible en edición -->
-        <div *ngIf="isEditing" class="form-group full-width">
-          <label>
-            <i class="fas fa-id-card"></i> ID de Actividad
-          </label>
-          <input>
-          <small class="help-text">ID generado automáticamente por el sistema</small>
-        </div>
+  
 
         <div class="form-row">
           <div class="form-group full-width">
@@ -264,93 +333,93 @@
         </div>
 
         <!-- Calendario de Horarios Mejorado -->
-        <div *ngIf="showCalendar && selectedDate" class="calendar-container">
-          <div class="calendar-header">
-            <div class="calendar-title">
-              <h3><i class="fas fa-clock"></i> Horarios Disponibles</h3>
-              <p class="selected-date">{{ selectedDate | date:'fullDate':'es-ES' | titlecase }}</p>
-            </div>
-            <div class="duracion-selector">
-              <label><i class="fas fa-stopwatch"></i> Duración:</label>
-              <div class="duracion-buttons">
-                <button 
-                  type="button"
-                  class="btn btn-sm" 
-                  [class.btn-primary]="duracionSeleccionada === 60"
-                  [class.btn-secondary]="duracionSeleccionada !== 60"
-                  (click)="cambiarDuracion(60)">
-                  <i class="fas fa-hourglass-start"></i> 1h
-                </button>
-                <button 
-                  type="button"
-                  class="btn btn-sm" 
-                  [class.btn-primary]="duracionSeleccionada === 90"
-                  [class.btn-secondary]="duracionSeleccionada !== 90"
-                  (click)="cambiarDuracion(90)">
-                  <i class="fas fa-hourglass-half"></i> 1.5h
-                </button>
-                <button 
-                  type="button"
-                  class="btn btn-sm" 
-                  [class.btn-primary]="duracionSeleccionada === 120"
-                  [class.btn-secondary]="duracionSeleccionada !== 120"
-                  (click)="cambiarDuracion(120)">
-                  <i class="fas fa-hourglass-end"></i> 2h
-                </button>
-                <button 
-                  type="button"
-                  class="btn btn-sm" 
-                  [class.btn-primary]="duracionSeleccionada === 150"
-                  [class.btn-secondary]="duracionSeleccionada !== 150"
-                  (click)="cambiarDuracion(150)">
-                  <i class="fas fa-hourglass"></i> 2.5h
-                </button>
-              </div>
-            </div>
-            <small class="help-text">
-              <i class="fas fa-circle available-dot"></i> Disponible 
-              <i class="fas fa-circle occupied-dot"></i> Ocupado 
-              • Duración: {{ getDuracionTexto(duracionSeleccionada) }}
-            </small>
-          </div>
-          
-          <!-- Horario seleccionado mejorado -->
-          <div *ngIf="horarioSeleccionado" class="selected-schedule">
-            <div class="selected-info">
-              <i class="fas fa-check-circle"></i>
-              <div>
-                <strong>Horario seleccionado</strong>
-                <span>{{ horarioSeleccionado.horaInicio }} - {{ horarioSeleccionado.horaFin }}</span>
-              </div>
-            </div>
-            <button type="button" class="btn btn-sm btn-clear" (click)="limpiarHorarioSeleccionado()">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
+<div *ngIf="showCalendar && selectedDate" class="calendar-container">
+  <div class="calendar-header">
+    <div class="calendar-title">
+      <h3><i class="fas fa-clock"></i> Horarios Disponibles</h3>
+      <p class="selected-date">{{ selectedDate | date:'fullDate':'es-ES' | titlecase }}</p>
+    </div>
+    <div class="duracion-selector">
+      <label><i class="fas fa-stopwatch"></i> Duración:</label>
+      <div class="duracion-buttons">
+        <button 
+          type="button"
+          class="btn btn-sm" 
+          [class.btn-primary]="duracionSeleccionada === 60"
+          [class.btn-secondary]="duracionSeleccionada !== 60"
+          (click)="cambiarDuracion(60)">
+          <i class="fas fa-hourglass-start"></i> 1h
+        </button>
+        <button 
+          type="button"
+          class="btn btn-sm" 
+          [class.btn-primary]="duracionSeleccionada === 90"
+          [class.btn-secondary]="duracionSeleccionada !== 90"
+          (click)="cambiarDuracion(90)">
+          <i class="fas fa-hourglass-half"></i> 1.5h
+        </button>
+        <button 
+          type="button"
+          class="btn btn-sm" 
+          [class.btn-primary]="duracionSeleccionada === 120"
+          [class.btn-secondary]="duracionSeleccionada !== 120"
+          (click)="cambiarDuracion(120)">
+          <i class="fas fa-hourglass-end"></i> 2h
+        </button>
+        <button 
+          type="button"
+          class="btn btn-sm" 
+          [class.btn-primary]="duracionSeleccionada === 150"
+          [class.btn-secondary]="duracionSeleccionada !== 150"
+          (click)="cambiarDuracion(150)">
+          <i class="fas fa-hourglass"></i> 2.5h
+        </button>
+      </div>
+    </div>
+    <small class="help-text">
+      <i class="fas fa-circle available-dot"></i> Disponible 
+      <i class="fas fa-circle occupied-dot"></i> Ocupado 
+      • Duración: {{ getDuracionTexto(duracionSeleccionada) }}
+    </small>
+  </div>
+  
+  <!-- Horario seleccionado mejorado -->
+  <div *ngIf="horarioSeleccionado" class="selected-schedule">
+    <div class="selected-info">
+      <i class="fas fa-check-circle"></i>
+      <div>
+        <strong>Horario seleccionado</strong>
+        <span>{{ formatearHoraParaDisplay(horarioSeleccionado.horaInicio) }} - {{ formatearHoraParaDisplay(horarioSeleccionado.horaFin) }}</span>
+        <small *ngIf="isEditing" class="help-text">(Horario actual de la actividad)</small>
+      </div>
+    </div>
+    <button type="button" class="btn btn-sm btn-clear" (click)="limpiarHorarioSeleccionado()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
 
-          <!-- Mensaje de advertencia mejorado -->
-          <div *ngIf="!horarioSeleccionado" class="warning-message">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span>Por favor selecciona un horario del calendario</span>
-          </div>
-          
-          <div class="hours-grid">
-            <div *ngFor="let hora of horasDisponibles" 
-                 [class]="getHourSlotClass(hora)"
-                 (click)="seleccionarHorario(hora)">
-              <span class="hour-time">{{ hora }}</span>
-              <span class="hour-duration">a {{ calcularHoraFin(hora, duracionSeleccionada) }}</span>
-              <span class="hour-status">
-                <i [class]="getHourStatusIcon(hora)"></i>
-                {{ esHoraOcupada(hora) ? 'Ocupado' : 'Disponible' }}
-              </span>
-              <span *ngIf="esHorarioSeleccionado(hora)" class="hour-selected">
-                <i class="fas fa-check"></i> Seleccionado
-              </span>
-            </div>
-          </div>
-        </div>
-
+  <!-- Mensaje de advertencia mejorado -->
+  <div *ngIf="!horarioSeleccionado" class="warning-message">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>Por favor selecciona un horario del calendario</span>
+  </div>
+  
+  <div class="hours-grid">
+    <div *ngFor="let hora of horasDisponibles" 
+         [class]="getHourSlotClass(hora)"
+         (click)="seleccionarHorario(hora)">
+      <span class="hour-time">{{ hora }}</span>
+      <span class="hour-duration">a {{ calcularHoraFin(hora, duracionSeleccionada) }}</span>
+      <span class="hour-status">
+        <i [class]="getHourStatusIcon(hora)"></i>
+        {{ esHoraOcupada(hora) ? 'Ocupado' : 'Disponible' }}
+      </span>
+      <span *ngIf="esHorarioSeleccionado(hora) || esHorarioCargado(hora)" class="hour-selected">
+        <i class="fas fa-check"></i> Seleccionado
+      </span>
+    </div>
+  </div>
+</div>
         <div class="form-row">
           <div class="form-group">
             <label>
@@ -495,20 +564,12 @@
             </button>
             
             <button 
-              class="btn btn-sm btn-info" 
-              (click)="verificarCupo(actividad.idActividad)"
-              [disabled]="isLoading"
-            >
-              <i class="fas fa-check-circle"></i> Cupo
-            </button>
-            
-            <button 
               *ngIf="actividad.estatus === 'Activa'"
               class="btn btn-sm btn-danger" 
               (click)="desactivarActividad(actividad.idActividad)"
               [disabled]="isLoading"
             >
-              <i class="fas fa-trash-alt"></i> Eliminar
+              <i class="fas fa-ban"></i> Desactivar
             </button>
 
             <button 
@@ -525,37 +586,4 @@
     </div>
   </div>
 
-  <!-- Estadísticas Mejoradas -->
-  <div class="stats-section" *ngIf="actividadesFiltradasParaMostrar.length > 0">
-    <h3><i class="fas fa-chart-line"></i> Resumen de Actividades</h3>
-    <div class="stats-container">
-      <div class="stats-card">
-        <div class="stats-icon total">
-          <i class="fas fa-dumbbell"></i>
-        </div>
-        <div class="stats-info">
-          <h4>Total de Actividades</h4>
-          <p class="stats-number">{{ totalActividades }}</p>
-        </div>
-      </div>
-      <div class="stats-card">
-        <div class="stats-icon active">
-          <i class="fas fa-running"></i>
-        </div>
-        <div class="stats-info">
-          <h4>Activas</h4>
-          <p class="stats-number">{{ totalActivas }}</p>
-        </div>
-      </div>
-      <div class="stats-card">
-        <div class="stats-icon inactive">
-          <i class="fas fa-bed"></i>
-        </div>
-        <div class="stats-info">
-          <h4>Inactivas</h4>
-          <p class="stats-number">{{ totalActividades - totalActivas }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+  

@@ -1,17 +1,18 @@
-// membresia.service.spec.ts
+// cliente-membresia.service.spec.ts
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { MembresiaService } from './membresia';
+import { ClienteMembresiaService } from './cliente-membresia';
 
-describe('MembresiaService', () => {
-  let service: MembresiaService;
+
+describe('ClienteMembresiaService', () => {
+  let service: ClienteMembresiaService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [MembresiaService],
+      providers: [ClienteMembresiaService]
     });
-    service = TestBed.inject(MembresiaService);
+    service = TestBed.inject(ClienteMembresiaService);
   });
 
   it('should be created', () => {
