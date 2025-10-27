@@ -1,1 +1,379 @@
-<p>administrador-component works!</p>
+<div class="instructor-container">
+  @if (mensaje) {
+    <div [class]="'alert alert-' + tipoMensaje">
+      {{ mensaje }}
+    </div>
+  }
+
+  <!-- Header Mejorado con Tema Gimnasio -->
+  <div class="header">
+    <div class="header-content">
+      <h1><i class="fas fa-users-cog"></i> Gestión de Administradores</h1>
+      <p class="header-subtitle">Administra y organiza los administradores del sistema</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="prepararNuevoAdministrador()" [disabled]="cargando">
+        <i class="fas fa-plus-circle"></i> Nuevo Administrador
+      </button>
+    </div>
+  </div>
+
+  <!-- FILTROS MEJORADOS CON DEBOUNCE -->
+  <div class="filtros-section">
+    <div class="filtros-row">
+      <div class="filtro-group">
+        <label><i class="fas fa-search"></i> Buscar por nombre:</label>
+        <input type="text" [(ngModel)]="terminoBusqueda" 
+               (input)="onBuscarNombreChange()" 
+               placeholder="Escribe el nombre..." 
+               [disabled]="cargando">
+      </div>
+
+      <div class="filtro-group">
+        <label><i class="fas fa-user"></i> Apellido Paterno:</label>
+        <input type="text" [(ngModel)]="filtroApp" 
+               (input)="onFiltroAppChange()" 
+               placeholder="Filtrar por apellido paterno..." 
+               [disabled]="cargando">
+      </div>
+
+      <div class="filtro-group">
+        <label><i class="fas fa-user"></i> Apellido Materno:</label>
+        <input type="text" [(ngModel)]="filtroApm" 
+               (input)="onFiltroApmChange()" 
+               placeholder="Filtrar por apellido materno..." 
+               [disabled]="cargando">
+      </div>
+
+      <button class="btn btn-secondary" (click)="limpiarFiltros()" [disabled]="cargando">
+        <i class="fas fa-undo"></i> Limpiar
+      </button>
+    </div>
+  </div>
+
+  @if (cargando) {
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <p>Cargando administradores...</p>
+      <div class="loading-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  }
+
+  @if (!cargando) {
+    <div class="instructores-section">
+      <div class="section-header">
+        <h2><i class="fas fa-clipboard-list"></i> Lista de Administradores</h2>
+        <span class="instructores-count">{{ administradoresFiltrados.length }} administrador{{ administradoresFiltrados.length !== 1 ? 'es' : '' }}</span>
+      </div>
+      
+      <div class="table-container">
+        <table class="instructores-table">
+          <thead>
+            <tr>
+              <th>Folio</th>
+              <th>Nombre Completo</th>
+              <th>Apellido Paterno</th>
+              <th>Apellido Materno</th>
+              <th>Fecha de Registro</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (administrador of administradoresFiltrados; track administrador.folioAdmin) {
+              <tr>
+                <td><strong>{{ administrador.folioAdmin }}</strong></td>
+                <td>
+                  <div class="instructor-info">
+                    <div class="instructor-avatar no-photo">
+                      <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div class="instructor-name">
+                      {{ administrador.nombreCom }}
+                    </div>
+                  </div>
+                </td>
+                <td>{{ administrador.app || '-' }}</td>
+                <td>{{ administrador.apm || '-' }}</td>
+                <td>
+                  <div class="fecha-info">
+                    <div>{{ formatearFecha(administrador.fechaRegistro) }}</div>
+                    <small class="text-muted">{{ getTiempoRegistro(administrador.fechaRegistro) }}</small>
+                  </div>
+                </td>
+                <td class="acciones">
+                  <button class="btn btn-sm btn-warning" 
+                          (click)="seleccionarAdministrador(administrador)"
+                          title="Editar administrador">
+                    <i class="fas fa-edit"></i> Editar
+                  </button>
+                  
+                  <button class="btn btn-sm btn-info" 
+                          (click)="verEstadisticas(administrador)"
+                          title="Ver estadísticas">
+                    <i class="fas fa-chart-bar"></i> Stats
+                  </button>
+
+                  <button class="btn btn-sm btn-danger" 
+                          (click)="eliminarAdministrador(administrador.folioAdmin)"
+                          title="Eliminar administrador">
+                    <i class="fas fa-trash-alt"></i> Eliminar
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="no-data">
+                  <div class="no-instructores">
+                    <div class="no-instructores-icon">
+                      <i class="fas fa-users-cog"></i>
+                    </div>
+                    <h3>No se encontraron administradores</h3>
+                    <p>No hay administradores registrados en el sistema.</p>
+                    <button class="btn btn-primary" (click)="prepararNuevoAdministrador()">
+                      <i class="fas fa-plus-circle"></i> Crear Primer Administrador
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- FORMULARIO NUEVO ADMINISTRADOR -->
+  @if (mostrarFormulario && !modoEdicion) {
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2><i class="fas fa-user-plus"></i> Nuevo Administrador</h2>
+          <button class="btn-close" (click)="cerrarFormulario()" [disabled]="cargando">
+            <span class="close-icon">×</span>
+          </button>
+        </div>
+
+        <form (ngSubmit)="crearAdministrador()" class="modal-body">
+          <div class="form-info">
+            <p class="folio-info">
+              <i class="fas fa-id-card"></i>
+              <strong>Folio generado automáticamente:</strong> {{ folioGenerado }}
+            </p>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> Nombre Completo *</label>
+              <input type="text" 
+                     [(ngModel)]="nuevoAdministrador.nombreCom" 
+                     name="nombreComNuevo" 
+                     required
+                     [disabled]="cargando"
+                     placeholder="Nombre completo del administrador"
+                     (input)="validarNombre()">
+              @if (nombreInvalido) {
+                <small class="error-text">El nombre completo es requerido</small>
+              }
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> Apellido Paterno</label>
+              <input type="text" 
+                     [(ngModel)]="nuevoAdministrador.app" 
+                     name="appNuevo"
+                     [disabled]="cargando"
+                     placeholder="Apellido paterno">
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> Apellido Materno</label>
+              <input type="text" 
+                     [(ngModel)]="nuevoAdministrador.apm" 
+                     name="apmNuevo"
+                     [disabled]="cargando"
+                     placeholder="Apellido materno">
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" 
+                    class="btn btn-secondary" 
+                    (click)="cerrarFormulario()"
+                    [disabled]="cargando">
+              <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button type="submit" 
+                    class="btn btn-primary" 
+                    [disabled]="cargando || !nuevoAdministrador.nombreCom.trim()">
+              <i class="fas fa-save"></i> {{ cargando ? 'Creando...' : 'Crear Administrador' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- FORMULARIO EDITAR ADMINISTRADOR -->
+  @if (mostrarFormulario && modoEdicion) {
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2><i class="fas fa-user-edit"></i> Editar Administrador</h2>
+          <button class="btn-close" (click)="cerrarFormulario()" [disabled]="cargando">
+            <span class="close-icon">×</span>
+          </button>
+        </div>
+
+        <form (ngSubmit)="actualizarAdministrador()" class="modal-body">
+          <div class="form-info">
+            <p class="folio-info">
+              <i class="fas fa-id-card"></i>
+              <strong>Folio:</strong> {{ administradorSeleccionado.folioAdmin }}
+            </p>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> Nombre Completo *</label>
+              <input type="text" 
+                     [(ngModel)]="administradorSeleccionado.nombreCom" 
+                     name="nombreComEdit" 
+                     required
+                     [disabled]="cargando"
+                     placeholder="Nombre completo del administrador">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> Apellido Paterno</label>
+              <input type="text" 
+                     [(ngModel)]="administradorSeleccionado.app" 
+                     name="appEdit"
+                     [disabled]="cargando"
+                     placeholder="Apellido paterno">
+            </div>
+
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> Apellido Materno</label>
+              <input type="text" 
+                     [(ngModel)]="administradorSeleccionado.apm" 
+                     name="apmEdit"
+                     [disabled]="cargando"
+                     placeholder="Apellido materno">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="fas fa-calendar"></i> Fecha de Registro</label>
+              <input type="text" 
+                     [value]="formatearFecha(administradorSeleccionado.fechaRegistro)" 
+                     disabled
+                     class="form-control">
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" 
+                    class="btn btn-secondary" 
+                    (click)="cerrarFormulario()"
+                    [disabled]="cargando">
+              <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button type="submit" 
+                    class="btn btn-primary" 
+                    [disabled]="cargando">
+              <i class="fas fa-save"></i> {{ cargando ? 'Actualizando...' : 'Actualizar Administrador' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL ESTADÍSTICAS -->
+  @if (mostrarEstadisticas) {
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2><i class="fas fa-chart-line"></i> Estadísticas - {{ administradorSeleccionado.nombreCom }}</h2>
+          <button class="btn-close" (click)="cerrarFormulario()">
+            <span class="close-icon">×</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="estadisticas-grid">
+            <div class="estadistica-card">
+              <div class="stats-icon total">
+                <i class="fas fa-tasks"></i>
+              </div>
+              <div class="stats-info">
+                <h4>Total Gestiones</h4>
+                <p class="stats-number">{{ estadisticas.totalGestiones }}</p>
+              </div>
+            </div>
+            <div class="estadistica-card">
+              <div class="stats-icon active">
+                <i class="fas fa-id-card"></i>
+              </div>
+              <div class="stats-info">
+                <h4>Membresías Activas</h4>
+                <p class="stats-number">{{ estadisticas.totalMembresiasActivas }}</p>
+              </div>
+            </div>
+            <div class="estadistica-card">
+              <div class="stats-icon inactive">
+                <i class="fas fa-users"></i>
+              </div>
+              <div class="stats-info">
+                <h4>Clientes Activos</h4>
+                <p class="stats-number">{{ estadisticas.totalClientesActivos }}</p>
+              </div>
+            </div>
+            <div class="estadistica-card">
+              <div class="stats-icon total">
+                <i class="fas fa-chalkboard-teacher"></i>
+              </div>
+              <div class="stats-info">
+                <h4>Instructores Activos</h4>
+                <p class="stats-number">{{ estadisticas.totalInstructoresActivos }}</p>
+              </div>
+            </div>
+            <div class="estadistica-card">
+              <div class="stats-icon active">
+                <i class="fas fa-user-tie"></i>
+              </div>
+              <div class="stats-info">
+                <h4>Recepcionistas Activos</h4>
+                <p class="stats-number">{{ estadisticas.totalRecepcionistasActivos }}</p>
+              </div>
+            </div>
+            <div class="estadistica-card">
+              <div class="stats-icon inactive">
+                <i class="fas fa-dollar-sign"></i>
+              </div>
+              <div class="stats-info">
+                <h4>Ingresos Hoy</h4>
+                <p class="stats-number">${{ estadisticas.ingresosHoy || 0 }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-primary" (click)="cerrarFormulario()">
+              <i class="fas fa-times"></i> Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
