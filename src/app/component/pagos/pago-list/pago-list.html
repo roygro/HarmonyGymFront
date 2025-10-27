@@ -200,7 +200,7 @@
                 <i class="fas fa-user"></i>
                 <div class="info-content">
                   <span class="info-label">Cliente</span>
-                  <span class="info-value">{{ pago.folioCliente }}</span>
+                  <span class="info-value">{{ obtenerNombreCliente(pago.folioCliente) }}</span>
                 </div>
               </div>
               
@@ -208,7 +208,7 @@
                 <i class="fas fa-cube"></i>
                 <div class="info-content">
                   <span class="info-label">Producto</span>
-                  <span class="info-value">{{ pago.codigoProducto }}</span>
+                  <span class="info-value">{{ obtenerNombreProducto(pago.codigoProducto) }}</span>
                 </div>
               </div>
               
@@ -232,7 +232,7 @@
                 <i class="fas fa-user-tie"></i>
                 <div class="info-content">
                   <span class="info-label">Recepcionista</span>
-                  <span class="info-value">{{ pago.idRecepcionista }}</span>
+                  <span class="info-value">{{ obtenerNombreRecepcionista(pago.idRecepcionista) }}</span>
                 </div>
               </div>
             </div>

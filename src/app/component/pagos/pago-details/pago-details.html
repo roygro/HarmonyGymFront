@@ -96,11 +96,11 @@
                 <div class="info-grid">
                   <div class="info-item">
                     <span class="info-label">Cliente:</span>
-                    <span class="info-value">{{ pago.folioCliente }}</span>
+                    <span class="info-value">{{ obtenerNombreCliente(pago.folioCliente) }}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">Recepcionista:</span>
-                    <span class="info-value">{{ pago.idRecepcionista }}</span>
+                    <span class="info-value">{{ obtenerNombreRecepcionista(pago.idRecepcionista) }}</span>
                   </div>
                 </div>
               </div>
@@ -129,7 +129,7 @@
                           <span class="product-badge" [ngClass]="getBadgeClass(pago.codigoProducto)">
                             {{ getTipoProducto(pago.codigoProducto) }}
                           </span>
-                          <span class="product-code">{{ pago.codigoProducto }}</span>
+                          <span class="product-code">{{ obtenerNombreProducto(pago.codigoProducto) }}</span>
                         </div>
                       </td>
                       <td class="text-center">{{ pago.cantidad }}</td>

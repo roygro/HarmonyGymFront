@@ -155,7 +155,7 @@
         
         <div class="actividad-content">
           <div class="actividad-header">
-            <h4>Cliente: {{ membresia.folio_cliente }}</h4>
+            <h4>Cliente: {{ obtenerNombreCliente(membresia.folio_cliente) }}</h4>
             <span [class]="'estatus-badge ' + getTipoMembresiaClass(membresia)">
               <i class="fas fa-star"></i> {{ obtenerEtiquetaMembresia(membresia.id_membresia) }}
             </span>
