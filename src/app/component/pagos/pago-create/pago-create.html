@@ -1,1 +1,173 @@
-<p>pago-create works!</p>
+<div><app-header-recepcionista></app-header-recepcionista></div>
+
+<div class="membresias-container">
+  <!-- Header Mejorado -->
+  <div class="header">
+    <div class="header-content">
+      <h1><i class="fas fa-cash-register"></i> Registrar Nuevo Pago</h1>
+      <p class="header-subtitle">Complete los datos para registrar una nueva venta</p>
+    </div>
+<div class="header-actions">
+  <button class="btn btn-secondary" (click)="volverALista()">
+    <i class="fas fa-arrow-left"></i> Volver a la lista
+  </button>
+</div>
+  </div>
+
+  <!-- Loading Spinner Mejorado -->
+  <div *ngIf="cargando" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Cargando formulario...</p>
+    <div class="loading-dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+
+  <!-- Formulario Mejorado -->
+  <div *ngIf="!cargando" class="form-container">
+    <div class="form-card">
+      <div class="form-header">
+        <h3><i class="fas fa-edit"></i> Información del Pago</h3>
+      </div>
+      
+      <form [formGroup]="pagoForm" (ngSubmit)="onSubmit()" #pagoFormElement="ngForm">
+        <!-- Recepcionista -->
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-user-tie"></i> Recepcionista *
+          </label>
+          <input 
+            type="text" 
+            class="form-control" 
+            formControlName="idRecepcionista" 
+            value="REC001" 
+            readonly
+          >
+          <small class="help-text">Recepcionista asignado automáticamente por el sistema</small>
+        </div>
+
+        <!-- Cliente -->
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-users"></i> Cliente *
+          </label>
+          <select 
+            class="form-control"
+            formControlName="folioCliente"
+            [class.error]="f['folioCliente'].invalid && f['folioCliente'].touched"
+          >
+            <option value="" disabled selected>-- Seleccione un cliente --</option>
+            <option *ngFor="let cliente of clientes" [value]="cliente.folioCliente">
+              {{ cliente.nombre }} - {{ cliente.folioCliente }}
+            </option>
+          </select>
+          <small *ngIf="f['folioCliente'].invalid && f['folioCliente'].touched" class="error-text">
+            Seleccione un cliente
+          </small>
+          <small *ngIf="f['folioCliente'].valid && f['folioCliente'].touched" class="success-text">
+            Cliente seleccionado
+          </small>
+        </div>
+
+        <!-- Producto -->
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-box"></i> Producto *
+          </label>
+          <select 
+            class="form-control"
+            formControlName="codigoProducto"
+            [class.error]="f['codigoProducto'].invalid && f['codigoProducto'].touched"
+          >
+            <option value="" disabled selected>-- Seleccione un producto --</option>
+            <option *ngFor="let producto of productos" [value]="producto.codigo">
+              {{ producto.nombre }} - {{ formatearMoneda(producto.precio) }}
+            </option>
+          </select>
+          <small *ngIf="f['codigoProducto'].invalid && f['codigoProducto'].touched" class="error-text">
+            Seleccione un producto
+          </small>
+          <small *ngIf="f['codigoProducto'].valid && f['codigoProducto'].touched" class="success-text">
+            Producto seleccionado
+          </small>
+        </div>
+
+        <div class="form-row">
+          <!-- Cantidad -->
+          <div class="form-group">
+            <label>
+              <i class="fas fa-hashtag"></i> Cantidad *
+            </label>
+            <input 
+              type="number" 
+              class="form-control"
+              formControlName="cantidad" 
+              min="1" 
+              max="100"
+              [class.error]="f['cantidad'].invalid && f['cantidad'].touched"
+            >
+            <small *ngIf="f['cantidad'].errors?.['required'] && f['cantidad'].touched" class="error-text">
+              La cantidad es requerida
+            </small>
+            <small *ngIf="f['cantidad'].errors?.['min'] && f['cantidad'].touched" class="error-text">
+              La cantidad mínima es 1
+            </small>
+            <small *ngIf="f['cantidad'].valid && f['cantidad'].touched" class="success-text">
+              Cantidad válida
+            </small>
+          </div>
+          
+          <!-- Precio Unitario -->
+          <div class="form-group">
+            <label>
+              <i class="fas fa-tag"></i> Precio Unitario *
+            </label>
+            <input 
+              type="number" 
+              class="form-control"
+              formControlName="precioUnitario" 
+              step="0.01" 
+              min="0"
+              (change)="onPrecioManualChange()"
+              [class.error]="f['precioUnitario'].invalid && f['precioUnitario'].touched"
+            >
+            <small *ngIf="f['precioUnitario'].invalid && f['precioUnitario'].touched" class="error-text">
+              El precio unitario es requerido
+            </small>
+            <small *ngIf="f['precioUnitario'].valid && f['precioUnitario'].touched" class="success-text">
+              Precio válido
+            </small>
+          </div>
+        </div>
+
+        <!-- Total a Pagar -->
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-calculator"></i> Total a Pagar
+          </label>
+          <input 
+            type="text" 
+            class="form-control total-field"
+            formControlName="total" 
+            [disabled]="true"
+            [value]="formatearMoneda(f['total'].value)"
+          >
+          <small class="help-text">Total calculado automáticamente</small>
+        </div>
+
+        <!-- Acciones del Formulario -->
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="onCancel()" [disabled]="enviando">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="enviando || pagoForm.invalid">
+            <i class="fas" [class.fa-save]="!enviando" [class.fa-spinner]="enviando" [class.fa-spin]="enviando"></i>
+            {{ enviando ? 'Registrando...' : 'Registrar Pago' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

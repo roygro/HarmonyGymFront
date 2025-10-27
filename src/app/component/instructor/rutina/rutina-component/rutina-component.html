@@ -1,27 +1,6 @@
+<!-- HEADER -->
+<app-header-instructor></app-header-instructor>
 <div class="container-fluid">
-  <!-- HEADER -->
-  <div class="header-section">
-    <h2 class="section-title">
-      <i class="fas fa-dumbbell"></i> Gestión de Rutinas y Ejercicios
-    </h2>
-    <p class="section-subtitle">Crea y gestiona rutinas de entrenamiento personalizadas</p>
-  </div>
-
-  <!-- ALERTAS -->
-  @if (alertMessage) {
-    <div class="alert" [class]="alertType">
-      <div class="alert-content">
-        <i class="fas" [class.fa-check-circle]="alertType === 'alert-success'" 
-           [class.fa-exclamation-triangle]="alertType === 'alert-warning'"
-           [class.fa-info-circle]="alertType === 'alert-info'"
-           [class.fa-times-circle]="alertType === 'alert-danger'"></i>
-        <span>{{ alertMessage }}</span>
-      </div>
-      <button class="btn-close" (click)="clearAlert()">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-  }
 
   <div class="main-content">
     <div class="row g-3">
@@ -38,44 +17,73 @@
           </div>
           
           <div class="card-body">
-            <!-- FILTROS -->
+            <!-- FILTROS MEJORADOS -->
             <div class="filters-section mb-3">
-              <div class="input-group">
-                <input type="text" class="form-control" placeholder="Buscar rutina..." 
-                       [value]="searchTerm" (input)="onSearchTermChange($event)">
-                <select class="form-select" [value]="filterStatus" (change)="onFilterStatusChange($event)">
-                  <option value="">Todos los estados</option>
-                  <option value="Activa">Activas</option>
-                  <option value="Inactiva">Inactivas</option>
-                </select>
+              <div class="search-filters-card">
+                <div class="input-group">
+                  <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="form-control" placeholder="Buscar rutina..." 
+                           [value]="searchTerm" (input)="onSearchTermChange($event)">
+                  </div>
+                  <select class="form-select" [value]="filterStatus" (change)="onFilterStatusChange($event)">
+                    <option value="">Todas</option>
+                    <option value="Activa">Activas</option>
+                    <option value="Inactiva">Inactivas</option>
+                  </select>
+                </div>
               </div>
             </div>
 
-            <!-- LISTA DE RUTINAS CON SCROLL -->
+            <!-- LISTA DE RUTINAS - VERSIÓN MEJORADA -->
             <div class="card-content">
               <div class="rutinas-list-container">
-                <div class="rutinas-list">
+                <div class="rutinas-grid-compact">
                   @for (rutina of filteredRutinas; track rutina.folioRutina) {
-                    <div class="rutina-item" 
+                    <div class="rutina-card-compact" 
                          [class.active]="selectedRutina?.folioRutina === rutina.folioRutina"
                          (click)="selectRutina(rutina)">
                       
-                      <div class="rutina-header">
-                        <div class="rutina-info">
-                          <h6 class="rutina-title">{{ rutina.nombre }}</h6>
-                          <span class="badge" [class]="getStatusBadgeClass(rutina.estatus)">
-                            {{ rutina.estatus }}
-                          </span>
+                      <!-- Header más compacto -->
+                      <div class="rutina-card-header-compact">
+                        <div class="rutina-info-main">
+                          <div class="rutina-avatar-compact">
+                            <i class="fas fa-dumbbell"></i>
+                          </div>
+                          <div class="rutina-title-section">
+                            <h6 class="rutina-title-compact">{{ rutina.nombre }}</h6>
+                            <div class="rutina-meta-compact">
+                              <span class="meta-item-compact">
+                                <i class="fas fa-dumbbell"></i> {{ rutina.ejercicios?.length || 0 }}
+                              </span>
+                              <span class="meta-item-compact">
+                                <i class="fas fa-users"></i> {{ getClientesAsignadosCount(rutina.folioRutina) }}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div class="rutina-actions" (click)="$event.stopPropagation()">
+                        <span class="status-badge-compact" [class]="getStatusBadgeClass(rutina.estatus)">
+                          {{ rutina.estatus }}
+                        </span>
+                      </div>
+
+                      <!-- Información secundaria en una sola línea -->
+                      <div class="rutina-card-footer-compact">
+                        <div class="footer-left">
+                          <span class="level-badge-compact" [class]="getNivelBadgeClass(rutina.nivel)">
+                            <i class="fas fa-chart-line"></i> {{ rutina.nivel || 'Sin nivel' }}
+                          </span>
+                          <small class="date-compact">{{ rutina.fechaCreacion | date:'dd/MM/yyyy' }}</small>
+                        </div>
+                        <div class="rutina-actions-compact" (click)="$event.stopPropagation()">
                           @if (rutina.estatus === 'Activa') {
-                            <button class="btn btn-warning btn-xs" 
+                            <button class="btn btn-warning btn-xxs" 
                                     (click)="inactivarRutina(rutina)"
                                     title="Inactivar rutina">
                               <i class="fas fa-pause"></i>
                             </button>
                           } @else {
-                            <button class="btn btn-success btn-xs" 
+                            <button class="btn btn-success btn-xxs" 
                                     (click)="activarRutina(rutina)"
                                     title="Activar rutina">
                               <i class="fas fa-play"></i>
@@ -83,25 +91,18 @@
                           }
                         </div>
                       </div>
-                      
-                      <div class="rutina-details">
-                        <small class="text-muted">
-                          <i class="fas fa-dumbbell"></i> {{ rutina.ejercicios ? rutina.ejercicios.length : 0 }} ejercicios
-                        </small>
-                      </div>
-                      
-                      <div class="rutina-meta">
-                        <span class="nivel-badge">
-                          <i class="fas fa-chart-line"></i> {{ rutina.nivel || 'Sin nivel' }}
-                        </span>
-                      </div>
                     </div>
                   }
-
+      
+                  <!-- Estado vacío compacto -->
                   @if (filteredRutinas.length === 0) {
                     <div class="no-rutinas">
                       <i class="fas fa-inbox"></i>
-                      <p>No se encontraron rutinas</p>
+                      <h5>No se encontraron rutinas</h5>
+                      <p>Crea tu primera rutina para comenzar</p>
+                      <button class="btn btn-primary" (click)="showCreateRutinaForm()">
+                        <i class="fas fa-plus"></i> Crear Rutina
+                      </button>
                     </div>
                   }
                 </div>
@@ -111,162 +112,116 @@
         </div>
       </div>
 
-      <!-- CONTENIDO PRINCIPAL - DETALLE DE RUTINA -->
+      <!-- CONTENIDO PRINCIPAL - DETALLE DE RUTINA COMPACTO -->
       <div class="col-md-8">
-        <!-- VISTA DETALLE DE RUTINA -->
+        <!-- VISTA DETALLE DE RUTINA COMPACTA -->
         @if (selectedRutina && !isCreating && !isEditing) {
           <div class="card main-card card-scrollable">
-            <div class="card-header">
-              <div class="d-flex justify-content-between align-items-center">
-                <h4 class="card-title">{{ selectedRutina.nombre }}</h4>
-                <div class="action-buttons">
-                  <button class="btn btn-outline-primary btn-sm" (click)="editRutina()">
-                    <i class="fas fa-edit"></i> Editar
+            <!-- HEADER COMPACTO -->
+            <div class="card-header-compact">
+              <div class="rutina-detail-header-compact">
+                <div class="rutina-main-info-compact">
+                  <div class="rutina-avatar-compact-lg">
+                    <i class="fas fa-dumbbell"></i>
+                  </div>
+                  <div class="rutina-title-section-compact">
+                    <h4 class="rutina-main-title-compact">{{ selectedRutina.nombre }}</h4>
+                    <div class="rutina-tags-compact">
+                      <span class="tag-compact nivel-tag" [class]="getNivelBadgeClass(selectedRutina.nivel)">
+                        <i class="fas fa-chart-line"></i> {{ selectedRutina.nivel || 'Sin nivel' }}
+                      </span>
+                      <span class="tag-compact objetivo-tag">
+                        <i class="fas fa-bullseye"></i> {{ selectedRutina.objetivo || 'Sin objetivo' }}
+                      </span>
+                      <span class="tag-compact status-tag" [class]="getStatusBadgeClass(selectedRutina.estatus)">
+                        {{ selectedRutina.estatus }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="rutina-header-actions-compact">
+                  <button class="btn btn-outline-primary btn-xs" (click)="showVerClientesAsignados()" title="Ver Clientes">
+                    <i class="fas fa-users"></i>
                   </button>
-                  <button class="btn btn-outline-danger btn-sm" (click)="deleteRutina()">
-                    <i class="fas fa-trash"></i> Eliminar
+                  <button class="btn btn-outline-primary btn-xs" (click)="editRutina()" title="Editar Rutina">
+                    <i class="fas fa-edit"></i>
                   </button>
-                  <button class="btn btn-success btn-sm" (click)="showAsignarClientes()">
-                    <i class="fas fa-users"></i> Asignar Clientes
+                  <button class="btn btn-outline-danger btn-xs" (click)="deleteRutina()" title="Eliminar Rutina">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                  <button class="btn btn-success btn-xs" (click)="showAsignarClientes()" title="Asignar Clientes">
+                    <i class="fas fa-user-plus"></i>
                   </button>
                 </div>
               </div>
             </div>
 
-            <div class="card-body">
+            <div class="card-body-compact">
               <div class="card-content">
-                <!-- INFORMACIÓN GENERAL -->
-                <div class="info-section">
-                  <div class="row g-3">
-                    <div class="col-md-6">
-                      <div class="info-card">
-                        <h6><i class="fas fa-info-circle"></i> Información General</h6>
-                        <div class="info-grid">
-                          <div class="info-item">
-                            <span class="info-label">Nivel:</span>
-                            <span class="badge" [class]="getNivelBadgeClass(selectedRutina.nivel)">
-                              {{ selectedRutina.nivel || 'No especificado' }}
-                            </span>
-                          </div>
-                          <div class="info-item">
-                            <span class="info-label">Objetivo:</span>
-                            <span class="info-value">{{ selectedRutina.objetivo || 'No especificado' }}</span>
-                          </div>
-                          <div class="info-item">
-                            <span class="info-label">Estado:</span>
-                            <span class="badge" [class]="getStatusBadgeClass(selectedRutina.estatus)">
-                              {{ selectedRutina.estatus }}
-                            </span>
-                          </div>
-                        </div>
+                <!-- ESTADÍSTICAS RÁPIDAS COMPACTAS -->
+                <div class="stats-section-compact">
+                  <div class="stats-grid-compact">
+                    <div class="stat-card-compact">
+                      <div class="stat-icon-compact">
+                        <i class="fas fa-dumbbell"></i>
+                      </div>
+                      <div class="stat-info-compact">
+                        <div class="stat-number-compact">{{ selectedRutina.ejercicios ? selectedRutina.ejercicios.length : 0 }}</div>
+                        <div class="stat-label-compact">Ejercicios</div>
                       </div>
                     </div>
-                    <div class="col-md-6">
-                      <div class="info-card">
-                        <h6><i class="fas fa-chart-bar"></i> Estadísticas</h6>
-                        <div class="info-grid">
-                          <div class="info-item">
-                            <span class="info-label">Ejercicios:</span>
-                            <span class="info-value">{{ selectedRutina.ejercicios ? selectedRutina.ejercicios.length : 0 }}</span>
-                          </div>
-                          <div class="info-item">
-                            <span class="info-label">Fecha creación:</span>
-                            <span class="info-value">{{ selectedRutina.fechaCreacion | date:'dd/MM/yyyy' }}</span>
-                          </div>
-                        </div>
+                    <div class="stat-card-compact">
+                      <div class="stat-icon-compact clients">
+                        <i class="fas fa-users"></i>
+                      </div>
+                      <div class="stat-info-compact">
+                        <div class="stat-number-compact">{{ getClientesAsignadosCount(selectedRutina.folioRutina) }}</div>
+                        <div class="stat-label-compact">Clientes</div>
+                      </div>
+                    </div>
+                    <div class="stat-card-compact">
+                      <div class="stat-icon-compact time">
+                        <i class="fas fa-clock"></i>
+                      </div>
+                      <div class="stat-info-compact">
+                        <div class="stat-number-compact">{{ calcularTiempoTotalRutina() | number:'1.0-0' }}</div>
+                        <div class="stat-label-compact">Minutos</div>
+                      </div>
+                    </div>
+                    <div class="stat-card-compact">
+                      <div class="stat-icon-compact date">
+                        <i class="fas fa-calendar"></i>
+                      </div>
+                      <div class="stat-info-compact">
+                        <div class="stat-date-compact">{{ selectedRutina.fechaCreacion | date:'dd/MM/yyyy' }}</div>
+                        <div class="stat-label-compact">Creación</div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- DESCRIPCIÓN -->
+                <!-- DESCRIPCIÓN HORIZONTAL COMPACTA -->
                 @if (selectedRutina.descripcion) {
-                  <div class="description-section">
-                    <h6><i class="fas fa-file-alt"></i> Descripción</h6>
-                    <div class="description-content">
-                      <p>{{ selectedRutina.descripcion }}</p>
+                  <div class="description-section-horizontal">
+                    <div class="description-header-horizontal">
+                      <span class="description-title">Descripción: </span>
+                    </div>
+                    <div class="description-content-horizontal">
+                      <div class="description-text-wrapper">
+                        <p class="description-text-horizontal">{{ selectedRutina.descripcion }}</p>
+                      </div>
                     </div>
                   </div>
                 }
 
-                <!-- CLIENTES ASIGNADOS -->
-                <div class="clientes-section">
-                  <div class="section-header">
-                    <h6>
-                      <i class="fas fa-users"></i> 
-                      Clientes Asignados
-                      <span class="badge bg-primary ms-2">{{ clientesAsignados.length }}</span>
-                    </h6>
-                    <button class="btn btn-outline-primary btn-sm" (click)="toggleMostrarClientesAsignados()">
-                      <i class="fas" [class.fa-eye]="!mostrarClientesAsignados" [class.fa-eye-slash]="mostrarClientesAsignados"></i>
-                      {{ mostrarClientesAsignados ? 'Ocultar' : 'Mostrar' }}
-                    </button>
-                  </div>
-
-                  @if (mostrarClientesAsignados) {
-                    <div class="clientes-content">
-                      @if (clientesAsignados.length > 0) {
-                        <!-- Vista de tabla para clientes asignados -->
-                        <div class="table-container">
-                          <table class="table table-hover">
-                            <thead>
-                              <tr>
-                                <th>Nombre</th>
-                                <th>Edad</th>
-                                <th>Género</th>
-                                <th>Email</th>
-                                <th>Estado</th>
-                                <th width="80">Acciones</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              @for (cliente of clientesAsignados; track cliente.folioCliente) {
-                                <tr>
-                                  <td>
-                                    <strong>{{ cliente.nombre }}</strong>
-                                  </td>
-                                  <td>{{ calcularEdad(cliente.fechaNacimiento) }} años</td>
-                                  <td>{{ cliente.genero }}</td>
-                                  <td>
-                                    <small>{{ cliente.email }}</small>
-                                  </td>
-                                  <td>
-                                    <span class="badge" [class]="cliente.estatus === 'Activo' ? 'bg-success' : 'bg-secondary'">
-                                      {{ cliente.estatus }}
-                                    </span>
-                                  </td>
-                                  <td>
-                                    <button class="btn btn-outline-danger btn-sm" 
-                                            (click)="desasignarCliente(cliente.folioCliente)"
-                                            title="Desasignar cliente">
-                                      <i class="fas fa-user-times"></i>
-                                    </button>
-                                  </td>
-                                </tr>
-                              }
-                            </tbody>
-                          </table>
-                        </div>
-                      }
-
-                      @if (clientesAsignados.length === 0) {
-                        <div class="empty-state">
-                          <i class="fas fa-users"></i>
-                          <p>No hay clientes asignados a esta rutina</p>
-                          <button class="btn btn-primary" (click)="showAsignarClientes()">
-                            <i class="fas fa-user-plus"></i> Asignar Clientes
-                          </button>
-                        </div>
-                      }
-                    </div>
-                  }
-                </div>
-
-                <!-- LISTA DE EJERCICIOS -->
+                <!-- LISTA DE EJERCICIOS MEJORADA -->
                 <div class="ejercicios-section">
                   <div class="section-header">
-                    <h6><i class="fas fa-dumbbell"></i> Ejercicios de la Rutina</h6>
-                    <div class="action-buttons">
+                    <div class="section-title">
+                      <i class="fas fa-dumbbell"></i> Ejercicios de la Rutina
+                      <span class="ejercicios-count">{{ selectedRutina.ejercicios ? selectedRutina.ejercicios.length : 0 }} ejercicios</span>
+                    </div>
+                    <div class="section-actions">
                       <button class="btn btn-outline-primary btn-sm" (click)="showCrearEjercicio()">
                         <i class="fas fa-plus-circle"></i> Crear Ejercicio
                       </button>
@@ -278,40 +233,53 @@
 
                   @if (selectedRutina.ejercicios && selectedRutina.ejercicios.length > 0) {
                     <div class="ejercicios-list-container">
-                      <div class="ejercicios-list">
+                      <div class="ejercicios-list-improved">
                         @for (ejercicio of selectedRutina.ejercicios; track ejercicio.idEjercicio; let i = $index) {
-                          <div class="ejercicio-item">
-                            <div class="ejercicio-header">
-                              <div class="ejercicio-order">
-                                <span class="order-badge">{{ ejercicio.orden }}</span>
-                              </div>
-                              <div class="ejercicio-info">
+                          <div class="ejercicio-item-improved">
+                            <div class="ejercicio-order">
+                              <span class="order-number">{{ ejercicio.orden }}</span>
+                            </div>
+                            <div class="ejercicio-content">
+                              <div class="ejercicio-header">
                                 <h6 class="ejercicio-title">{{ getEjercicioNombre(ejercicio.idEjercicio) }}</h6>
-                                <div class="ejercicio-stats">
-                                  <span class="stat">
-                                    <i class="fas fa-sync-alt"></i> {{ ejercicio.seriesEjercicio }} series
-                                  </span>
-                                  <span class="stat">
-                                    <i class="fas fa-redo"></i> {{ ejercicio.repeticionesEjercicio }} reps
-                                  </span>
-                                  <span class="stat">
-                                    <i class="fas fa-clock"></i> {{ ejercicio.descansoEjercicio }}s descanso
-                                  </span>
+                                <div class="ejercicio-actions">
+                                  <button class="btn btn-outline-danger btn-sm" 
+                                          (click)="eliminarEjercicio(ejercicio.idEjercicio)"
+                                          title="Eliminar ejercicio">
+                                    <i class="fas fa-trash"></i>
+                                  </button>
                                 </div>
                               </div>
-                              <div class="ejercicio-actions">
-                                <button class="btn btn-outline-danger btn-sm" 
-                                        (click)="eliminarEjercicio(ejercicio.idEjercicio)">
-                                  <i class="fas fa-trash"></i>
-                                </button>
+                              
+                              <div class="ejercicio-stats-improved">
+                                <div class="stat-box">
+                                  <i class="fas fa-sync-alt"></i>
+                                  <span class="stat-value">{{ ejercicio.seriesEjercicio }}</span>
+                                  <span class="stat-label">Series</span>
+                                </div>
+                                <div class="stat-box">
+                                  <i class="fas fa-redo"></i>
+                                  <span class="stat-value">{{ ejercicio.repeticionesEjercicio }}</span>
+                                  <span class="stat-label">Reps</span>
+                                </div>
+                                <div class="stat-box">
+                                  <i class="fas fa-hourglass-half"></i>
+                                  <span class="stat-value">{{ ejercicio.descansoEjercicio }}</span>
+                                  <span class="stat-label">Seg descanso</span>
+                                </div>
+                                <div class="stat-box time">
+                                  <i class="fas fa-clock"></i>
+                                  <span class="stat-value">{{ calcularTiempoEjercicioIndividual(ejercicio) }}</span>
+                                  <span class="stat-label">Min total</span>
+                                </div>
                               </div>
-                            </div>
 
-                            @if (ejercicio.instrucciones) {
-                              <div class="ejercicio-instructions">
-                                <strong>Instrucciones:</strong> {{ ejercicio.instrucciones }}
-                              </div>
-                            }
+                              @if (ejercicio.instrucciones) {
+                                <div class="ejercicio-instructions-improved">
+                                  <strong>Instrucciones:</strong> {{ ejercicio.instrucciones }}
+                                </div>
+                              }
+                            </div>
                           </div>
                         }
                       </div>
@@ -319,15 +287,18 @@
                   }
 
                   @if (!selectedRutina.ejercicios || selectedRutina.ejercicios.length === 0) {
-                    <div class="empty-state">
-                      <i class="fas fa-dumbbell"></i>
-                      <p>No hay ejercicios en esta rutina</p>
-                      <div class="action-buttons">
+                    <div class="empty-state-improved">
+                      <div class="empty-icon">
+                        <i class="fas fa-dumbbell"></i>
+                      </div>
+                      <h5>No hay ejercicios en esta rutina</h5>
+                      <p>Comienza agregando ejercicios para crear una rutina completa</p>
+                      <div class="empty-actions">
                         <button class="btn btn-primary" (click)="showCrearEjercicio()">
                           <i class="fas fa-plus-circle"></i> Crear Ejercicio
                         </button>
-                        <button class="btn btn-primary" (click)="showAgregarEjercicio()">
-                          <i class="fas fa-plus"></i> Agregar Ejercicio
+                        <button class="btn btn-outline-primary" (click)="showAgregarEjercicio()">
+                          <i class="fas fa-plus"></i> Agregar Ejercicio Existente
                         </button>
                       </div>
                     </div>
@@ -414,17 +385,33 @@
           </div>
         }
 
-        <!-- VISTA INICIAL (CUANDO NO HAY RUTINA SELECCIONADA) -->
+        <!-- VISTA INICIAL MEJORADA -->
         @if (!selectedRutina && !isCreating) {
-          <div class="card main-card welcome-card">
+          <div class="card main-card welcome-card-improved">
             <div class="card-body">
-              <div class="welcome-content">
-                <i class="fas fa-dumbbell"></i>
+              <div class="welcome-content-improved">
+                <div class="welcome-icon">
+                  <i class="fas fa-dumbbell"></i>
+                </div>
                 <h3>Bienvenido al Gestor de Rutinas</h3>
-                <p class="text-muted">
-                  Selecciona una rutina existente o crea una nueva para comenzar
+                <p class="welcome-text">
+                  Selecciona una rutina existente o crea una nueva para comenzar a gestionar tus entrenamientos
                 </p>
-                <button class="btn btn-primary btn-lg" (click)="showCreateRutinaForm()">
+                <div class="welcome-features">
+                  <div class="feature-item">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Crea rutinas personalizadas</span>
+                  </div>
+                  <div class="feature-item">
+                    <i class="fas fa-users"></i>
+                    <span>Asigna a múltiples clientes</span>
+                  </div>
+                  <div class="feature-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Gestiona niveles y objetivos</span>
+                  </div>
+                </div>
+                <button class="btn btn-primary btn-lg welcome-button" (click)="showCreateRutinaForm()">
                   <i class="fas fa-plus"></i> Crear Nueva Rutina
                 </button>
               </div>
@@ -436,14 +423,14 @@
   </div>
 </div>
 
-<!-- MODAL AGREGAR EJERCICIO - MÁS GRANDE -->
+<!-- MODAL AGREGAR EJERCICIO -->
 @if (showEjercicioModal) {
   <div class="modal show" style="display: block">
     <div class="modal-dialog modal-xl ejercicio-modal modal-centered">
       <div class="modal-content card-scrollable">
         <div class="modal-header">
           <h5 class="modal-title">
-            <i class="fas fa-plus"></i> Agregar Ejercicio a la Rutina
+            <i class="fas fa-dumbbell"></i> Agregar Ejercicio a la Rutina
           </h5>
           <button type="button" class="btn-close" (click)="closeEjercicioModal()">
             <i class="fas fa-times"></i>
@@ -451,187 +438,270 @@
         </div>
         <div class="modal-body">
           <div class="card-content">
-            @if (ejerciciosDisponibles.length > 0) {
-              <div class="modal-content-inner">
-                <!-- BUSCADOR Y FILTROS DE EJERCICIOS -->
-                <div class="card mb-3">
-                  <div class="card-body">
-                    <h6>Buscar Ejercicios</h6>
-                    <div class="search-filters">
-                      <div class="row g-2">
-                        <div class="col-md-6">
-                          <label class="form-label">Buscar por nombre</label>
-                          <input type="text" class="form-control" 
-                                 placeholder="Nombre del ejercicio..."
-                                 [value]="filtroEjercicioNombre"
-                                 (input)="onFiltroEjercicioNombreChange($event)">
-                        </div>
-                        <div class="col-md-4">
-                          <label class="form-label">Filtrar por grupo muscular</label>
-                          <select class="form-select" 
-                                  [value]="filtroGrupoMuscular"
-                                  (change)="onFiltroGrupoMuscularChange($event)">
-                            <option value="">Todos los grupos</option>
-                            @for (grupo of gruposMusculares; track grupo) {
-                              <option [value]="grupo">{{ grupo }}</option>
-                            }
-                          </select>
-                        </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                          <button class="btn btn-outline-secondary w-100" 
-                                  (click)="limpiarFiltrosEjercicios()">
-                            <i class="fas fa-times"></i> Limpiar
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+            <!-- BÚSQUEDA Y FILTRADO MEJORADO -->
+            <div class="search-filters-card">
+              <div class="row g-3">
+                <div class="col-md-5">
+                  <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="form-control" 
+                           placeholder="Buscar ejercicio por nombre..."
+                           [value]="filtroEjercicioNombre"
+                           (input)="onFiltroEjercicioNombreChange($event)">
                   </div>
                 </div>
-
-                <!-- Selección de Ejercicio -->
-                <div class="selection-section">
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                    <label class="form-label">Seleccionar Ejercicio *</label>
-                    <button type="button" class="btn btn-outline-primary btn-sm" (click)="showCrearEjercicioModalFromAgregar()">
-                      <i class="fas fa-plus"></i> Crear Nuevo Ejercicio
+                <div class="col-md-4">
+                  <select class="form-select" 
+                          [value]="filtroGrupoMuscular"
+                          (change)="onFiltroGrupoMuscularChange($event)">
+                    <option value="">Todos los grupos musculares</option>
+                    @for (grupo of gruposMusculares; track grupo) {
+                      <option [value]="grupo">{{ grupo }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <div class="filter-actions">
+                    <span class="results-count">{{ ejerciciosFiltrados.length }} ejercicios</span>
+                    <button class="btn btn-outline-secondary" 
+                            (click)="limpiarFiltrosEjercicios()">
+                      <i class="fas fa-times"></i> Limpiar
                     </button>
                   </div>
-                  
-                  @if (ejerciciosFiltrados.length > 0) {
-                    <select class="form-select" [value]="ejercicioSeleccionado" (change)="onEjercicioSeleccionadoChange($event)">
-                      <option value="">Seleccionar ejercicio ({{ ejerciciosFiltrados.length }} encontrados)</option>
-                      @for (ejercicio of ejerciciosFiltrados; track ejercicio.idEjercicio) {
-                        <option [value]="ejercicio.idEjercicio" [disabled]="isEjercicioEnRutina(ejercicio.idEjercicio)">
-                          {{ ejercicio.nombre }} - {{ ejercicio.grupoMuscular }}
-                          @if (isEjercicioEnRutina(ejercicio.idEjercicio)) {
-                            (Ya está en la rutina)
-                          }
-                        </option>
-                      }
-                    </select>
-                  } @else {
-                    <div class="alert alert-warning">
-                      <i class="fas fa-search"></i> No se encontraron ejercicios con los filtros aplicados.
-                    </div>
-                  }
+                </div>
+              </div>
+            </div>
 
-                  @if (ejercicioSeleccionado && isEjercicioEnRutina(ejercicioSeleccionado)) {
-                    <div class="warning-message">
-                      <i class="fas fa-exclamation-triangle"></i>
-                      Este ejercicio ya está en la rutina. No se pueden agregar duplicados.
+            <!-- EJERCICIOS DISPONIBLES -->
+            <div class="ejercicios-disponibles-section">
+              <h6 class="section-subtitle">Ejercicios Disponibles</h6>
+              
+              @if (ejerciciosFiltrados.length > 0) {
+                <div class="ejercicios-grid">
+                  @for (ejercicio of ejerciciosFiltrados; track ejercicio.idEjercicio) {
+                    <div class="ejercicio-card" 
+                         [class.disabled]="isEjercicioEnRutina(ejercicio.idEjercicio)"
+                         (click)="selectEjercicioForModal(ejercicio.idEjercicio)">
+                      
+                      <div class="ejercicio-card-header">
+                        <div class="ejercicio-badge-group">
+                          <span class="grupo-muscular-badge">
+                            <i class="fas fa-muscle"></i> {{ ejercicio.grupoMuscular }}
+                          </span>
+                          @if (isEjercicioEnRutina(ejercicio.idEjercicio)) {
+                            <span class="status-badge already-added">
+                              <i class="fas fa-check-circle"></i> En rutina
+                            </span>
+                          }
+                        </div>
+                      </div>
+
+                      <div class="ejercicio-card-body">
+                        <h6 class="ejercicio-nombre">{{ ejercicio.nombre }}</h6>
+                        <div class="ejercicio-equipo">
+                          <small>
+                            <i class="fas fa-tools"></i> 
+                            {{ ejercicio.equipoNecesario || 'Sin equipo específico' }}
+                          </small>
+                        </div>
+                        <div class="ejercicio-descripcion">
+                          <p>{{ (ejercicio.instrucciones || 'Sin instrucciones específicas') }}</p>
+                        </div>
+                      </div>
+
+                      <div class="ejercicio-card-footer">
+                        <div class="ejercicio-stats">
+                          <div class="stat-item">
+                            <i class="fas fa-clock"></i>
+                            <span [class]="getTiempoClass(ejercicio.tiempo)">
+                              {{ formatTiempo(ejercicio.tiempo) }}
+                            </span>
+                          </div>
+                          <div class="stat-item">
+                            <i class="fas fa-couch"></i>
+                            <span [class]="getTiempoClass(ejercicio.descanso)">
+                              {{ formatTiempo(ejercicio.descanso) }}
+                            </span>
+                          </div>
+                        </div>
+                        <!-- BOTÓN PARA AGREGAR -->
+                        <button class="btn btn-primary btn-sm agregar-btn"
+                                (click)="selectEjercicioForModal(ejercicio.idEjercicio); $event.stopPropagation()"
+                                [disabled]="isEjercicioEnRutina(ejercicio.idEjercicio)">
+                          <i class="fas fa-plus"></i> Agregar
+                        </button>
+                      </div>
                     </div>
                   }
                 </div>
+              } @else {
+                <div class="no-ejercicios-state">
+                  <i class="fas fa-dumbbell"></i>
+                  <h5>No se encontraron ejercicios</h5>
+                  <p>Intenta ajustar los filtros de búsqueda o crear un nuevo ejercicio.</p>
+                  <button class="btn btn-primary" (click)="showCrearEjercicioModalFromAgregar()">
+                    <i class="fas fa-plus"></i> Crear Nuevo Ejercicio
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
 
-                <!-- Información del Ejercicio Seleccionado -->
-                @if (ejercicioSeleccionado) {
-                  <div class="card mb-3">
-                    <div class="card-body">
-                      <h6>Información del Ejercicio</h6>
-                      @if (getEjercicioInfo(ejercicioSeleccionado)) {
-                        <div class="exercise-info">
-                          <div class="row">
-                            <div class="col-md-6">
-                              <strong>Grupo Muscular:</strong> {{ getEjercicioInfo(ejercicioSeleccionado)?.grupoMuscular }}
-                            </div>
-                            <div class="col-md-6">
-                              <strong>Equipo:</strong> {{ getEjercicioInfo(ejercicioSeleccionado)?.equipoNecesario }}
-                            </div>
-                          </div>
-                          <div class="mt-2">
-                            <strong>Instrucciones:</strong> {{ getEjercicioInfo(ejercicioSeleccionado)?.instrucciones }}
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  </div>
-                }
+<!-- MODAL CONFIGURAR EJERCICIO -->
+@if (showConfigurarEjercicioModal) {
+  <div class="modal show" style="display: block">
+    <div class="modal-dialog modal-lg configurar-ejercicio-modal modal-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-cog"></i> Configurar Ejercicio
+          </h5>
+          <button type="button" class="btn-close" (click)="closeConfigurarEjercicioModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- INFORMACIÓN DEL EJERCICIO SELECCIONADO -->
+          <div class="ejercicio-info-card mb-4">
+            <div class="ejercicio-header-info">
+              <div class="ejercicio-avatar">
+                <i class="fas fa-dumbbell"></i>
+              </div>
+              <div class="ejercicio-details">
+                <h6 class="ejercicio-nombre-modal">{{ getEjercicioNombre(ejercicioSeleccionado) }}</h6>
+                <div class="ejercicio-meta">
+                  <span class="grupo-muscular-badge">
+                    <i class="fas fa-muscle"></i> {{ getEjercicioGrupoMuscular(ejercicioSeleccionado) }}
+                  </span>
+                  <span class="equipo-badge">
+                    <i class="fas fa-tools"></i> {{ getEjercicioEquipo(ejercicioSeleccionado) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="ejercicio-instructions-preview">
+              <p><strong>Instrucciones:</strong> {{ getEjercicioInstrucciones(ejercicioSeleccionado) }}</p>
+            </div>
+          </div>
 
-                <!-- Parámetros del Ejercicio -->
-                <div class="parameters-section">
-                  <h6>Parámetros del Ejercicio</h6>
-                  <div class="parameters-grid">
-                    <div class="parameter-group">
-                      <label class="form-label">Series *</label>
+          <!-- CONFIGURACIÓN DEL EJERCICIO -->
+          <div class="configuracion-content">
+            <h6 class="section-title mb-3">
+              <i class="fas fa-sliders-h"></i> Datos del Ejercicio
+            </h6>
+            
+            <div class="parametros-grid">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="parametro-group">
+                    <label class="parametro-label">
+                      <i class="fas fa-sync-alt"></i> Series *
+                    </label>
+                    <div class="parametro-control">
                       <input type="number" class="form-control" 
                              [value]="nuevoEjercicio.seriesEjercicio" 
                              (input)="onSeriesChange($event)" 
                              min="1" max="10" required>
-                      <div class="form-text">Número de series</div>
+                      <small class="parametro-help">Número de series a realizar</small>
                     </div>
-                    
-                    <div class="parameter-group">
-                      <label class="form-label">Repeticiones *</label>
+                  </div>
+                </div>
+                
+                <div class="col-md-6">
+                  <div class="parametro-group">
+                    <label class="parametro-label">
+                      <i class="fas fa-redo"></i> Repeticiones *
+                    </label>
+                    <div class="parametro-control">
                       <input type="number" class="form-control" 
                              [value]="nuevoEjercicio.repeticionesEjercicio" 
                              (input)="onRepeticionesChange($event)" 
                              min="1" max="50" required>
-                      <div class="form-text">Reps por serie</div>
+                      <small class="parametro-help">Repeticiones por serie</small>
                     </div>
-                    
-                    <div class="parameter-group">
-                      <label class="form-label">Descanso (seg) *</label>
-                      <input type="number" class="form-control" 
-                             [value]="nuevoEjercicio.descansoEjercicio" 
-                             (input)="onDescansoChange($event)" 
-                             min="0" max="300" required>
-                      <div class="form-text">Segundos entre series</div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="parametro-group">
+                    <label class="parametro-label">
+                      <i class="fas fa-hourglass-half"></i> Descanso *
+                    </label>
+                    <div class="parametro-control">
+                      <div class="input-with-unit">
+                        <input type="number" class="form-control" 
+                               [value]="nuevoEjercicio.descansoEjercicio" 
+                               (input)="onDescansoChange($event)" 
+                               min="0" max="300" required>
+                        <span class="input-unit">seg</span>
+                      </div>
+                      <small class="parametro-help">Segundos entre series</small>
                     </div>
-                    
-                    <div class="parameter-group">
-                      <label class="form-label">Orden *</label>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="parametro-group">
+                    <label class="parametro-label">
+                      <i class="fas fa-list-ol"></i> Orden *
+                    </label>
+                    <div class="parametro-control">
                       <input type="number" class="form-control" 
                              [value]="nuevoEjercicio.orden" 
                              (input)="onOrdenChange($event)" 
                              min="1" [max]="(selectedRutina?.ejercicios?.length || 0) + 1" required>
-                      <div class="form-text">Posición en la rutina</div>
+                      <small class="parametro-help">Posición en la rutina</small>
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                <!-- Instrucciones Personalizadas -->
-                <div class="instructions-section">
-                  <label class="form-label">Instrucciones Personalizadas</label>
-                  <textarea class="form-control" 
-                            [value]="nuevoEjercicio.instrucciones" 
-                            (input)="onInstruccionesChange($event)"
-                            rows="3" 
-                            placeholder="Instrucciones específicas para este ejercicio en la rutina..."></textarea>
-                  <div class="form-text">Opcional. Sobrescribe las instrucciones por defecto del ejercicio.</div>
+            <!-- INSTRUCCIONES PERSONALIZADAS -->
+            <div class="instrucciones-section mt-4">
+              <label class="instrucciones-label">
+                <i class="fas fa-edit"></i> Instrucciones Personalizadas
+              </label>
+              <textarea class="form-control instrucciones-textarea" 
+                        [value]="nuevoEjercicio.instrucciones" 
+                        (input)="onInstruccionesChange($event)"
+                        rows="3" 
+                        placeholder="Agrega instrucciones específicas para este ejercicio en la rutina..."></textarea>
+              <small class="instrucciones-help">
+                Estas instrucciones sobrescribirán las instrucciones por defecto del ejercicio.
+              </small>
+            </div>
+
+            <!-- RESUMEN DE TIEMPO ESTIMADO -->
+            <div class="tiempo-resumen-card mt-4">
+              <div class="tiempo-header">
+                <i class="fas fa-stopwatch"></i>
+                <span>Tiempo Estimado</span>
+              </div>
+              <div class="tiempo-content">
+                <div class="tiempo-total">
+                  <strong>{{ formatearTiempo(calcularTiempoEjercicio()) }}</strong>
                 </div>
-
-                <!-- Resumen de Tiempo Estimado -->
-                @if (ejercicioSeleccionado && nuevoEjercicio.seriesEjercicio) {
-                  <div class="time-summary">
-                    <div class="alert alert-info">
-                      <strong>Tiempo estimado para este ejercicio:</strong><br>
-                      {{ formatearTiempo(calcularTiempoEjercicio()) }}<br>
-                      <small class="text-muted">{{ getTiempoEjercicioDesglose() }}</small>
-                    </div>
-                  </div>
-                }
+                <div class="tiempo-desglose">
+                  <small>{{ getTiempoEjercicioDesglose() }}</small>
+                </div>
               </div>
-            }
-            
-            @if (ejerciciosDisponibles.length === 0) {
-              <div class="empty-state">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>No hay ejercicios disponibles</p>
-                <button class="btn btn-primary" (click)="cargarEjerciciosDisponibles()">
-                  <i class="fas fa-sync-alt"></i> Recargar Ejercicios
-                </button>
-              </div>
-            }
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-primary" 
-                  (click)="agregarEjercicio()" 
-                  [disabled]="!ejercicioSeleccionado || !esEjercicioValido() || isEjercicioEnRutina(ejercicioSeleccionado)">
-            <i class="fas fa-plus"></i> Agregar Ejercicio
+          <button class="btn btn-primary" 
+                  (click)="agregarEjercicio()"
+                  [disabled]="!esEjercicioValido()">
+            <i class="fas fa-plus"></i> Agregar a la Rutina
           </button>
-          <button type="button" class="btn btn-secondary" (click)="closeEjercicioModal()">
-            Cancelar
+          <button class="btn btn-secondary" (click)="closeConfigurarEjercicioModal()">
+            <i class="fas fa-times"></i> Cancelar
           </button>
         </div>
       </div>
@@ -639,158 +709,257 @@
   </div>
 }
 
-<!-- MODAL ASIGNAR CLIENTES - EXTRA GRANDE -->
+<!-- MODAL ASIGNAR CLIENTES -->
 @if (showAsignarModal) {
   <div class="modal show" style="display: block">
     <div class="modal-dialog modal-xxl clientes-modal">
       <div class="modal-content card-scrollable">
         <div class="modal-header">
           <h5 class="modal-title">
-            <i class="fas fa-users"></i> Asignar Rutina a Clientes
+            <i class="fas fa-user-plus"></i> Asignar Rutina a Clientes
           </h5>
           <button type="button" class="btn-close" (click)="closeAsignarModal()">
             <i class="fas fa-times"></i>
           </button>
         </div>
+        
         <div class="modal-body">
-          <div class="card-content">
-            <!-- Información de la Rutina -->
-            <div class="card mb-4">
-              <div class="card-body">
-                <h6>Rutina a Asignar</h6>
-                <div class="rutina-info">
-                  <div class="row">
-                    <div class="col-md-6">
-                      <div class="info-item">
-                        <strong>Nombre:</strong> {{ selectedRutina?.nombre }}
-                      </div>
-                      <div class="info-item">
-                        <strong>Nivel:</strong> {{ selectedRutina?.nivel || 'No especificado' }}
-                      </div>
-                    </div>
-                    <div class="col-md-6">
-                      <div class="info-item">
-                        <strong>Objetivo:</strong> {{ selectedRutina?.objetivo || 'No especificado' }}
-                      </div>
-                    </div>
-                  </div>
+          <!-- BÚSQUEDA Y SELECCIÓN MEJORADA -->
+          <div class="clientes-selection-section">
+            <div class="selection-header">
+              <div class="search-container">
+                <div class="search-box">
+                  <i class="fas fa-search"></i>
+                  <input type="text" class="form-control" 
+                         placeholder="Buscar clientes por nombre, email..."
+                         [value]="filtroCliente"
+                         (input)="onFiltroClienteChange($event)">
+                </div>
+              </div>
+              <div class="selection-info">
+                <div class="selection-stats">
+                  <span class="selected-count">{{ clientesSeleccionados.length }}</span>
+                  <span class="stats-text">clientes seleccionados</span>
+                </div>
+                <div class="selection-actions">
+                  <button class="btn btn-outline-primary btn-sm" 
+                          (click)="seleccionarTodosClientes()">
+                    <i class="fas" [class.fa-check-square]="clientesSeleccionados.length === clientesFiltrados.length" 
+                       [class.fa-square]="clientesSeleccionados.length !== clientesFiltrados.length"></i>
+                    {{ clientesSeleccionados.length === clientesFiltrados.length ? 'Desmarcar' : 'Marcar' }} Todos
+                  </button>
                 </div>
               </div>
             </div>
 
-            <!-- Búsqueda y Filtros -->
-            <div class="search-section">
-              <div class="row g-3">
-                <div class="col-md-8">
-                  <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" class="form-control" 
-                           placeholder="Buscar clientes por nombre o email..."
-                           [value]="filtroCliente"
-                           (input)="onFiltroClienteChange($event)">
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="selection-info">
-                    <span class="selection-count">{{ clientesSeleccionados.length }} cliente(s) seleccionado(s)</span>
-                    <button class="btn btn-outline-primary btn-sm" 
-                            (click)="seleccionarTodosClientes()">
-                      <i class="fas" [class.fa-check-square]="clientesSeleccionados.length === clientesFiltrados.length" 
-                         [class.fa-square]="clientesSeleccionados.length !== clientesFiltrados.length"></i>
-                      {{ clientesSeleccionados.length === clientesFiltrados.length ? 'Desmarcar' : 'Marcar' }} Todos
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Lista de Clientes -->
-            <div class="clientes-list-section">
+            <!-- LISTA DE CLIENTES -->
+            <div class="clientes-grid-container">
               @if (clientesFiltrados.length > 0) {
-                <div class="clientes-list-container">
-                  <div class="clientes-list">
-                    @for (cliente of clientesFiltrados; track cliente.folioCliente) {
-                      <div class="cliente-item" [class.selected]="isClienteSeleccionado(cliente.folioCliente)">
+                <div class="clientes-grid">
+                  @for (cliente of clientesFiltrados; track cliente.folioCliente) {
+                    <div class="cliente-card" 
+                         [class.selected]="isClienteSeleccionado(cliente.folioCliente)"
+                         (click)="toggleClienteSeleccionado(cliente.folioCliente)">
+                      
+                      <div class="cliente-card-header">
+                        <div class="cliente-avatar">
+                          <i class="fas fa-user"></i>
+                        </div>
                         <div class="cliente-checkbox">
                           <input type="checkbox" 
                                  [id]="'cliente-' + cliente.folioCliente"
                                  [checked]="isClienteSeleccionado(cliente.folioCliente)"
                                  (change)="toggleClienteSeleccionado(cliente.folioCliente)">
                         </div>
-                        <label class="cliente-info" [for]="'cliente-' + cliente.folioCliente">
-                          <div class="cliente-main">
-                            <strong>{{ cliente.nombre }}</strong>
-                            <small>{{ cliente.email }}</small>
-                          </div>
-                          <div class="cliente-details">
-                            <span class="detail">
-                              <i class="fas fa-birthday-cake"></i>
-                              {{ calcularEdad(cliente.fechaNacimiento) }} años
-                            </span>
-                            <span class="detail">
-                              <i class="fas fa-venus-mars"></i>
-                              {{ cliente.genero }}
-                            </span>
-                            <span class="detail">
-                              <i class="fas fa-phone"></i>
-                              {{ cliente.telefono || 'Sin teléfono' }}
-                            </span>
-                          </div>
-                          <div class="cliente-status">
-                            <span class="badge" [class]="cliente.estatus === 'Activo' ? 'bg-success' : 'bg-secondary'">
-                              {{ cliente.estatus }}
-                            </span>
-                          </div>
-                        </label>
                       </div>
-                    }
-                  </div>
+
+                      <div class="cliente-card-body">
+                        <h6 class="cliente-nombre">{{ cliente.nombre }}</h6>
+                        <p class="cliente-email">{{ cliente.email }}</p>
+                        
+                        <div class="cliente-info">
+                          <div class="info-item">
+                            <i class="fas fa-birthday-cake"></i>
+                            <span>{{ calcularEdad(cliente.fechaNacimiento) }} años</span>
+                          </div>
+                          <div class="info-item">
+                            <i class="fas fa-venus-mars"></i>
+                            <span>{{ cliente.genero }}</span>
+                          </div>
+                          <div class="info-item">
+                            <i class="fas fa-phone"></i>
+                            <span>{{ cliente.telefono || 'Sin teléfono' }}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="cliente-card-footer">
+                        <div class="cliente-status">
+                          <span class="status-badge" [class]="cliente.estatus === 'Activo' ? 'status-active' : 'status-inactive'">
+                            {{ cliente.estatus }}
+                          </span>
+                        </div>
+                        <div class="cliente-compatibility">
+                          <span class="compatibility-badge" 
+                                [class]="getCompatibilityClass(cliente, selectedRutina)">
+                            <i class="fas" [class]="getCompatibilityIcon(cliente, selectedRutina)"></i>
+                            {{ getCompatibilityText(cliente, selectedRutina) }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  }
                 </div>
               } @else {
-                <div class="empty-state">
+                <div class="no-clientes-state">
                   <i class="fas fa-users"></i>
-                  <p>No se encontraron clientes</p>
-                  <button class="btn btn-primary" (click)="cargarTodosLosClientesYFiltrar()">
-                    <i class="fas fa-sync-alt"></i> Recargar Clientes
-                  </button>
+                  <h5>No se encontraron clientes</h5>
+                  <p>Intenta ajustar los términos de búsqueda.</p>
                 </div>
               }
             </div>
+          </div>
 
-            <!-- Resumen de Selección -->
-            @if (clientesSeleccionados.length > 0) {
-              <div class="selection-summary">
-                <div class="card">
-                  <div class="card-body">
-                    <h6>Clientes Seleccionados ({{ clientesSeleccionados.length }})</h6>
-                    <div class="selected-clients">
-                      @for (folioCliente of clientesSeleccionados; track folioCliente) {
-                        <span class="selected-client">
-                          {{ getClienteNombre(folioCliente) }}
-                          <button type="button" class="btn-remove" 
-                                  (click)="toggleClienteSeleccionado(folioCliente)">
-                            <i class="fas fa-times"></i>
-                          </button>
+          <!-- RESUMEN DE SELECCIÓN -->
+          @if (clientesSeleccionados.length > 0) {
+            <div class="selection-summary-card">
+              <div class="summary-header">
+                <h6>Resumen de Selección</h6>
+                <span class="summary-count">{{ clientesSeleccionados.length }} cliente(s)</span>
+              </div>
+              <div class="selected-clients-list">
+                @for (folioCliente of clientesSeleccionados; track folioCliente) {
+                  <div class="selected-client-item">
+                    <div class="client-avatar">
+                      <i class="fas fa-user"></i>
+                    </div>
+                    <div class="client-info">
+                      <strong>{{ getClienteNombre(folioCliente) }}</strong>
+                      <small>{{ getClienteEmail(folioCliente) }}</small>
+                    </div>
+                    <button type="button" class="btn-remove-client" 
+                            (click)="toggleClienteSeleccionado(folioCliente)">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+        
+        <!-- MODAL FOOTER CON BOTÓN DE ASIGNAR -->
+        <div class="modal-footer">
+          <div class="footer-actions">
+            <div class="selection-summary">
+              <span class="selection-text">
+                {{ clientesSeleccionados.length }} cliente(s) seleccionado(s)
+              </span>
+            </div>
+            <div class="action-buttons">
+              <button type="button" class="btn btn-secondary" 
+                      (click)="closeAsignarModal()"
+                      [disabled]="asignando">
+                Cancelar
+              </button>
+              <button type="button" class="btn btn-primary" 
+                      (click)="asignarRutinaAClientes()"
+                      [disabled]="clientesSeleccionados.length === 0 || asignando">
+                <i class="fas fa-save"></i> 
+                {{ asignando ? 'Asignando...' : 'Asignar a ' + clientesSeleccionados.length + ' Cliente(s)' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL VER CLIENTES ASIGNADOS -->
+@if (showVerClientesModal) {
+  <div class="modal show" style="display: block">
+    <div class="modal-dialog modal-xl clientes-asignados-modal">
+      <div class="modal-content card-scrollable">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-users"></i> Clientes Asignados a la Rutina
+          </h5>
+          <button type="button" class="btn-close" (click)="closeVerClientesModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Lista de Clientes Asignados Mejorada -->
+          <div class="clientes-asignados-section">
+            @if (clientesAsignados.length > 0) {
+              <div class="clientes-asignados-grid">
+                @for (cliente of clientesAsignados; track cliente.folioCliente) {
+                  <div class="cliente-asignado-card">
+                    <div class="cliente-header">
+                      <div class="cliente-avatar">
+                        <i class="fas fa-user"></i>
+                      </div>
+                      <div class="cliente-info">
+                        <h6 class="cliente-nombre">{{ cliente.nombre }}</h6>
+                        <p class="cliente-email">{{ cliente.email }}</p>
+                      </div>
+                      <div class="cliente-status">
+                        <span class="status-badge" [class]="cliente.estatus === 'Activo' ? 'status-active' : 'status-inactive'">
+                          {{ cliente.estatus }}
                         </span>
-                      }
+                      </div>
+                    </div>
+                    
+                    <div class="cliente-details">
+                      <div class="detail-row">
+                        <div class="detail-item">
+                          <i class="fas fa-birthday-cake"></i>
+                          <span>{{ calcularEdad(cliente.fechaNacimiento) }} años</span>
+                        </div>
+                        <div class="detail-item">
+                          <i class="fas fa-venus-mars"></i>
+                          <span>{{ cliente.genero }}</span>
+                        </div>
+                        <div class="detail-item">
+                          <i class="fas fa-phone"></i>
+                          <span>{{ cliente.telefono || 'No especificado' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="cliente-actions">
+                      <button class="btn btn-outline-danger btn-sm" 
+                              (click)="desasignarCliente(cliente.folioCliente)"
+                              title="Desasignar cliente">
+                        <i class="fas fa-user-times"></i> Desasignar
+                      </button>
                     </div>
                   </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-state-improved">
+                <div class="empty-icon">
+                  <i class="fas fa-users"></i>
+                </div>
+                <h5>No hay clientes asignados a esta rutina</h5>
+                <p>Asigna clientes para que puedan comenzar a seguir esta rutina</p>
+                <div class="empty-actions">
+                  <button class="btn btn-primary" (click)="closeVerClientesModal(); showAsignarClientes()">
+                    <i class="fas fa-user-plus"></i> Asignar Clientes
+                  </button>
                 </div>
               </div>
             }
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-primary" 
-                  (click)="asignarRutinaAClientes()"
-                  [disabled]="clientesSeleccionados.length === 0 || asignando">
-            <i class="fas fa-save"></i> 
-            {{ asignando ? 'Asignando...' : 'Asignar a ' + clientesSeleccionados.length + ' Cliente(s)' }}
+          <button type="button" class="btn btn-secondary" (click)="closeVerClientesModal()">
+            Cerrar
           </button>
-          <button type="button" class="btn btn-secondary" 
-                  (click)="closeAsignarModal()"
-                  [disabled]="asignando">
-            Cancelar
+          <button type="button" class="btn btn-primary" (click)="closeVerClientesModal(); showAsignarClientes()">
+            <i class="fas fa-user-plus"></i> Asignar Más Clientes
           </button>
         </div>
       </div>
@@ -798,7 +967,7 @@
   </div>
 }
 
-<!-- MODAL CREAR NUEVO EJERCICIO - MÁS GRANDE -->
+<!-- MODAL CREAR EJERCICIO -->
 @if (showCrearEjercicioModal) {
   <div class="modal show" style="display: block">
     <div class="modal-dialog modal-xl crear-ejercicio-modal modal-centered">
@@ -842,37 +1011,120 @@
               </div>
 
               <!-- Equipo Necesario -->
-              <div class="equipment-section">
-                <label class="form-label">Equipo Necesario *</label>
-                <div class="equipment-card">
-                  <div class="selected-equipment">
-                    <small>{{ getEquiposSeleccionadosTexto() }}</small>
-                  </div>
-                  <div class="equipment-options">
-                    <div class="row">
-                      @for (equipo of equiposDisponibles; track equipo) {
-                        <div class="col-md-4">
-                          <div class="equipment-option">
-                            <input type="checkbox" 
-                                   [id]="'equipo-' + equipo"
-                                   [checked]="isEquipoSeleccionado(equipo)"
-                                   (change)="toggleEquipo(equipo)">
-                            <label [for]="'equipo-' + equipo">
-                              {{ equipo }}
-                            </label>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  </div>
-                  @if (ejercicioForm.get('equipoNecesario')?.invalid && ejercicioForm.get('equipoNecesario')?.touched) {
-                    <div class="error-message">
-                      <i class="fas fa-exclamation-circle"></i> Selecciona al menos un equipo
-                    </div>
-                  }
-                </div>
-              </div>
+              <!-- EQUIPO NECESARIO MEJORADO CON 3 COLUMNAS -->
+<div class="equipment-section">
+  <label class="form-label">
+    <i class="fas fa-tools"></i> Equipo Necesario *
+    <span class="equipment-counter" *ngIf="equiposSeleccionados.length > 0">
+      {{ equiposSeleccionados.length }} seleccionados
+    </span>
+  </label>
+  
+  <div class="equipment-card">
+    <!-- Equipo seleccionado -->
+    <div class="selected-equipment" *ngIf="equiposSeleccionados.length > 0">
+      <small>
+        <i class="fas fa-check-circle"></i> Equipo seleccionado: 
+        <span class="equipment-highlight">{{ getEquiposSeleccionadosTexto() }}</span>
+      </small>
+    </div>
+    
+    <div class="selected-equipment" *ngIf="equiposSeleccionados.length === 0">
+      <small style="color: rgba(255,255,255,0.6);">
+        <i class="fas fa-info-circle"></i> Selecciona al menos un tipo de equipo necesario para el ejercicio
+      </small>
+    </div>
 
+    <!-- 3 Columnas de opciones de equipo -->
+    <div class="equipment-columns-container">
+      
+      <!-- Columna 1: Equipo Básico -->
+      <div class="equipment-column">
+        <div class="column-header">
+          <h6><i class="fas fa-dumbbell"></i> Equipo Básico</h6>
+        </div>
+        
+        <div class="equipment-option-compact" 
+             *ngFor="let equipo of getEquiposByCategory('basico')"
+             [class.selected]="isEquipoSeleccionado(equipo)"
+             (click)="toggleEquipo(equipo)">
+          
+          <input type="checkbox" 
+                 [id]="'equipo-' + equipo"
+                 [checked]="isEquipoSeleccionado(equipo)"
+                 (change)="toggleEquipo(equipo)">
+          
+          <div class="equipment-icon-compact">
+            <i [class]="getEquipoIcon(equipo)"></i>
+          </div>
+          
+          <label [for]="'equipo-' + equipo">
+            {{ equipo }}
+          </label>
+        </div>
+      </div>
+
+      <!-- Columna 2: Máquinas y Especializado -->
+      <div class="equipment-column">
+        <div class="column-header">
+          <h6><i class="fas fa-cogs"></i> Máquinas & Especializado</h6>
+        </div>
+        
+        <div class="equipment-option-compact" 
+             *ngFor="let equipo of getEquiposByCategory('maquinas')"
+             [class.selected]="isEquipoSeleccionado(equipo)"
+             (click)="toggleEquipo(equipo)">
+          
+          <input type="checkbox" 
+                 [id]="'equipo-' + equipo"
+                 [checked]="isEquipoSeleccionado(equipo)"
+                 (change)="toggleEquipo(equipo)">
+          
+          <div class="equipment-icon-compact">
+            <i [class]="getEquipoIcon(equipo)"></i>
+          </div>
+          
+          <label [for]="'equipo-' + equipo">
+            {{ equipo }}
+          </label>
+        </div>
+      </div>
+
+      <!-- Columna 3: Accesorios y Otros -->
+      <div class="equipment-column">
+        <div class="column-header">
+          <h6><i class="fas fa-hands-helping"></i> Accesorios & Otros</h6>
+        </div>
+        
+        <div class="equipment-option-compact" 
+             *ngFor="let equipo of getEquiposByCategory('accesorios')"
+             [class.selected]="isEquipoSeleccionado(equipo)"
+             (click)="toggleEquipo(equipo)">
+          
+          <input type="checkbox" 
+                 [id]="'equipo-' + equipo"
+                 [checked]="isEquipoSeleccionado(equipo)"
+                 (change)="toggleEquipo(equipo)">
+          
+          <div class="equipment-icon-compact">
+            <i [class]="getEquipoIcon(equipo)"></i>
+          </div>
+          
+          <label [for]="'equipo-' + equipo">
+            {{ equipo }}
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje de error -->
+    <div class="error-message" 
+         *ngIf="ejercicioForm.get('equipoNecesario')?.invalid && ejercicioForm.get('equipoNecesario')?.touched">
+      <i class="fas fa-exclamation-circle"></i> 
+      Selecciona al menos un tipo de equipo necesario para el ejercicio
+    </div>
+  </div>
+</div>
               <div class="form-grid">
                 <div class="form-group">
                   <label class="form-label">Tiempo (minutos)</label>

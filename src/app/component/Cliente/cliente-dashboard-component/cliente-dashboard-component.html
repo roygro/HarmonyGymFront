@@ -1,177 +1,183 @@
-<div class="dashboard-container">
-  <!-- Header -->
-  <header class="dashboard-header">
-    <div class="header-content">
-      <div class="user-info">
-        <h1>¡Bienvenido, {{ currentUser?.nombreCompleto || 'Cliente' }}!</h1>
-        <p>Gestiona tus actividades y rutinas de entrenamiento</p>
+<div class="cliente-dashboard-container">
+
+  <!-- Header del Dashboard -->
+  <div class="header">
+    <div class="header-main">
+      <div class="header-brand">
+        <h1 class="header-title">
+          <i class="fas fa-dumbbell"></i>
+          Mi Dashboard
+        </h1>
       </div>
+      
+      <!-- Barra de búsqueda centrada -->
+      <div class="search-bar-header">
+        <div class="search-container">
+          <i class="fas fa-search search-icon"></i>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (input)="buscarActividades()"
+            placeholder="Buscar actividades..."
+            class="search-input"
+          >
+          <button *ngIf="searchTerm" class="btn btn-clear" (click)="limpiarBusqueda()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Botones de acción a la derecha -->
       <div class="header-actions">
-        <button class="btn btn-secondary" (click)="logout()">
-          <i class="fas fa-sign-out-alt"></i>
-          Cerrar Sesión
+        <button class="btn btn-primary" (click)="obtenerEstadisticas()">
+          <i class="fas fa-chart-bar"></i> Estadísticas
+        </button>
+        <button class="btn btn-secondary" (click)="actualizarDatos()">
+          <i class="fas fa-sync-alt"></i> Actualizar
         </button>
       </div>
     </div>
-  </header>
+    
+    <!-- Filtros en una fila separada -->
+    <div class="header-filters">
+      <div class="filters-container">
+        <button class="filter-btn active" (click)="mostrarTodasActividades()">
+          <i class="fas fa-list"></i> Todas
+        </button>
+        <button class="filter-btn" (click)="mostrarActividadesHoy()">
+          <i class="fas fa-calendar-day"></i> Hoy
+        </button>
+        <button class="filter-btn" (click)="mostrarProximasActividades()">
+          <i class="fas fa-calendar-plus"></i> Próximas
+        </button>
+      </div>
+      
+      <!-- Contador de actividades -->
+      <div class="activities-counter">
+        <span class="counter-badge">{{actividades.length}} actividades</span>
+      </div>
+    </div>
+  </div>
 
-  <!-- Loading -->
+  <!-- Loading Spinner -->
   @if (isLoading) {
-    <div class="loading-container">
+    <div class="loading-spinner">
       <div class="spinner"></div>
-      <p>Cargando tus datos...</p>
+      <p>Cargando tu información...</p>
+      <div class="loading-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
     </div>
   }
 
-  @if (!isLoading) {
-    <div class="dashboard-content">
-      
-      <!-- Resumen Rápido -->
-      <div class="quick-stats">
-        <div class="stat-card">
-          <div class="stat-icon hoy">
-            <i class="fas fa-calendar-day"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{ actividadesHoy.length }}</h3>
-            <p>Actividades Hoy</p>
-          </div>
+  <!-- Estadísticas Rápidas -->
+  <div class="stats-section">
+    <h3><i class="fas fa-chart-line"></i> Mi Resumen</h3>
+    <div class="stats-container">
+      <div class="stats-card">
+        <div class="stats-icon active">
+          <i class="fas fa-calendar-check"></i>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon proximas">
-            <i class="fas fa-calendar-week"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{ actividadesProximas.length }}</h3>
-            <p>Próximas Actividades</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon rutina">
-            <i class="fas fa-dumbbell"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{ rutinas.length }}</h3>
-            <p>Mis Rutinas</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon total">
-            <i class="fas fa-chart-line"></i>
-          </div>
-          <div class="stat-info">
-            <h3>{{ actividades.length }}</h3>
-            <p>Total Actividades</p>
-          </div>
+        <div class="stats-info">
+          <h4>Actividades Hoy</h4>
+          <div class="stats-number">{{ actividadesHoy.length }}</div>
         </div>
       </div>
-
-      <!-- Sección de Rutina Activa -->
-      @if (tieneRutinaActiva) {
-        <div class="section rutina-section">
-          <h2><i class="fas fa-dumbbell"></i> Tu Rutina Activa</h2>
-          <div class="rutina-card destacada">
-            <div class="rutina-header">
-              <h3>{{ rutinaActiva!.nombre }}</h3>
-              <div class="rutina-badges">
-                <span class="nivel-badge" [style.background-color]="getColorNivel(rutinaActiva!.nivel)">
-                  {{ rutinaActiva!.nivel }}
-                </span>
-                <span class="estatus-badge badge-activa">Activa</span>
-              </div>
-            </div>
-            
-            @if (rutinaActiva!.descripcion) {
-              <p class="rutina-descripcion">{{ rutinaActiva!.descripcion }}</p>
-            }
-            
-            <div class="rutina-stats">
-              <div class="stat">
-                <i class="fas fa-dumbbell"></i>
-                <span>{{ contarEjerciciosRutina(rutinaActiva!) }} ejercicios</span>
-              </div>
-              <div class="stat">
-                <i class="fas fa-clock"></i>
-                <span>{{ formatearDuracionRutina(rutinaActiva!) }}</span>
-              </div>
-              <div class="stat">
-                <i class="fas fa-bullseye"></i>
-                <span>{{ rutinaActiva!.objetivo || 'General' }}</span>
-              </div>
-            </div>
-
-            <!-- Ejercicios -->
-            @if (rutinaActiva!.ejercicios && rutinaActiva!.ejercicios.length > 0) {
-              <div class="ejercicios-section">
-                <h4>Ejercicios de la Rutina</h4>
-                <div class="ejercicios-list">
-                  @for (ejercicio of rutinaActiva!.ejercicios; track ejercicio.idEjercicio; let i = $index) {
-                    <div class="ejercicio-item">
-                      <div class="ejercicio-orden">{{ i + 1 }}</div>
-                      <div class="ejercicio-info">
-                        <h5>{{ getNombreEjercicio(ejercicio.idEjercicio) }}</h5>
-                        <div class="ejercicio-detalles">
-                          <span>{{ ejercicio.seriesEjercicio }} series</span>
-                          <span>•</span>
-                          <span>{{ ejercicio.repeticionesEjercicio }} repeticiones</span>
-                          <span>•</span>
-                          <span>{{ ejercicio.descansoEjercicio }}s descanso</span>
-                        </div>
-                        @if (ejercicio.instrucciones) {
-                          <p class="ejercicio-instrucciones">{{ ejercicio.instrucciones }}</p>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-              </div>
-            }
-          </div>
+      
+      <div class="stats-card">
+        <div class="stats-icon" [class]="tieneRutinaActiva ? 'active' : 'inactive'">
+          <i class="fas fa-dumbbell"></i>
         </div>
-      }
+        <div class="stats-info">
+          <h4>Rutina Activa</h4>
+          <div class="stats-number">{{ tieneRutinaActiva ? 'Sí' : 'No' }}</div>
+        </div>
+      </div>
+      
+      <div class="stats-card">
+        <div class="stats-icon active">
+          <i class="fas fa-running"></i>
+        </div>
+        <div class="stats-info">
+          <h4>Próximas</h4>
+          <div class="stats-number">{{ actividadesProximas.length }}</div>
+        </div>
+      </div>
+      
+      <div class="stats-card">
+        <div class="stats-icon active">
+          <i class="fas fa-history"></i>
+        </div>
+        <div class="stats-info">
+          <h4>Total Rutinas</h4>
+          <div class="stats-number">{{ rutinas.length }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      <!-- Sección de Actividades de Hoy -->
-      @if (tieneActividadesHoy) {
-        <div class="section actividades-section">
-          <h2><i class="fas fa-calendar-day"></i> Actividades de Hoy</h2>
-          <div class="actividades-grid">
+  <div class="dashboard-content">
+    <!-- Columna Izquierda: Actividades -->
+    <div class="content-column">
+      <!-- Actividades de Hoy -->
+      <section class="dashboard-section">
+        <div class="section-header">
+          <h2><i class="fas fa-sun"></i> Actividades de Hoy</h2>
+          <span class="activities-count">{{ actividadesHoy.length }}</span>
+        </div>
+        
+        @if (tieneActividadesHoy) {
+          <div class="actividades-list">
             @for (actividad of actividadesHoy; track actividad.idActividad) {
               <div class="actividad-card">
                 <div class="actividad-image">
                   <img [src]="getImagenActividad(actividad)" [alt]="actividad.nombreActividad">
                   <div class="image-overlay">
-                    <span class="image-badge">{{ actividad.lugar }}</span>
+                    <span class="actividad-badge">
+                      <i class="fas fa-clock"></i>
+                      {{ formatearHora(actividad.horaInicio) }}
+                    </span>
                   </div>
                 </div>
                 <div class="actividad-content">
                   <div class="actividad-header">
                     <h4>{{ actividad.nombreActividad }}</h4>
-                    <span class="estatus-badge badge-activa">Activa</span>
+                    <span class="estatus-badge badge-activa">
+                      <i class="fas fa-circle"></i> Disponible
+                    </span>
                   </div>
-                  <div class="info-grid">
-                    <div class="info-item">
-                      <i class="fas fa-clock"></i>
-                      <div class="info-content">
-                        <span class="info-label">Horario</span>
-                        <span class="info-value">
-                          {{ formatearHora(actividad.horaInicio) }} - {{ formatearHora(actividad.horaFin) }}
-                        </span>
+                  
+                  <div class="actividad-info">
+                    <div class="info-grid">
+                      <div class="info-item">
+                        <i class="fas fa-user-tie"></i>
+                        
+                      </div>
+                      
+                      <div class="info-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div class="info-content">
+                          <span class="info-label">Lugar</span>
+                          <span class="info-value">{{ actividad.lugar }}</span>
+                        </div>
+                      </div>
+                      
+                      <div class="info-item">
+                        <i class="fas fa-stopwatch"></i>
+                        
+                      </div>
+                      
+                      <div class="info-item">
+                        <i class="fas fa-users"></i>
+                        <div class="info-content">
+                          <span class="info-label">Cupo</span>
+                          <span class="info-value">{{ actividad.cupo }} personas</span>
+                        </div>
                       </div>
                     </div>
-                    <div class="info-item">
-                      <i class="fas fa-map-marker-alt"></i>
-                      <div class="info-content">
-                        <span class="info-label">Lugar</span>
-                        <span class="info-value">{{ actividad.lugar }}</span>
-                      </div>
-                    </div>
-                    <div class="info-item">
-                      <i class="fas fa-users"></i>
-                      <div class="info-content">
-                        <span class="info-label">Cupo</span>
-                        <span class="info-value">{{ actividad.cupo }} personas</span>
-                      </div>
-                    </div>
+                    
                     @if (actividad.descripcion) {
                       <div class="info-item descripcion">
                         <i class="fas fa-info-circle"></i>
@@ -182,125 +188,236 @@
                       </div>
                     }
                   </div>
+
+                  <div class="actividad-actions">
+                    <button class="btn btn-sm btn-primary">
+                      <i class="fas fa-calendar-plus"></i> Registrarme
+                    </button>
+                    <button class="btn btn-sm btn-secondary">
+                      <i class="fas fa-info-circle"></i> Detalles
+                    </button>
+                  </div>
                 </div>
               </div>
             }
           </div>
-        </div>
-      }
+        } @else {
+          <div class="no-activities">
+            <div class="no-activities-icon">
+              <i class="fas fa-calendar-times"></i>
+            </div>
+            <h3>No hay actividades para hoy</h3>
+            <p>Revisa las actividades próximas o consulta con recepción.</p>
+          </div>
+        }
+      </section>
 
-      <!-- Semana -->
-      <div class="section semana-section">
-        <h2><i class="fas fa-calendar-week"></i> Tu Semana</h2>
-        <div class="semana-grid">
+      <!-- Calendario Semanal -->
+      <section class="dashboard-section">
+        <div class="section-header">
+          <h2><i class="fas fa-calendar-alt"></i> Esta Semana</h2>
+        </div>
+        
+        <div class="calendar-week">
           @for (dia of semana; track dia; let i = $index) {
-            <div class="dia-card" [class.hoy]="esHoy(dia)">
-              <div class="dia-header">
-                <span class="dia-nombre">{{ getDiaSemana(dia) }}</span>
-                <span class="dia-numero">{{ getDiaMes(dia) }}</span>
+            <div class="calendar-day" 
+                 [class.today]="esHoy(dia)" 
+                 [class.has-activities]="tieneActividadesDia(dia)"
+                 (click)="seleccionarDia(dia)">
+              <div class="day-header">
+                <span class="day-name">{{ getDiaSemana(dia) }}</span>
+                <span class="day-number">{{ getDiaMes(dia) }}</span>
               </div>
-              <div class="dia-actividades">
-                @if (tieneActividadesDia(dia)) {
-                  @for (actividad of getActividadesDia(dia); track actividad.idActividad) {
-                    <div class="actividad-mini">
-                      <span class="actividad-hora">{{ formatearHora(actividad.horaInicio) }}</span>
-                      <span class="actividad-nombre">{{ actividad.nombreActividad }}</span>
-                    </div>
-                  }
-                } @else {
-                  <span class="sin-actividades">Sin actividades</span>
+              <div class="day-activities">
+                @for (actividad of getActividadesDia(dia); track actividad.idActividad) {
+                  <div class="activity-dot" [title]="actividad.nombreActividad"></div>
                 }
               </div>
             </div>
           }
         </div>
-      </div>
+      </section>
 
-      <!-- Próximas Actividades -->
-      @if (tieneActividadesProximas) {
-        <div class="section">
-          <h2><i class="fas fa-calendar-check"></i> Próximas Actividades</h2>
-          <div class="actividades-list proximas">
+      <!-- Actividades Próximas -->
+      <section class="dashboard-section">
+        <div class="section-header">
+          <h2><i class="fas fa-calendar-plus"></i> Próximas Actividades</h2>
+          <span class="activities-count">{{ actividadesProximas.length }}</span>
+        </div>
+        
+        @if (tieneActividadesProximas) {
+          <div class="proximas-list">
             @for (actividad of actividadesProximas; track actividad.idActividad) {
-              <div class="actividad-item">
+              <div class="proxima-actividad">
                 <div class="actividad-fecha">
-                  <span class="fecha-dia">{{ getDiaMesFromString(actividad.fechaActividad) }}</span>
-                  <span class="fecha-mes">{{ getDiaSemanaFromString(actividad.fechaActividad) }}</span>
+                  <div class="fecha-dia">{{ getDiaMesFromString(actividad.fechaActividad) }}</div>
+                  <div class="fecha-mes">{{ getDiaSemanaFromString(actividad.fechaActividad) }}</div>
                 </div>
                 <div class="actividad-info">
                   <h4>{{ actividad.nombreActividad }}</h4>
-                  <p>
+                  <p class="actividad-hora">
                     <i class="fas fa-clock"></i>
-                    {{ formatearHora(actividad.horaInicio) }} - {{ formatearHora(actividad.horaFin) }}
+                    {{ formatearHora(actividad.horaInicio) }}
                   </p>
-                  <p>
-                    <i class="fas fa-map-marker-alt"></i>
-                    {{ actividad.lugar }}
-                  </p>
+                  
                 </div>
                 <div class="actividad-actions">
-                  <span class="estatus-badge badge-activa">Disponible</span>
+                  <button class="btn btn-sm btn-primary">
+                    <i class="fas fa-user-plus"></i> Unirse
+                  </button>
                 </div>
               </div>
             }
           </div>
-        </div>
-      }
-
-      <!-- Todas las Rutinas -->
-      @if (tieneRutinas && rutinas.length > 1) {
-        <div class="section">
-          <h2><i class="fas fa-list"></i> Todas tus Rutinas</h2>
-          <div class="rutinas-grid">
-            @for (rutina of rutinas; track rutina.folioRutina) {
-              @if (rutina.estatus !== 'Activa' || rutinas.length === 1) {
-                <div class="rutina-card" [class.activa]="rutina.estatus === 'Activa'">
-                  <div class="rutina-header">
-                    <h4>{{ rutina.nombre }}</h4>
-                    <div class="rutina-badges">
-                      <span class="nivel-badge" [style.background-color]="getColorNivel(rutina.nivel)">
-                        {{ rutina.nivel }}
-                      </span>
-                      <span class="estatus-badge" [class.badge-activa]="rutina.estatus === 'Activa'" 
-                            [class.badge-inactiva]="rutina.estatus === 'Inactiva'">
-                        {{ rutina.estatus }}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  @if (rutina.descripcion) {
-                    <p class="rutina-descripcion">{{ rutina.descripcion }}</p>
-                  }
-                  
-                  <div class="rutina-stats">
-                    <div class="stat">
-                      <i class="fas fa-dumbbell"></i>
-                      <span>{{ contarEjerciciosRutina(rutina) }} ejercicios</span>
-                    </div>
-                    <div class="stat">
-                      <i class="fas fa-clock"></i>
-                      <span>{{ formatearDuracionRutina(rutina) }}</span>
-                    </div>
-                  </div>
-                  
-                  <div class="rutina-objetivo">
-                    <strong>Objetivo:</strong> {{ rutina.objetivo || 'General' }}
-                  </div>
-                </div>
-              }
-            }
+        } @else {
+          <div class="no-activities">
+            <div class="no-activities-icon">
+              <i class="fas fa-calendar-plus"></i>
+            </div>
+            <h3>No hay actividades próximas</h3>
+            <p>Consulta el calendario completo de actividades.</p>
           </div>
-        </div>
-      }
-
-      <!-- Estados vacíos -->
-      @if (!tieneActividades && !tieneRutinas) {
-        <div class="empty-state">
-          <i class="fas fa-calendar-times empty-icon"></i>
-          <h3>No tienes actividades ni rutinas asignadas</h3>
-          <p>Consulta con recepción para inscribirte en actividades o contacta con tu instructor para una rutina personalizada.</p>
-        </div>
-      }
+        }
+      </section>
     </div>
-  }
+
+    <!-- Columna Derecha: Rutina e Información -->
+    <div class="content-column">
+      <!-- Rutina Activa -->
+      <section class="dashboard-section">
+        <div class="section-header">
+          <h2><i class="fas fa-dumbbell"></i> Mi Rutina</h2>
+          @if (rutinaActiva) {
+            <span class="nivel-badge" [style.background-color]="getColorNivel(rutinaActiva.nivel)">
+              {{ rutinaActiva.nivel }}
+            </span>
+          }
+        </div>
+        
+        @if (tieneRutinaActiva && rutinaActiva) {
+          <div class="rutina-card">
+            <div class="rutina-header">
+              <h3>{{ rutinaActiva.nombre }}</h3>
+              <span class="estatus-badge badge-activa">Activa</span>
+            </div>
+            
+            <div class="rutina-meta">
+              <div class="meta-item">
+                <i class="fas fa-list-ol"></i>
+                <span>{{ contarEjerciciosRutina(rutinaActiva) }} ejercicios</span>
+              </div>
+              <div class="meta-item">
+                <i class="fas fa-clock"></i>
+                <span>{{ formatearDuracionRutina(rutinaActiva) }}</span>
+              </div>
+              <div class="meta-item">
+                <i class="fas fa-calendar"></i>
+                <span>{{ formatearFecha(rutinaActiva.fechaCreacion) }}</span>
+              </div>
+            </div>
+            
+            <div class="rutina-descripcion">
+              <p>{{ rutinaActiva.descripcion }}</p>
+            </div>
+            
+            <div class="rutina-ejercicios">
+              <h4>Ejercicios:</h4>
+              <div class="ejercicios-list">
+                @for (ejercicio of rutinaActiva.ejercicios; track ejercicio.idEjercicio; let i = $index) {
+                  <div class="ejercicio-item">
+                    <div class="ejercicio-info">
+                      <span class="ejercicio-numero">{{ i + 1 }}</span>
+                      <span class="ejercicio-nombre">
+                        {{ getNombreEjercicio(ejercicio.idEjercicio) }}
+                      </span>
+                    </div>
+                    <div class="ejercicio-sets">
+                      <span class="sets-info">
+                        {{ ejercicio.seriesEjercicio }}x{{ ejercicio.repeticionesEjercicio }}
+                      </span>
+                      @if (ejercicio.descansoEjercicio) {
+                        <span class="descanso-info">
+                          <i class="fas fa-hourglass-half"></i>
+                          {{ ejercicio.descansoEjercicio }}s
+                        </span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+            
+            <div class="rutina-actions">
+              <button class="btn btn-primary">
+                <i class="fas fa-play-circle"></i> Iniciar Rutina
+              </button>
+              <button class="btn btn-secondary">
+                <i class="fas fa-download"></i> Descargar PDF
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="no-activities">
+            <div class="no-activities-icon">
+              <i class="fas fa-dumbbell"></i>
+            </div>
+            <h3>No tienes rutina asignada</h3>
+            <p>Contacta con un instructor para que te asigne una rutina personalizada.</p>
+            <button class="btn btn-primary">
+              <i class="fas fa-user-tie"></i> Solicitar Rutina
+            </button>
+          </div>
+        }
+      </section>
+
+      <!-- Instructor Asignado -->
+      <section class="dashboard-section">
+        <div class="section-header">
+          <h2><i class="fas fa-user-tie"></i> Mi Instructor</h2>
+        </div>
+        
+        @if (rutinaActiva?.nombre) {
+          <div class="instructor-card">
+            <div class="instructor-avatar">
+              <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="instructor-info">
+              <h4>{{ rutinaActiva?.nombre }}</h4>
+              <p class="instructor-especialidad">Entrenador Personal</p>
+              <div class="instructor-contact">
+                <span class="contact-item">
+                  <i class="fas fa-star"></i>
+                  4.8/5.0
+                </span>
+                <span class="contact-item">
+                  <i class="fas fa-calendar-check"></i>
+                  Disponible
+                </span>
+              </div>
+            </div>
+            <div class="instructor-actions">
+              <button class="btn btn-sm btn-secondary">
+                <i class="fas fa-comment"></i> Contactar
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="no-activities small">
+            <div class="no-activities-icon">
+              <i class="fas fa-user-tie"></i>
+            </div>
+            <h4>Sin instructor asignado</h4>
+            <p>Se te asignará un instructor cuando tengas una rutina.</p>
+          </div>
+        }
+      </section>
+
+      <!-- Historial de Rutinas -->
+      <section class="dashboard-section">
+        <div class="section-header">
+          <h2><i class="fas fa-history"></i> Historial de Rutinas</h2>
+        </div>
+      </section>
+    </div>
+  </div>
 </div>
