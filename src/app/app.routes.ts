@@ -25,6 +25,12 @@ export const routes: Routes = [
     component: HeaderRecepcionistaComponent 
   },
   
+  //Rutas del cliente
+    // Ruta para dashboard del cliente
+  { 
+    path: 'cliente/dashboard', 
+    loadComponent: () => import('./component/Cliente/cliente-dashboard-component/cliente-dashboard-component').then(m => m.ClienteDashboardComponent)
+  },
   // Rutas de Pagos
   { 
     path: 'pagos', 
@@ -83,6 +89,16 @@ export const routes: Routes = [
     component: InstructorComponent 
   },
  
+
+  // RUTAS DE ADMINISTRADOR 
+  { 
+    path: 'administradores', 
+    loadComponent: () => import('./component/Administrador/administrador-component/administrador-component').then(m => m.AdministradorComponent)
+  },
+  { 
+    path: 'administradores/dashboard', 
+    loadComponent: () => import('./component/Administrador/administrador-dashboard-component/administrador-dashboard-component').then(m => m.AdministradorDashboardComponent)
+  },
   
   // Ruta por defecto
   { 

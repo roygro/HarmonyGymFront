@@ -1,0 +1,722 @@
+/* Variables de colores */
+:root {
+  --primary-red: #E63946;
+  --secondary-orange: #F77F00;
+  --accent-blue: #457B9D;
+  --dark-blue: #1D3557;
+  --light-blue: #A8DADC;
+  --white: #F1FAEE;
+  --black: #1A1A1A;
+  --gray-dark: #2D3748;
+  --gray-medium: #4A5568;
+  --gray-light: #E2E8F0;
+}
+
+/* Estilos generales */
+.dashboard-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--dark-blue) 0%, var(--black) 100%);
+  color: var(--white);
+  padding: 20px;
+}
+
+/* Header */
+.dashboard-header {
+  background: linear-gradient(135deg, var(--primary-red) 0%, var(--secondary-orange) 100%);
+  border-radius: 16px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.user-info h1 {
+  font-size: 2.2rem;
+  margin-bottom: 8px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.user-info p {
+  opacity: 0.9;
+  margin: 0;
+}
+
+/* Navegación */
+.dashboard-nav {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: var(--white);
+  padding: 15px 25px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(10px);
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.nav-btn.active {
+  background: var(--accent-blue);
+  border-color: var(--light-blue);
+  box-shadow: 0 5px 15px rgba(69, 123, 157, 0.4);
+}
+
+/* Loading */
+.loading-container {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top: 4px solid var(--primary-red);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+/* Quick Stats */
+.quick-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 25px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.stat-icon {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+
+.stat-icon.hoy {
+  background: rgba(230, 57, 70, 0.2);
+  color: var(--primary-red);
+}
+
+.stat-icon.proximas {
+  background: rgba(247, 127, 0, 0.2);
+  color: var(--secondary-orange);
+}
+
+.stat-icon.total {
+  background: rgba(69, 123, 157, 0.2);
+  color: var(--accent-blue);
+}
+
+.stat-info h3 {
+  font-size: 2.2rem;
+  margin-bottom: 5px;
+  font-weight: 700;
+}
+
+.stat-info p {
+  opacity: 0.8;
+  margin: 0;
+}
+
+/* Semana */
+.semana-section {
+  margin-bottom: 40px;
+}
+
+.semana-section h2 {
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+}
+
+.semana-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.dia-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.dia-card.hoy {
+  background: rgba(230, 57, 70, 0.2);
+  border-color: var(--primary-red);
+  transform: scale(1.05);
+}
+
+.dia-header {
+  margin-bottom: 15px;
+}
+
+.dia-nombre {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.dia-numero {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.dia-actividades {
+  min-height: 60px;
+}
+
+.actividad-mini {
+  background: rgba(168, 218, 220, 0.2);
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 5px;
+  font-size: 0.8rem;
+}
+
+.actividad-hora {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.actividad-nombre {
+  opacity: 0.9;
+  font-size: 0.75rem;
+}
+
+.sin-actividades {
+  opacity: 0.5;
+  font-size: 0.8rem;
+}
+
+/* Secciones */
+.section {
+  margin-bottom: 40px;
+}
+
+.section h2 {
+  margin-bottom: 25px;
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Actividades Grid */
+.actividades-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 25px;
+}
+
+.actividad-card {
+  background: linear-gradient(135deg, rgba(34, 91, 170, 0.7) 0%, rgba(45, 55, 72, 0.7) 100%);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(79, 117, 215, 0.597);
+  transition: all 0.4s ease;
+  border: 1px solid rgba(114, 192, 255, 0.1);
+}
+
+.actividad-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+}
+
+.actividad-image {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.actividad-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.actividad-card:hover .actividad-image img {
+  transform: scale(1.05);
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.7) 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 15px;
+}
+
+.image-badge {
+  background: var(--secondary-orange);
+  color: var(--white);
+  padding: 6px 12px;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.actividad-content {
+  padding: 25px;
+}
+
+.actividad-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.actividad-header h4 {
+  font-size: 1.4rem;
+  margin-right: 15px;
+  flex: 1;
+}
+
+.estatus-badge {
+  padding: 6px 12px;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.badge-activa {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.badge-inactiva {
+  background: rgba(244, 67, 54, 0.2);
+  color: #F44336;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+}
+
+.info-item {
+  display: flex;
+  gap: 12px;
+}
+
+.info-item i {
+  color: var(--light-blue);
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.info-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-label {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-bottom: 3px;
+}
+
+.info-value {
+  font-weight: 500;
+}
+
+.descripcion {
+  grid-column: 1 / -1;
+}
+
+/* Lista de actividades próximas */
+.actividades-list.proximas {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.actividad-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.actividad-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(5px);
+}
+
+.actividad-fecha {
+  text-align: center;
+  min-width: 60px;
+}
+
+.fecha-dia {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--light-blue);
+}
+
+.fecha-mes {
+  display: block;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.actividad-info {
+  flex: 1;
+}
+
+.actividad-info h4 {
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+}
+
+.actividad-info p {
+  margin: 4px 0;
+  opacity: 0.8;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Rutinas */
+.rutinas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 25px;
+}
+
+.rutina-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.rutina-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.rutina-card.destacada {
+  background: linear-gradient(135deg, rgba(69, 123, 157, 0.3) 0%, rgba(29, 53, 87, 0.3) 100%);
+  border: 2px solid var(--accent-blue);
+}
+
+.rutina-card.activa {
+  border-left: 4px solid #4CAF50;
+}
+
+.rutina-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.rutina-header h3,
+.rutina-header h4 {
+  margin: 0;
+  flex: 1;
+}
+
+.rutina-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nivel-badge {
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+.rutina-descripcion {
+  opacity: 0.8;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.rutina-stats {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.rutina-stats .stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.rutina-objetivo {
+  background: rgba(168, 218, 220, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
+/* Ejercicios */
+.ejercicios-section {
+  margin-top: 20px;
+}
+
+.ejercicios-section h4 {
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+}
+
+.ejercicios-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ejercicio-item {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.ejercicio-orden {
+  background: var(--primary-red);
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.ejercicio-info {
+  flex: 1;
+}
+
+.ejercicio-info h5 {
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+
+.ejercicio-detalles {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.85rem;
+  opacity: 0.8;
+  flex-wrap: wrap;
+}
+
+.ejercicio-instrucciones {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+/* Empty States */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  color: var(--light-blue);
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+}
+
+.empty-state p {
+  opacity: 0.7;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* Botones */
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 15px;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .dashboard-nav {
+    justify-content: center;
+  }
+  
+  .quick-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .semana-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+  
+  .actividades-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .rutinas-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .actividad-item {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+  
+  .actividad-fecha {
+    min-width: auto;
+  }
+  
+  .rutina-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .rutina-stats {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-header {
+    padding: 20px;
+  }
+  
+  .user-info h1 {
+    font-size: 1.8rem;
+  }
+  
+  .nav-btn {
+    padding: 12px 20px;
+    font-size: 0.9rem;
+  }
+  
+  .stat-card {
+    padding: 20px;
+  }
+  
+  .stat-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.4rem;
+  }
+}
