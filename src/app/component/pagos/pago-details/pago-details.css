@@ -154,8 +154,31 @@ body {
 }
 
 .btn-back {
-  align-self: flex-start;
-  margin-bottom: 15px;
+  background: var(--gray-dark);
+  border: 2px solid var(--gray-medium);
+  color: var(--white);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 12px;
+  font-family: 'Roboto Condensed', sans-serif;
+  margin-bottom: 20px;
+}
+
+.btn-back:hover {
+  background: var(--gray-medium);
+  border-color: var(--gray-light);
+  color: var(--white);
+}
+
+.btn-back i {
+  font-size: 11px;
 }
 
 /* ===== LOADING SPINNER ESTANDARIZADO ===== */

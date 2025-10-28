@@ -1,9 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http'; // Importa HttpClient
+import { HttpClient } from '@angular/common/http';
 import { ClienteMembresiaService, ClienteMembresia } from '../../../services/membresia/cliente-membresia';
 import { HeaderRecepcionistaComponent } from '../../recepcionista/header-recepcionista/header-recepcionista';
+import { Chart, registerables } from 'chart.js';
+
+// Registrar todos los componentes de Chart.js
+Chart.register(...registerables);
 
 export interface ClienteMembresiaBackend {
   idMembresiaCliente: number;
@@ -36,7 +40,7 @@ export interface ClienteMembresiaBackend {
   templateUrl: './cliente-membresia.html',
   styleUrl: './cliente-membresia.css'
 })
-export class ClienteMembresiaComponent implements OnInit {
+export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestroy {
   membresias: ClienteMembresia[] = [];
   membresiasFiltradas: ClienteMembresia[] = [];
   filtro: string = '';
@@ -47,91 +51,104 @@ export class ClienteMembresiaComponent implements OnInit {
     folioCliente: '',
     idMembresia: '',
     fechaInicio: new Date().toISOString().split('T')[0]
-    
   };
 
   // Lista inicial vacía - se llenará con datos reales
   tipoMembresias: any[] = [];
 
- // Cambia esta parte en tu componente TypeScript
-snackbar = {
-  show: false,
-  message: '',
-  type: 'success' as 'success' | 'error' | 'warning'  // Agrega 'warning'
-};
+  // Snackbar
+  snackbar = {
+    show: false,
+    message: '',
+    type: 'success' as 'success' | 'error' | 'warning'
+  };
 
-// Agrega estas variables después de las que ya tienes
-showHistorialModal: boolean = false;
-historialData: any[] = [];
-clienteHistorial: string = '';
-loadingHistorial: boolean = false;
+  // Historial
+  showHistorialModal: boolean = false;
+  historialData: any[] = [];
+  clienteHistorial: string = '';
+  loadingHistorial: boolean = false;
 
-
-// Propiedades para los nombres
+  // Propiedades para los nombres
   clientes: any[] = [];
   recepcionistas: any[] = [];
   productos: any[] = [];
 
-  
+  // Propiedades para gráficos
+  private distribucionChart: Chart | null = null;
+  private estadoChart: Chart | null = null;
+  tiposMembresiaDisponibles: string[] = ['Básica', 'Premium', 'VIP'];
 
   constructor(
     private clienteMembresiaService: ClienteMembresiaService,
-    private http: HttpClient // Inyecta HttpClient
+    private http: HttpClient
   ) { }
 
   ngOnInit(): void {
-    this.verificarMembresiasDisponibles(); // Primero verifica las membresías disponibles
+    this.verificarMembresiasDisponibles();
     this.cargarMembresiasActivas();
-    this.cargarNombres(); // <- Agregar esta línea
+    this.cargarNombres();
   }
 
-// Método para cargar los nombres
-cargarNombres(): void {
-  // Necesitarás agregar estos métodos a tu servicio o usar HttpClient directamente
-  this.http.get('http://localhost:8081/api/clientes').subscribe({
-    next: (clientes: any) => {
-      this.clientes = clientes;
-    },
-    error: (error: any) => {
-      console.error('Error al cargar clientes:', error);
+  ngAfterViewInit(): void {
+    // Los gráficos se crearán después de cargar los datos
+  }
+
+  ngOnDestroy(): void {
+    // Limpiar gráficos cuando el componente se destruya
+    if (this.distribucionChart) {
+      this.distribucionChart.destroy();
     }
-  });
-
-  this.http.get('http://localhost:8081/api/recepcionistas').subscribe({
-    next: (recepcionistas: any) => {
-      this.recepcionistas = recepcionistas;
-    },
-    error: (error: any) => {
-      console.error('Error al cargar recepcionistas:', error);
+    if (this.estadoChart) {
+      this.estadoChart.destroy();
     }
-  });
+  }
 
-  this.http.get('http://localhost:8081/api/productos').subscribe({
-    next: (productos: any) => {
-      this.productos = productos;
-    },
-    error: (error: any) => {
-      console.error('Error al cargar productos:', error);
-    }
-  });
-}
-// Métodos para obtener nombres
-obtenerNombreCliente(folio: string): string {
-  const cliente = this.clientes.find((c: any) => c.folioCliente === folio);
-  return cliente ? cliente.nombre : folio;
-}
+  // Método para cargar los nombres
+  cargarNombres(): void {
+    this.http.get('http://localhost:8081/api/clientes').subscribe({
+      next: (clientes: any) => {
+        this.clientes = clientes;
+      },
+      error: (error: any) => {
+        console.error('Error al cargar clientes:', error);
+      }
+    });
 
-obtenerNombreRecepcionista(id: string): string {
-  const recepcionista = this.recepcionistas.find((r: any) => r.idRecepcionista === id);
-  return recepcionista ? recepcionista.nombre : id;
-}
+    this.http.get('http://localhost:8081/api/recepcionistas').subscribe({
+      next: (recepcionistas: any) => {
+        this.recepcionistas = recepcionistas;
+      },
+      error: (error: any) => {
+        console.error('Error al cargar recepcionistas:', error);
+      }
+    });
 
-obtenerNombreProducto(codigo: string): string {
-  const producto = this.productos.find((p: any) => p.codigo === codigo);
-  return producto ? producto.nombre : codigo;
-}
+    this.http.get('http://localhost:8081/api/productos').subscribe({
+      next: (productos: any) => {
+        this.productos = productos;
+      },
+      error: (error: any) => {
+        console.error('Error al cargar productos:', error);
+      }
+    });
+  }
 
+  // Métodos para obtener nombres
+  obtenerNombreCliente(folio: string): string {
+    const cliente = this.clientes.find((c: any) => c.folioCliente === folio);
+    return cliente ? cliente.nombre : folio;
+  }
 
+  obtenerNombreRecepcionista(id: string): string {
+    const recepcionista = this.recepcionistas.find((r: any) => r.idRecepcionista === id);
+    return recepcionista ? recepcionista.nombre : id;
+  }
+
+  obtenerNombreProducto(codigo: string): string {
+    const producto = this.productos.find((p: any) => p.codigo === codigo);
+    return producto ? producto.nombre : codigo;
+  }
 
   // NUEVO MÉTODO: Verificar membresías disponibles en el backend
   verificarMembresiasDisponibles(): void {
@@ -232,50 +249,56 @@ obtenerNombreProducto(codigo: string): string {
     });
   }
 
-cargarMembresiasActivas(): void {
-  this.loading = true;
-  this.clienteMembresiaService.obtenerMembresiasActivas().subscribe({
-    next: (data: any) => {
-      console.log('Datos recibidos del servicio:', data);
-      
-      if (data && data.membresias && Array.isArray(data.membresias)) {
-        // Mapear correctamente la estructura del backend
-        this.membresias = data.membresias.map((item: any) => this.mapearMembresiaBackend(item));
-      } else if (data && Array.isArray(data)) {
-        this.membresias = data.map((item: any) => this.mapearMembresiaBackend(item));
-      } else {
-        console.warn('Formato de respuesta inesperado:', data);
+  cargarMembresiasActivas(): void {
+    this.loading = true;
+    this.clienteMembresiaService.obtenerMembresiasActivas().subscribe({
+      next: (data: any) => {
+        console.log('Datos recibidos del servicio:', data);
+        
+        if (data && data.membresias && Array.isArray(data.membresias)) {
+          // Mapear correctamente la estructura del backend
+          this.membresias = data.membresias.map((item: any) => this.mapearMembresiaBackend(item));
+        } else if (data && Array.isArray(data)) {
+          this.membresias = data.map((item: any) => this.mapearMembresiaBackend(item));
+        } else {
+          console.warn('Formato de respuesta inesperado:', data);
+          this.membresias = [];
+        }
+        
+        console.log('Membresías después del mapeo:', this.membresias);
+        this.membresiasFiltradas = [...this.membresias];
+        this.loading = false;
+        
+        // Crear gráficos después de cargar los datos
+        setTimeout(() => {
+          this.crearGraficoDistribucion();
+          this.crearGraficoEstado();
+        }, 100);
+      },
+      error: (error: any) => {
+        console.error('Error al cargar membresías:', error);
+        this.mostrarSnackbar('Error al cargar las membresías activas', 'error');
         this.membresias = [];
+        this.membresiasFiltradas = [];
+        this.loading = false;
       }
-      
-      console.log('Membresías después del mapeo:', this.membresias);
-      this.membresiasFiltradas = [...this.membresias];
-      this.loading = false;
-    },
-    error: (error: any) => {
-      console.error('Error al cargar membresías:', error);
-      this.mostrarSnackbar('Error al cargar las membresías activas', 'error');
-      this.membresias = [];
-      this.membresiasFiltradas = [];
-      this.loading = false;
-    }
-  });
-}
+    });
+  }
 
-private mapearMembresiaBackend(backendData: any): ClienteMembresia {
-  console.log('Mapeando datos del backend:', backendData);
-  
-  return {
-    id_membresia_cliente: backendData.idMembresiaCliente || backendData.id_membresia_cliente,
-    folio_cliente: backendData.cliente?.folioCliente || backendData.folio_cliente || 'Desconocido',
-    id_membresia: backendData.membresia?.idMembresia || backendData.id_membresia || 'Desconocida',
-    fecha_inicio: backendData.fechaInicio || backendData.fecha_inicio || '',
-    fecha_fin: backendData.fechaFin || backendData.fecha_fin || '',
-    estatus: backendData.estatus || 'Desconocido',
-    fecha_registro: backendData.fechaRegistro || backendData.fecha_registro || '',
-    fecha_actualizacion: backendData.fechaActualizacion || backendData.fecha_actualizacion || ''
-  };
-}
+  private mapearMembresiaBackend(backendData: any): ClienteMembresia {
+    console.log('Mapeando datos del backend:', backendData);
+    
+    return {
+      id_membresia_cliente: backendData.idMembresiaCliente || backendData.id_membresia_cliente,
+      folio_cliente: backendData.cliente?.folioCliente || backendData.folio_cliente || 'Desconocido',
+      id_membresia: backendData.membresia?.idMembresia || backendData.id_membresia || 'Desconocida',
+      fecha_inicio: backendData.fechaInicio || backendData.fecha_inicio || '',
+      fecha_fin: backendData.fechaFin || backendData.fecha_fin || '',
+      estatus: backendData.estatus || 'Desconocido',
+      fecha_registro: backendData.fechaRegistro || backendData.fecha_registro || '',
+      fecha_actualizacion: backendData.fechaActualizacion || backendData.fecha_actualizacion || ''
+    };
+  }
 
   aplicarFiltro(): void {
     if (!Array.isArray(this.membresias)) {
@@ -289,11 +312,17 @@ private mapearMembresiaBackend(backendData: any): ClienteMembresia {
     }
 
     const filtroLower = this.filtro.toLowerCase();
-    this.membresiasFiltradas = this.membresias.filter(membresia =>
-      (membresia.folio_cliente && membresia.folio_cliente.toLowerCase().includes(filtroLower)) ||
-      (membresia.id_membresia && membresia.id_membresia.toLowerCase().includes(filtroLower)) ||
-      (membresia.estatus && membresia.estatus.toLowerCase().includes(filtroLower))
-    );
+    this.membresiasFiltradas = this.membresias.filter(membresia => {
+      const nombreCliente = this.obtenerNombreCliente(membresia.folio_cliente).toLowerCase();
+      const nombreMembresia = this.obtenerEtiquetaMembresia(membresia.id_membresia).toLowerCase();
+      
+      return (
+        (nombreCliente && nombreCliente.includes(filtroLower)) ||
+        (nombreMembresia && nombreMembresia.includes(filtroLower)) ||
+        (membresia.estatus && membresia.estatus.toLowerCase().includes(filtroLower)) ||
+        (membresia.folio_cliente && membresia.folio_cliente.toLowerCase().includes(filtroLower))
+      );
+    });
   }
 
   limpiarFiltro(): void {
@@ -359,8 +388,6 @@ private mapearMembresiaBackend(backendData: any): ClienteMembresia {
     });
   }
 
-  // ... (el resto de tus métodos existentes se mantienen igual)
-
   renovarMembresia(membresia: ClienteMembresia): void {
     if (confirm('¿Estás seguro de que deseas renovar esta membresía?')) {
       this.clienteMembresiaService.renovarMembresia(membresia.id_membresia_cliente).subscribe({
@@ -391,87 +418,77 @@ private mapearMembresiaBackend(backendData: any): ClienteMembresia {
     }
   }
 
-  // POR ESTE MÉTODO MEJORADO:
-// REEMPLAZA el método verificarAcceso actual por este:
-verificarAcceso(membresia: ClienteMembresia): void {
-  this.clienteMembresiaService.verificarAcceso(membresia.folio_cliente).subscribe({
-    next: (response: any) => {
-      console.log('Respuesta verificar acceso:', response); // Para debug
-      
-      // El backend retorna {success: true, tieneAcceso: boolean, mensaje: string}
-      if (response.success) {
-        if (response.tieneAcceso) {
-          // ✅ Acceso permitido
-          this.mostrarSnackbar(`✅ ${response.mensaje} - ${membresia.folio_cliente}`, 'success');
-          this.registrarEntradaCliente(membresia.folio_cliente);
-        } else {
-          // ❌ Acceso denegado
-          const mensaje = response.mensaje || response.message || 'Acceso denegado';
-          this.mostrarSnackbar(`❌ ${mensaje}`, 'error');
-          
-          // Sugerencias - CON VALIDACIÓN SEGURA
-          if (mensaje && typeof mensaje === 'string') {
-            if (mensaje.includes('expirada')) {
-              this.sugerirRenovacion(membresia);
-            } else if (mensaje.includes('No tiene membresía') || mensaje.includes('no tiene membresía')) {
-              this.sugerirAsignarMembresia(membresia.folio_cliente);
+  verificarAcceso(membresia: ClienteMembresia): void {
+    this.clienteMembresiaService.verificarAcceso(membresia.folio_cliente).subscribe({
+      next: (response: any) => {
+        console.log('Respuesta verificar acceso:', response);
+        
+        if (response.success) {
+          if (response.tieneAcceso) {
+            this.mostrarSnackbar(`✅ ${response.mensaje} - ${membresia.folio_cliente}`, 'success');
+            this.registrarEntradaCliente(membresia.folio_cliente);
+          } else {
+            const mensaje = response.mensaje || response.message || 'Acceso denegado';
+            this.mostrarSnackbar(`❌ ${mensaje}`, 'error');
+            
+            if (mensaje && typeof mensaje === 'string') {
+              if (mensaje.includes('expirada')) {
+                this.sugerirRenovacion(membresia);
+              } else if (mensaje.includes('No tiene membresía') || mensaje.includes('no tiene membresía')) {
+                this.sugerirAsignarMembresia(membresia.folio_cliente);
+              }
             }
           }
+        } else {
+          this.mostrarSnackbar('Error en la verificación de acceso', 'error');
         }
-      } else {
-        // Error en la respuesta del servidor
-        this.mostrarSnackbar('Error en la verificación de acceso', 'error');
+      },
+      error: (error: any) => {
+        console.error('Error al verificar acceso:', error);
+        this.mostrarSnackbar('Error al conectar con el servidor', 'error');
       }
-    },
-    error: (error: any) => {
-      console.error('Error al verificar acceso:', error);
-      this.mostrarSnackbar('Error al conectar con el servidor', 'error');
-    }
-  });
-}
-
-// AGREGA estos métodos auxiliares:
-registrarEntradaCliente(folioCliente: string): void {
-  console.log(`📝 Entrada registrada: ${folioCliente} - ${new Date().toLocaleString()}`);
-  // Aquí puedes agregar llamada a servicio de registro de entradas
-}
-
-sugerirRenovacion(membresia: ClienteMembresia): void {
-  if (confirm('¿Desea renovar esta membresía?')) {
-    this.renovarMembresia(membresia);
-  }
-}
-
-sugerirAsignarMembresia(folioCliente: string): void {
-  if (confirm(`El cliente ${folioCliente} no tiene membresía. ¿Desea asignar una?`)) {
-    this.asignarFormData.folioCliente = folioCliente;
-    this.showAsignarDialog = true;
+    });
   }
 
-}
-// POR ESTE NUEVO MÉTODO:
-verHistorial(membresia: ClienteMembresia): void {
-  this.loadingHistorial = true;
-  
-  this.clienteMembresiaService.obtenerHistorialMembresias(membresia.folio_cliente).subscribe({
-    next: (response: any) => {
-      this.loadingHistorial = false;
-      
-      if (response.success && response.historial) {
-        this.historialData = response.historial;
-        this.clienteHistorial = membresia.folio_cliente;
-        this.showHistorialModal = true;
-      } else {
-        this.mostrarSnackbar('No se pudo cargar el historial', 'error');
-      }
-    },
-    error: (error: any) => {
-      this.loadingHistorial = false;
-      console.error('Error al cargar historial:', error);
-      this.mostrarSnackbar('Error al cargar el historial', 'error');
+  registrarEntradaCliente(folioCliente: string): void {
+    console.log(`📝 Entrada registrada: ${folioCliente} - ${new Date().toLocaleString()}`);
+  }
+
+  sugerirRenovacion(membresia: ClienteMembresia): void {
+    if (confirm('¿Desea renovar esta membresía?')) {
+      this.renovarMembresia(membresia);
     }
-  });
-}
+  }
+
+  sugerirAsignarMembresia(folioCliente: string): void {
+    if (confirm(`El cliente ${folioCliente} no tiene membresía. ¿Desea asignar una?`)) {
+      this.asignarFormData.folioCliente = folioCliente;
+      this.showAsignarDialog = true;
+    }
+  }
+
+  verHistorial(membresia: ClienteMembresia): void {
+    this.loadingHistorial = true;
+    
+    this.clienteMembresiaService.obtenerHistorialMembresias(membresia.folio_cliente).subscribe({
+      next: (response: any) => {
+        this.loadingHistorial = false;
+        
+        if (response.success && response.historial) {
+          this.historialData = response.historial;
+          this.clienteHistorial = membresia.folio_cliente;
+          this.showHistorialModal = true;
+        } else {
+          this.mostrarSnackbar('No se pudo cargar el historial', 'error');
+        }
+      },
+      error: (error: any) => {
+        this.loadingHistorial = false;
+        console.error('Error al cargar historial:', error);
+        this.mostrarSnackbar('Error al cargar el historial', 'error');
+      }
+    });
+  }
 
   cargarMembresiasPorExpirar(): void {
     this.loading = true;
@@ -487,6 +504,9 @@ verHistorial(membresia: ClienteMembresia): void {
         this.membresiasFiltradas = [...membresiasArray];
         this.mostrarSnackbar(`Se encontraron ${membresiasArray.length} membresías por expirar`, 'success');
         this.loading = false;
+        
+        // Actualizar gráficos
+        this.actualizarGraficos();
       },
       error: (error: any) => {
         console.error('Error al cargar membresías por expirar:', error);
@@ -511,7 +531,197 @@ verHistorial(membresia: ClienteMembresia): void {
     });
   }
 
-  // Métodos auxiliares para la UI - ACTUALIZADOS
+  // Métodos para gráficos
+  private crearGraficoDistribucion(): void {
+    if (this.distribucionChart) {
+      this.distribucionChart.destroy();
+    }
+
+    const ctx = document.getElementById('distribucionClientesChart') as HTMLCanvasElement;
+    if (!ctx) {
+      console.warn('Canvas distribucionClientesChart no encontrado');
+      return;
+    }
+
+    const counts = this.tiposMembresiaDisponibles.map(tipo => 
+      this.membresias.filter(m => this.obtenerEtiquetaMembresia(m.id_membresia) === tipo).length
+    );
+
+    const colors = this.tiposMembresiaDisponibles.map(tipo => this.getColorForTipo(tipo));
+
+    const total = counts.reduce((a, b) => a + b, 0);
+    if (total === 0) {
+      this.mostrarMensajeSinDatos(ctx, 'No hay membresías asignadas');
+      return;
+    }
+
+    try {
+      this.distribucionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: this.tiposMembresiaDisponibles,
+          datasets: [{
+            data: counts,
+            backgroundColor: colors,
+            borderColor: colors.map(color => this.adjustBrightness(color, -20)),
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#F1FAEE',
+                font: {
+                  size: 12
+                },
+                padding: 20
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const label = context.label || '';
+                  const value = context.raw as number;
+                  const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                  return `${label}: ${value} cliente${value !== 1 ? 's' : ''} (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error al crear gráfico de distribución:', error);
+    }
+  }
+
+  private crearGraficoEstado(): void {
+    if (this.estadoChart) {
+      this.estadoChart.destroy();
+    }
+
+    const ctx = document.getElementById('estadoMembresiasChart') as HTMLCanvasElement;
+    if (!ctx) {
+      console.warn('Canvas estadoMembresiasChart no encontrado');
+      return;
+    }
+
+    const estados = ['Activa', 'Inactiva', 'Expirada', 'Cancelada'];
+    const counts = estados.map(estado => 
+      this.membresias.filter(m => m.estatus === estado).length
+    );
+
+    const colors = ['#4CAF50', '#FF9800', '#F44336', '#9E9E9E'];
+
+    const total = counts.reduce((a, b) => a + b, 0);
+    if (total === 0) {
+      this.mostrarMensajeSinDatos(ctx, 'No hay datos de estado');
+      return;
+    }
+
+    try {
+      this.estadoChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: estados,
+          datasets: [{
+            label: 'Clientes por Estado',
+            data: counts,
+            backgroundColor: colors,
+            borderColor: colors.map(color => this.adjustBrightness(color, -20)),
+            borderWidth: 2,
+            borderRadius: 8,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  return `${context.parsed.y} cliente${context.parsed.y !== 1 ? 's' : ''}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                color: '#F1FAEE',
+                stepSize: 1
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              }
+            },
+            x: {
+              ticks: {
+                color: '#F1FAEE'
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              }
+            }
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error al crear gráfico de estado:', error);
+    }
+  }
+
+  private mostrarMensajeSinDatos(ctx: HTMLCanvasElement, mensaje: string): void {
+    const context = ctx.getContext('2d');
+    if (!context) return;
+
+    context.clearRect(0, 0, ctx.width, ctx.height);
+    context.fillStyle = '#F1FAEE';
+    context.font = '14px Arial';
+    context.textAlign = 'center';
+    context.fillText(mensaje, ctx.width / 2, ctx.height / 2);
+  }
+
+  private adjustBrightness(color: string, percent: number): string {
+    const num = parseInt(color.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = Math.max(0, Math.min(255, (num >> 16) + amt));
+    const G = Math.max(0, Math.min(255, (num >> 8 & 0x00FF) + amt));
+    const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt));
+    
+    return "#" + (
+      0x1000000 +
+      R * 0x10000 +
+      G * 0x100 +
+      B
+    ).toString(16).slice(1);
+  }
+
+  getColorForTipo(tipo: string): string {
+    const colors: {[key: string]: string} = {
+      'Básica': '#E63946',
+      'Premium': '#457B9D', 
+      'VIP': '#F77F00'
+    };
+    return colors[tipo] || '#A8DADC';
+  }
+
+  actualizarGraficos(): void {
+    setTimeout(() => {
+      this.crearGraficoDistribucion();
+      this.crearGraficoEstado();
+    }, 100);
+  }
+
+  // Métodos auxiliares para la UI
   getImagenMembresia(membresia: ClienteMembresia): string {
     const idMembresia = membresia.id_membresia?.toUpperCase();
     if (idMembresia === 'MEM003' || idMembresia === 'MEM_VIP') {
@@ -588,69 +798,66 @@ verHistorial(membresia: ClienteMembresia): void {
   }
 
   obtenerEtiquetaMembresia(idMembresia: string): string {
-  if (!idMembresia || idMembresia === 'Desconocida') {
-    return 'Desconocida';
-  }
-  
-  // Buscar en la lista real de membresías primero
-  const membresiaEncontrada = this.tipoMembresias.find(m => m.value === idMembresia);
-  if (membresiaEncontrada) {
-    return membresiaEncontrada.label;
-  }
-  
-  // Si no está en la lista, buscar en los datos del backend
-  const membresia = this.membresias.find(m => m.id_membresia === idMembresia);
-  if (membresia) {
-    return idMembresia; // O podrías buscar el nombre en otro lugar
-  }
-  
-  // Fallback para IDs conocidos
-  const etiquetas: { [key: string]: string } = {
-    'MEM_BASICA': 'Básica',
-    'MEM_PREMIUM': 'Premium',
-    'MEM_VIP': 'VIP',
-    'MEM001': 'Básica',
-    'MEM002': 'Premium', 
-    'MEM003': 'VIP'
-  };
-  
-  return etiquetas[idMembresia] || idMembresia;
-}
-
-  formatearFecha(fechaString: string): string {
-  if (!fechaString || fechaString === 'Fecha no disponible') {
-    return 'Fecha no disponible';
-  }
-  
-  try {
-    const fecha = new Date(fechaString);
-    
-    // Verificar si la fecha es válida
-    if (isNaN(fecha.getTime())) {
-      console.warn('Fecha inválida:', fechaString);
-      return 'Fecha inválida';
+    if (!idMembresia || idMembresia === 'Desconocida') {
+      return 'Desconocida';
     }
     
-    return fecha.toLocaleDateString('es-MX', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  } catch (error) {
-    console.warn('Error al formatear fecha:', fechaString, error);
-    return 'Fecha inválida';
+    const membresiaEncontrada = this.tipoMembresias.find(m => m.value === idMembresia);
+    if (membresiaEncontrada) {
+      return membresiaEncontrada.label;
+    }
+    
+    const membresia = this.membresias.find(m => m.id_membresia === idMembresia);
+    if (membresia) {
+      return idMembresia;
+    }
+    
+    const etiquetas: { [key: string]: string } = {
+      'MEM_BASICA': 'Básica',
+      'MEM_PREMIUM': 'Premium',
+      'MEM_VIP': 'VIP',
+      'MEM001': 'Básica',
+      'MEM002': 'Premium', 
+      'MEM003': 'VIP'
+    };
+    
+    return etiquetas[idMembresia] || idMembresia;
   }
-}
+
+  formatearFecha(fechaString: string): string {
+    if (!fechaString || fechaString === 'Fecha no disponible') {
+      return 'Fecha no disponible';
+    }
+    
+    try {
+      const fecha = new Date(fechaString);
+      
+      if (isNaN(fecha.getTime())) {
+        console.warn('Fecha inválida:', fechaString);
+        return 'Fecha inválida';
+      }
+      
+      return fecha.toLocaleDateString('es-MX', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.warn('Error al formatear fecha:', fechaString, error);
+      return 'Fecha inválida';
+    }
+  }
+
   mostrarSnackbar(mensaje: string, type: 'success' | 'error' | 'warning' = 'success'): void {
-  this.snackbar = { 
-    show: true, 
-    message: mensaje, 
-    type 
-  };
-  setTimeout(() => {
-    this.snackbar.show = false;
-  }, 4000);
-}
+    this.snackbar = { 
+      show: true, 
+      message: mensaje, 
+      type 
+    };
+    setTimeout(() => {
+      this.snackbar.show = false;
+    }, 4000);
+  }
 
   cerrarSnackbar(): void {
     this.snackbar.show = false;
@@ -688,35 +895,47 @@ verHistorial(membresia: ClienteMembresia): void {
     }).length;
   }
 
-  calcularTasaRenovacion(): number {
-    return 75;
+  calcularTasaRetencion(): number {
+  if (!Array.isArray(this.membresias) || this.membresias.length === 0) {
+    return 0;
   }
+
+  const membresiasActivas = this.membresias.filter(m => m.estatus === 'Activa').length;
+  const totalMembresias = this.membresias.length;
+  
+  return Math.round((membresiasActivas / totalMembresias) * 100);
+}
 
   hayMembresias(): boolean {
     return Array.isArray(this.membresias) && this.membresias.length > 0;
   }
 
-  // AGREGA este método nuevo:
-cerrarModalHistorial(): void {
-  this.showHistorialModal = false;
-  this.historialData = [];
-  this.clienteHistorial = '';
-}
+  cerrarModalHistorial(): void {
+    this.showHistorialModal = false;
+    this.historialData = [];
+    this.clienteHistorial = '';
+  }
+
+  contarActivas(): number {
+    if (!this.historialData || !Array.isArray(this.historialData)) {
+      return 0;
+    }
+    return this.historialData.filter(item => item.estatus === 'Activa').length;
+  }
+
+  contarHistoricas(): number {
+    if (!this.historialData || !Array.isArray(this.historialData)) {
+      return 0;
+    }
+    return this.historialData.filter(item => item.estatus !== 'Activa').length;
+  }
 
 
-// Agrega estos métodos después del método cerrarModalHistorial()
-
-contarActivas(): number {
-  if (!this.historialData || !Array.isArray(this.historialData)) {
+// Agrega este método en la sección de métodos auxiliares para la UI, después de obtenerEtiquetaMembresia
+contarMembresiasPorTipo(tipo: string): number {
+  if (!Array.isArray(this.membresias)) {
     return 0;
   }
-  return this.historialData.filter(item => item.estatus === 'Activa').length;
-}
-
-contarHistoricas(): number {
-  if (!this.historialData || !Array.isArray(this.historialData)) {
-    return 0;
-  }
-  return this.historialData.filter(item => item.estatus !== 'Activa').length;
+  return this.membresias.filter(m => this.obtenerEtiquetaMembresia(m.id_membresia) === tipo).length;
 }
 }

@@ -124,38 +124,7 @@
 
 
 
-  <!-- Estadísticas Mejoradas -->
-  <div *ngIf="!loading" class="stats-section">
-    <div class="stats-container">
-      <div class="stats-card">
-        <div class="stats-icon total">
-          <i class="fas fa-id-card-alt"></i>
-        </div>
-        <div class="stats-info">
-          <h4>Total de Membresías</h4>
-          <p class="stats-number">{{ estadisticas.totalMembresias || 0 }}</p>
-        </div>
-      </div>
-      <div class="stats-card">
-        <div class="stats-icon active">
-          <i class="fas fa-check-circle"></i>
-        </div>
-        <div class="stats-info">
-          <h4>Activas</h4>
-          <p class="stats-number">{{ estadisticas.membresiasActivas || 0 }}</p>
-        </div>
-      </div>
-      <div class="stats-card">
-        <div class="stats-icon inactive">
-          <i class="fas fa-pause-circle"></i>
-        </div>
-        <div class="stats-info">
-          <h4>Inactivas</h4>
-          <p class="stats-number">{{ estadisticas.membresiasInactivas || 0 }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  
 
   <!-- Barra de búsqueda y filtros -->
   <div *ngIf="!loading" class="search-bar">
@@ -164,7 +133,7 @@
       <input
         type="text"
         class="search-input"
-        placeholder="Buscar por tipo, descripción, estado o ID..."
+        placeholder="Buscar por tipo, descripción, estado..."
         [(ngModel)]="filtro"
         (input)="aplicarFiltro()"
       >

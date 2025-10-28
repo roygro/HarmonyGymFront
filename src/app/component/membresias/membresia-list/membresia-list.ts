@@ -81,8 +81,7 @@ export class MembresiaList implements OnInit, AfterViewInit, OnDestroy {
     this.membresiasFiltradas = this.membresias.filter(membresia =>
       membresia.tipo.toLowerCase().includes(filtroLower) ||
       membresia.descripcion.toLowerCase().includes(filtroLower) ||
-      membresia.estatus.toLowerCase().includes(filtroLower) ||
-      membresia.idMembresia.toString().toLowerCase().includes(filtroLower)
+      membresia.estatus.toLowerCase().includes(filtroLower)
     );
   }
 

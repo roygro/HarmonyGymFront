@@ -151,19 +151,21 @@ obtenerNombreProducto(codigo: string): string {
   }
 
   // Filtrar pagos
-  get pagosFiltrados(): Pago[] {
+    get pagosFiltrados(): Pago[] {
     let filtered = this.pagos;
 
     if (this.filtroCliente) {
-      filtered = filtered.filter(pago =>
-        pago.folioCliente.toLowerCase().includes(this.filtroCliente.toLowerCase())
-      );
+      filtered = filtered.filter(pago => {
+        const nombreCliente = this.obtenerNombreCliente(pago.folioCliente).toLowerCase();
+        return nombreCliente.includes(this.filtroCliente.toLowerCase());
+      });
     }
 
     if (this.filtroRecepcionista) {
-      filtered = filtered.filter(pago =>
-        pago.idRecepcionista.toLowerCase().includes(this.filtroRecepcionista.toLowerCase())
-      );
+      filtered = filtered.filter(pago => {
+        const nombreRecepcionista = this.obtenerNombreRecepcionista(pago.idRecepcionista).toLowerCase();
+        return nombreRecepcionista.includes(this.filtroRecepcionista.toLowerCase());
+      });
     }
 
     // Filtros de fecha
@@ -234,12 +236,12 @@ obtenerNombreProducto(codigo: string): string {
     const headers = ['ID Venta', 'Cliente', 'Producto', 'Cantidad', 'Total', 'Fecha', 'Recepcionista'];
     const rows = this.pagosFiltrados.map(pago => [
       pago.idVenta?.toString() || '',
-      pago.folioCliente,
-      pago.codigoProducto,
+      this.obtenerNombreCliente(pago.folioCliente),
+      this.obtenerNombreProducto(pago.codigoProducto), // Usar nombre en lugar de código
       pago.cantidad.toString(),
       this.formatearMoneda(pago.total),
       pago.fechaVenta ? this.formatearFechaParaCSV(pago.fechaVenta) : '',
-      pago.idRecepcionista
+      this.obtenerNombreRecepcionista(pago.idRecepcionista) // Usar nombre en lugar de ID
     ]);
 
     return [headers, ...rows]
@@ -344,8 +346,8 @@ obtenerNombreProducto(codigo: string): string {
             </td>
             <td style="width: 50%; vertical-align: top;">
               <h3 style="color: #1D3557; margin-bottom: 10px;">Información del Cliente</h3>
-              <p><strong>Folio Cliente:</strong> ${pago.folioCliente}</p>
-              <p><strong>Recepcionista:</strong> ${pago.idRecepcionista}</p>
+              <p><strong>Folio Cliente:</strong> ${this.obtenerNombreCliente(pago.folioCliente)}</p>
+              <p><strong>Recepcionista:</strong> ${this.obtenerNombreRecepcionista(pago.idRecepcionista)}</p>
             </td>
           </tr>
         </table>
@@ -364,7 +366,7 @@ obtenerNombreProducto(codigo: string): string {
           </thead>
           <tbody>
             <tr>
-              <td style="border: 1px solid #ddd; padding: 10px;">${pago.codigoProducto}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;">${this.obtenerNombreProducto(pago.codigoProducto)}</td>
               <td style="border: 1px solid #ddd; padding: 10px; text-align: center;">${pago.cantidad}</td>
               <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${this.formatearMoneda(pago.precioUnitario)}</td>
               <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${this.formatearMoneda(pago.total)}</td>
