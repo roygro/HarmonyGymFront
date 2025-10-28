@@ -1,4 +1,7 @@
-<!-- instructor.component.html -->
+<div>
+  <app-header-admin></app-header-admin>
+</div>
+
 <div class="instructor-container">
   @if (mensaje) {
     <div [class]="'alert alert-' + tipoMensaje">
@@ -6,16 +9,61 @@
     </div>
   }
 
-  <!-- Header Mejorado con Tema Gimnasio -->
+  <!-- Header Actividades - Estilo similar al ActividadesComponent -->
   <div class="header">
-    <div class="header-content">
-      <h1><i class="fas fa-user-tie"></i> Gestión de Instructores</h1>
-      <p class="header-subtitle">Administra y organiza el personal de instructores</p>
+    <!-- Contenedor principal del header -->
+    <div class="header-main">
+      <!-- Logo o título a la izquierda -->
+      <div class="header-brand">
+        <h1 class="header-title">
+          <i class="fas fa-user-tie"></i>
+          Instructores
+        </h1>
+      </div>
+      
+      <!-- Barra de búsqueda centrada -->
+      <div class="search-bar-header">
+        <div class="search-container">
+          <i class="fas fa-search search-icon"></i>
+          <input
+            type="text"
+            [(ngModel)]="terminoBusqueda"
+            (input)="onBuscarNombreChange()"
+            placeholder="Buscar instructores por nombre..."
+            class="search-input"
+          >
+          <button *ngIf="terminoBusqueda" class="btn btn-clear" (click)="terminoBusqueda = ''; aplicarFiltros()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Botones de acción a la derecha -->
+      <div class="header-actions">
+        <button class="btn btn-primary" (click)="prepararNuevoInstructor()" [disabled]="cargando">
+          <i class="fas fa-plus-circle"></i> Nuevo Instructor
+        </button>
+      </div>
     </div>
-    <div class="header-actions">
-      <button class="btn btn-primary" (click)="prepararNuevoInstructor()" [disabled]="cargando">
-        <i class="fas fa-plus-circle"></i> Nuevo Instructor
-      </button>
+    
+    <!-- Filtros en una fila separada -->
+    <div class="header-filters">
+      <div class="filters-container">
+        <button class="filter-btn" [class.active]="!filtroEstatus" (click)="filtroEstatus = ''; aplicarFiltros()">
+          <i class="fas fa-list"></i> Todos
+        </button>
+        <button class="filter-btn" [class.active]="filtroEstatus === 'Activo'" (click)="filtroEstatus = 'Activo'; aplicarFiltros()">
+          <i class="fas fa-check-circle"></i> Activos
+        </button>
+        <button class="filter-btn" [class.active]="filtroEstatus === 'Inactivo'" (click)="filtroEstatus = 'Inactivo'; aplicarFiltros()">
+          <i class="fas fa-ban"></i> Inactivos
+        </button>
+      </div>
+      
+      <!-- Contador de instructores -->
+      <div class="activities-counter">
+        <span class="counter-badge">{{instructoresFiltrados.length}} instructor{{ instructoresFiltrados.length !== 1 ? 'es' : '' }}</span>
+      </div>
     </div>
   </div>
 
@@ -23,27 +71,10 @@
   <div class="filtros-section">
     <div class="filtros-row">
       <div class="filtro-group">
-        <label><i class="fas fa-filter"></i> Estatus:</label>
-        <select [(ngModel)]="filtroEstatus" (change)="aplicarFiltros()" [disabled]="cargando">
-          <option value="">Todos los estatus</option>
-          <option value="Activo">Activo</option>
-          <option value="Inactivo">Inactivo</option>
-        </select>
-      </div>
-
-      <div class="filtro-group">
         <label><i class="fas fa-graduation-cap"></i> Especialidad:</label>
         <input type="text" [(ngModel)]="filtroEspecialidad" 
                (input)="onFiltroEspecialidadChange()" 
                placeholder="Escribe la especialidad..." 
-               [disabled]="cargando">
-      </div>
-
-      <div class="filtro-group">
-        <label><i class="fas fa-search"></i> Buscar por nombre:</label>
-        <input type="text" [(ngModel)]="terminoBusqueda" 
-               (input)="onBuscarNombreChange()" 
-               placeholder="Escribe el nombre..." 
                [disabled]="cargando">
       </div>
 
@@ -56,7 +87,7 @@
       </div>
 
       <button class="btn btn-secondary" (click)="limpiarFiltros()" [disabled]="cargando">
-        <i class="fas fa-undo"></i> Limpiar
+        <i class="fas fa-undo"></i> Limpiar Filtros
       </button>
     </div>
   </div>

@@ -1,14 +1,16 @@
+// administrador.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { Administrador, AdministradorService } from '../../../services/administrador/administradorService';
+import { HeaderAdministradorComponent } from '../header-admin/header-admin'; // Importar el header
 
 @Component({
   selector: 'app-administrador-component',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, FormsModule, HttpClientModule, HeaderAdministradorComponent],
   templateUrl: './administrador-component.html',
   styleUrls: ['./administrador-component.css']
 })

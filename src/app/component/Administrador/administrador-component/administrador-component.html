@@ -1,34 +1,69 @@
-<div class="instructor-container">
+<div>
+  <app-header-admin></app-header-admin>
+</div>
+
+<div class="administrador-container">
   @if (mensaje) {
     <div [class]="'alert alert-' + tipoMensaje">
       {{ mensaje }}
     </div>
   }
 
-  <!-- Header Mejorado con Tema Gimnasio -->
+  <!-- Header Actividades - Estilo similar al ActividadesComponent -->
   <div class="header">
-    <div class="header-content">
-      <h1><i class="fas fa-users-cog"></i> Gestión de Administradores</h1>
-      <p class="header-subtitle">Administra y organiza los administradores del sistema</p>
+    <!-- Contenedor principal del header -->
+    <div class="header-main">
+      <!-- Logo o título a la izquierda -->
+      <div class="header-brand">
+        <h1 class="header-title">
+          <i class="fas fa-users-cog"></i>
+          Administradores
+        </h1>
+      </div>
+      
+      <!-- Barra de búsqueda centrada -->
+      <div class="search-bar-header">
+        <div class="search-container">
+          <i class="fas fa-search search-icon"></i>
+          <input
+            type="text"
+            [(ngModel)]="terminoBusqueda"
+            (input)="onBuscarNombreChange()"
+            placeholder="Buscar administradores por nombre..."
+            class="search-input"
+          >
+          <button *ngIf="terminoBusqueda" class="btn btn-clear" (click)="terminoBusqueda = ''; aplicarFiltros()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Botones de acción a la derecha -->
+      <div class="header-actions">
+        <button class="btn btn-primary" (click)="prepararNuevoAdministrador()" [disabled]="cargando">
+          <i class="fas fa-plus-circle"></i> Nuevo Administrador
+        </button>
+      </div>
     </div>
-    <div class="header-actions">
-      <button class="btn btn-primary" (click)="prepararNuevoAdministrador()" [disabled]="cargando">
-        <i class="fas fa-plus-circle"></i> Nuevo Administrador
-      </button>
+    
+    <!-- Filtros en una fila separada -->
+    <div class="header-filters">
+      <div class="filters-container">
+        <button class="filter-btn active" (click)="limpiarFiltros()">
+          <i class="fas fa-list"></i> Todos
+        </button>
+      </div>
+      
+      <!-- Contador de administradores -->
+      <div class="activities-counter">
+        <span class="counter-badge">{{administradoresFiltrados.length}} administrador{{ administradoresFiltrados.length !== 1 ? 'es' : '' }}</span>
+      </div>
     </div>
   </div>
 
   <!-- FILTROS MEJORADOS CON DEBOUNCE -->
   <div class="filtros-section">
     <div class="filtros-row">
-      <div class="filtro-group">
-        <label><i class="fas fa-search"></i> Buscar por nombre:</label>
-        <input type="text" [(ngModel)]="terminoBusqueda" 
-               (input)="onBuscarNombreChange()" 
-               placeholder="Escribe el nombre..." 
-               [disabled]="cargando">
-      </div>
-
       <div class="filtro-group">
         <label><i class="fas fa-user"></i> Apellido Paterno:</label>
         <input type="text" [(ngModel)]="filtroApp" 
@@ -46,7 +81,7 @@
       </div>
 
       <button class="btn btn-secondary" (click)="limpiarFiltros()" [disabled]="cargando">
-        <i class="fas fa-undo"></i> Limpiar
+        <i class="fas fa-undo"></i> Limpiar Filtros
       </button>
     </div>
   </div>
@@ -64,14 +99,14 @@
   }
 
   @if (!cargando) {
-    <div class="instructores-section">
+    <div class="administradores-section">
       <div class="section-header">
         <h2><i class="fas fa-clipboard-list"></i> Lista de Administradores</h2>
-        <span class="instructores-count">{{ administradoresFiltrados.length }} administrador{{ administradoresFiltrados.length !== 1 ? 'es' : '' }}</span>
+        <span class="administradores-count">{{ administradoresFiltrados.length }} administrador{{ administradoresFiltrados.length !== 1 ? 'es' : '' }}</span>
       </div>
       
       <div class="table-container">
-        <table class="instructores-table">
+        <table class="administradores-table">
           <thead>
             <tr>
               <th>Folio</th>
@@ -85,13 +120,15 @@
           <tbody>
             @for (administrador of administradoresFiltrados; track administrador.folioAdmin) {
               <tr>
-                <td><strong>{{ administrador.folioAdmin }}</strong></td>
+                <td class="folio-cell">
+                  <strong>{{ administrador.folioAdmin }}</strong>
+                </td>
                 <td>
-                  <div class="instructor-info">
-                    <div class="instructor-avatar no-photo">
+                  <div class="administrador-info">
+                    <div class="administrador-avatar">
                       <i class="fas fa-user-shield"></i>
                     </div>
-                    <div class="instructor-name">
+                    <div class="administrador-name">
                       {{ administrador.nombreCom }}
                     </div>
                   </div>
@@ -105,30 +142,30 @@
                   </div>
                 </td>
                 <td class="acciones">
-                  <button class="btn btn-sm btn-warning" 
-                          (click)="seleccionarAdministrador(administrador)"
-                          title="Editar administrador">
-                    <i class="fas fa-edit"></i> Editar
-                  </button>
-                  
                   <button class="btn btn-sm btn-info" 
                           (click)="verEstadisticas(administrador)"
                           title="Ver estadísticas">
-                    <i class="fas fa-chart-bar"></i> Stats
+                    <i class="fas fa-chart-line"></i>
+                  </button>
+                  
+                  <button class="btn btn-sm btn-warning" 
+                          (click)="seleccionarAdministrador(administrador)"
+                          title="Editar administrador">
+                    <i class="fas fa-edit"></i>
                   </button>
 
                   <button class="btn btn-sm btn-danger" 
                           (click)="eliminarAdministrador(administrador.folioAdmin)"
                           title="Eliminar administrador">
-                    <i class="fas fa-trash-alt"></i> Eliminar
+                    <i class="fas fa-trash-alt"></i>
                   </button>
                 </td>
               </tr>
             } @empty {
               <tr>
                 <td colspan="6" class="no-data">
-                  <div class="no-instructores">
-                    <div class="no-instructores-icon">
+                  <div class="no-administradores">
+                    <div class="no-administradores-icon">
                       <i class="fas fa-users-cog"></i>
                     </div>
                     <h3>No se encontraron administradores</h3>
@@ -165,39 +202,43 @@
             </p>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-user"></i> Nombre Completo *</label>
-              <input type="text" 
-                     [(ngModel)]="nuevoAdministrador.nombreCom" 
-                     name="nombreComNuevo" 
-                     required
-                     [disabled]="cargando"
-                     placeholder="Nombre completo del administrador"
-                     (input)="validarNombre()">
-              @if (nombreInvalido) {
-                <small class="error-text">El nombre completo es requerido</small>
-              }
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-user"></i> Apellido Paterno</label>
-              <input type="text" 
-                     [(ngModel)]="nuevoAdministrador.app" 
-                     name="appNuevo"
-                     [disabled]="cargando"
-                     placeholder="Apellido paterno">
+          <div class="form-section">
+            <h3><i class="fas fa-id-card"></i> Información Personal</h3>
+            
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label><i class="fas fa-user"></i> Nombre Completo *</label>
+                <input type="text" 
+                       [(ngModel)]="nuevoAdministrador.nombreCom" 
+                       name="nombreComNuevo" 
+                       required
+                       [disabled]="cargando"
+                       placeholder="Nombre completo del administrador"
+                       (input)="validarNombre()">
+                @if (nombreInvalido) {
+                  <small class="error-text">El nombre completo es requerido</small>
+                }
+              </div>
             </div>
 
-            <div class="form-group">
-              <label><i class="fas fa-user"></i> Apellido Materno</label>
-              <input type="text" 
-                     [(ngModel)]="nuevoAdministrador.apm" 
-                     name="apmNuevo"
-                     [disabled]="cargando"
-                     placeholder="Apellido materno">
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-user"></i> Apellido Paterno</label>
+                <input type="text" 
+                       [(ngModel)]="nuevoAdministrador.app" 
+                       name="appNuevo"
+                       [disabled]="cargando"
+                       placeholder="Apellido paterno">
+              </div>
+
+              <div class="form-group">
+                <label><i class="fas fa-user"></i> Apellido Materno</label>
+                <input type="text" 
+                       [(ngModel)]="nuevoAdministrador.apm" 
+                       name="apmNuevo"
+                       [disabled]="cargando"
+                       placeholder="Apellido materno">
+              </div>
             </div>
           </div>
 
@@ -238,45 +279,49 @@
             </p>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-user"></i> Nombre Completo *</label>
-              <input type="text" 
-                     [(ngModel)]="administradorSeleccionado.nombreCom" 
-                     name="nombreComEdit" 
-                     required
-                     [disabled]="cargando"
-                     placeholder="Nombre completo del administrador">
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-user"></i> Apellido Paterno</label>
-              <input type="text" 
-                     [(ngModel)]="administradorSeleccionado.app" 
-                     name="appEdit"
-                     [disabled]="cargando"
-                     placeholder="Apellido paterno">
+          <div class="form-section">
+            <h3><i class="fas fa-id-card"></i> Información Personal</h3>
+            
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label><i class="fas fa-user"></i> Nombre Completo *</label>
+                <input type="text" 
+                       [(ngModel)]="administradorSeleccionado.nombreCom" 
+                       name="nombreComEdit" 
+                       required
+                       [disabled]="cargando"
+                       placeholder="Nombre completo del administrador">
+              </div>
             </div>
 
-            <div class="form-group">
-              <label><i class="fas fa-user"></i> Apellido Materno</label>
-              <input type="text" 
-                     [(ngModel)]="administradorSeleccionado.apm" 
-                     name="apmEdit"
-                     [disabled]="cargando"
-                     placeholder="Apellido materno">
-            </div>
-          </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-user"></i> Apellido Paterno</label>
+                <input type="text" 
+                       [(ngModel)]="administradorSeleccionado.app" 
+                       name="appEdit"
+                       [disabled]="cargando"
+                       placeholder="Apellido paterno">
+              </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-calendar"></i> Fecha de Registro</label>
-              <input type="text" 
-                     [value]="formatearFecha(administradorSeleccionado.fechaRegistro)" 
-                     disabled
-                     class="form-control">
+              <div class="form-group">
+                <label><i class="fas fa-user"></i> Apellido Materno</label>
+                <input type="text" 
+                       [(ngModel)]="administradorSeleccionado.apm" 
+                       name="apmEdit"
+                       [disabled]="cargando"
+                       placeholder="Apellido materno">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-calendar"></i> Fecha de Registro</label>
+                <input type="text" 
+                       [value]="formatearFecha(administradorSeleccionado.fechaRegistro)" 
+                       disabled
+                       class="form-control">
+              </div>
             </div>
           </div>
 
