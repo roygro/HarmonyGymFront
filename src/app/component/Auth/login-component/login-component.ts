@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { trigger, state, style, animate, transition, keyframes } from '@angular/animations';
 import { AuthService, LoginRequest } from '../../../services/Auth/AuthService';
 
 @Component({
@@ -9,9 +10,28 @@ import { AuthService, LoginRequest } from '../../../services/Auth/AuthService';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './login-component.html',
-  styleUrls: ['./login-component.css']
+  styleUrls: ['./login-component.css'],
+  animations: [
+    trigger('shake', [
+      transition('* => *', [
+        animate('0.5s', keyframes([
+          style({ transform: 'translateX(0)', offset: 0 }),
+          style({ transform: 'translateX(-10px)', offset: 0.1 }),
+          style({ transform: 'translateX(10px)', offset: 0.2 }),
+          style({ transform: 'translateX(-10px)', offset: 0.3 }),
+          style({ transform: 'translateX(10px)', offset: 0.4 }),
+          style({ transform: 'translateX(-10px)', offset: 0.5 }),
+          style({ transform: 'translateX(10px)', offset: 0.6 }),
+          style({ transform: 'translateX(-10px)', offset: 0.7 }),
+          style({ transform: 'translateX(10px)', offset: 0.8 }),
+          style({ transform: 'translateX(-10px)', offset: 0.9 }),
+          style({ transform: 'translateX(0)', offset: 1 })
+        ]))
+      ])
+    ])
+  ]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   loginRequest: LoginRequest = {
     username: '',
     password: ''
@@ -20,12 +40,33 @@ export class LoginComponent {
   isLoading = false;
   errorMessage = '';
   serverStatus = '';
+  showPassword = false;
+  particles: any[] = [];
 
   constructor(
     private authService: AuthService,
     private router: Router
   ) {
     this.checkServerConnection();
+  }
+
+  ngOnInit(): void {
+    this.createParticles();
+  }
+
+  // Crear partículas decorativas
+  createParticles(): void {
+    const particleCount = 15;
+    for (let i = 0; i < particleCount; i++) {
+      this.particles.push({
+        top: `${Math.random() * 100}%`,
+        left: `${Math.random() * 100}%`,
+        width: `${Math.random() * 6 + 2}px`,
+        height: `${Math.random() * 6 + 2}px`,
+        animationDelay: `${Math.random() * 20}s`,
+        animationDuration: `${Math.random() * 10 + 10}s`
+      });
+    }
   }
 
   // Verificar conexión con el servidor al inicializar
@@ -41,6 +82,11 @@ export class LoginComponent {
         console.error('❌ No se puede conectar al servidor:', error);
       }
     });
+  }
+
+  // Alternar visibilidad de contraseña
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
   }
 
   onSubmit(): void {

@@ -9,24 +9,19 @@
           Mi Dashboard
         </h1>
       </div>
-      
+
       <!-- Barra de búsqueda centrada -->
       <div class="search-bar-header">
         <div class="search-container">
           <i class="fas fa-search search-icon"></i>
-          <input
-            type="text"
-            [(ngModel)]="searchTerm"
-            (input)="buscarActividades()"
-            placeholder="Buscar actividades..."
-            class="search-input"
-          >
+          <input type="text" [(ngModel)]="searchTerm" (input)="buscarActividades()" placeholder="Buscar actividades..."
+            class="search-input">
           <button *ngIf="searchTerm" class="btn btn-clear" (click)="limpiarBusqueda()">
             <i class="fas fa-times"></i>
           </button>
         </div>
       </div>
-      
+
       <!-- Botones de acción a la derecha -->
       <div class="header-actions">
         <button class="btn btn-primary" (click)="actualizarDatos()" [disabled]="isLoading">
@@ -34,27 +29,21 @@
         </button>
       </div>
     </div>
-    
+
     <!-- Filtros en una fila separada -->
     <div class="header-filters">
       <div class="filters-container">
-        <button class="filter-btn" 
-                [class.active]="tabActiva === 'actividades'" 
-                (click)="cambiarTab('actividades')">
+        <button class="filter-btn" [class.active]="tabActiva === 'actividades'" (click)="cambiarTab('actividades')">
           <i class="fas fa-calendar-alt"></i> Actividades
         </button>
-        <button class="filter-btn" 
-                [class.active]="tabActiva === 'rutinas'" 
-                (click)="cambiarTab('rutinas')">
+        <button class="filter-btn" [class.active]="tabActiva === 'rutinas'" (click)="cambiarTab('rutinas')">
           <i class="fas fa-dumbbell"></i> Mis Rutinas
         </button>
-        <button class="filter-btn" 
-                [class.active]="tabActiva === 'perfil'" 
-                (click)="cambiarTab('perfil')">
+        <button class="filter-btn" [class.active]="tabActiva === 'perfil'" (click)="cambiarTab('perfil')">
           <i class="fas fa-user-cog"></i> Mi Perfil
         </button>
       </div>
-      
+
       <!-- Contador de actividades -->
       <div class="activities-counter">
         <span class="counter-badge">{{ getContadorActual() }}</span>
@@ -64,528 +53,508 @@
 
   <!-- Loading Spinner -->
   @if (isLoading) {
-    <div class="loading-spinner">
-      <div class="spinner"></div>
-      <p>Cargando tu información...</p>
-      <div class="loading-dots">
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
+  <div class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Cargando tu información...</p>
+    <div class="loading-dots">
+      <span></span>
+      <span></span>
+      <span></span>
     </div>
+  </div>
   }
 
   <!-- Contenido de las pestañas -->
   <div class="tab-content">
-    
+
     <!-- PESTAÑA: ACTIVIDADES -->
     @if (tabActiva === 'actividades') {
-      <div class="dashboard-section">
-        <!-- Estadísticas rápidas -->
-        <div class="stats-section">
-          <h3><i class="fas fa-chart-line"></i> Mi Resumen de Actividades</h3>
-          <div class="stats-container">
-            <div class="stats-card">
-              <div class="stats-icon active">
-                <i class="fas fa-calendar-check"></i>
-              </div>
-              <div class="stats-info">
-                <h4>Actividades Hoy</h4>
-                <div class="stats-number">{{ actividadesHoy.length }}</div>
-              </div>
+    <div class="dashboard-section">
+      <!-- Estadísticas rápidas -->
+      <div class="stats-section">
+        <h3><i class="fas fa-chart-line"></i> Mi Resumen de Actividades</h3>
+        <div class="stats-container">
+          <div class="stats-card">
+            <div class="stats-icon active">
+              <i class="fas fa-calendar-check"></i>
             </div>
-            
-            <div class="stats-card">
-              <div class="stats-icon active">
-                <i class="fas fa-bookmark"></i>
-              </div>
-              <div class="stats-info">
-                <h4>Inscrito</h4>
-                <div class="stats-number">{{ actividadesInscritas.length }}</div>
-              </div>
+            <div class="stats-info">
+              <h4>Actividades Hoy</h4>
+              <div class="stats-number">{{ actividadesHoy.length }}</div>
             </div>
-            
-            <div class="stats-card">
-              <div class="stats-icon active">
-                <i class="fas fa-running"></i>
-              </div>
-              <div class="stats-info">
-                <h4>Disponibles</h4>
-                <div class="stats-number">{{ actividadesDisponibles.length }}</div>
-              </div>
+          </div>
+
+          <div class="stats-card">
+            <div class="stats-icon active">
+              <i class="fas fa-bookmark"></i>
             </div>
-            
-            <div class="stats-card">
-              <div class="stats-icon active">
-                <i class="fas fa-history"></i>
-              </div>
-              <div class="stats-info">
-                <h4>Total</h4>
-                <div class="stats-number">{{ actividades.length }}</div>
-              </div>
+            <div class="stats-info">
+              <h4>Inscrito</h4>
+              <div class="stats-number">{{ actividadesInscritas.length }}</div>
+            </div>
+          </div>
+
+          <div class="stats-card">
+            <div class="stats-icon active">
+              <i class="fas fa-running"></i>
+            </div>
+            <div class="stats-info">
+              <h4>Disponibles</h4>
+              <div class="stats-number">{{ actividadesDisponibles.length }}</div>
+            </div>
+          </div>
+
+          <div class="stats-card">
+            <div class="stats-icon active">
+              <i class="fas fa-history"></i>
+            </div>
+            <div class="stats-info">
+              <h4>Total</h4>
+              <div class="stats-number">{{ actividades.length }}</div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Filtros de actividades -->
-        <div class="section-header">
-          <h2><i class="fas fa-filter"></i> Filtros</h2>
-          <div class="filters-container">
-            <button class="filter-btn" 
-                    [class.active]="filtroActivo === 'todas'" 
-                    (click)="mostrarTodasActividades()">
-              <i class="fas fa-list"></i> Todas
-            </button>
-            <button class="filter-btn" 
-                    [class.active]="filtroActivo === 'hoy'" 
-                    (click)="mostrarActividadesHoy()">
-              <i class="fas fa-calendar-day"></i> Hoy
-            </button>
-            <button class="filter-btn" 
-                    [class.active]="filtroActivo === 'proximas'" 
-                    (click)="mostrarProximasActividades()">
-              <i class="fas fa-calendar-plus"></i> Próximas
-            </button>
-            <button class="filter-btn" 
-                    [class.active]="filtroActivo === 'inscritas'" 
-                    (click)="mostrarActividadesInscritas()">
-              <i class="fas fa-bookmark"></i> Mis Inscripciones
-            </button>
-          </div>
+      <!-- Filtros de actividades -->
+      <div class="section-header">
+        <h2><i class="fas fa-filter"></i> Filtros</h2>
+        <div class="filters-container">
+          <button class="filter-btn" [class.active]="filtroActivo === 'todas'" (click)="mostrarTodasActividades()">
+            <i class="fas fa-list"></i> Todas
+          </button>
+          <button class="filter-btn" [class.active]="filtroActivo === 'hoy'" (click)="mostrarActividadesHoy()">
+            <i class="fas fa-calendar-day"></i> Hoy
+          </button>
+          <button class="filter-btn" [class.active]="filtroActivo === 'proximas'"
+            (click)="mostrarProximasActividades()">
+            <i class="fas fa-calendar-plus"></i> Próximas
+          </button>
+          <button class="filter-btn" [class.active]="filtroActivo === 'inscritas'"
+            (click)="mostrarActividadesInscritas()">
+            <i class="fas fa-bookmark"></i> Mis Inscripciones
+          </button>
         </div>
+      </div>
 
-        <!-- Lista de actividades -->
-        <div class="section-header">
-          <h2><i class="fas fa-dumbbell"></i> {{ getTituloSeccionActividades() }}</h2>
-          <span class="activities-count">{{ actividadesFiltradas.length }}</span>
+      <!-- Lista de actividades -->
+      <div class="section-header">
+        <h2><i class="fas fa-dumbbell"></i> {{ getTituloSeccionActividades() }}</h2>
+        <span class="activities-count">{{ actividadesFiltradas.length }}</span>
+      </div>
+
+      @if (actividadesFiltradas.length === 0) {
+      <div class="no-activities">
+        <div class="no-activities-icon">
+          <i class="fas fa-calendar-times"></i>
         </div>
-        
-        @if (actividadesFiltradas.length === 0) {
-          <div class="no-activities">
-            <div class="no-activities-icon">
-              <i class="fas fa-calendar-times"></i>
-            </div>
-            <h3>No hay actividades</h3>
-            <p>{{ getMensajeNoActividades() }}</p>
-            @if (filtroActivo !== 'todas') {
-              <button class="btn btn-primary" (click)="mostrarTodasActividades()">
-                <i class="fas fa-list"></i> Ver Todas las Actividades
-              </button>
-            }
-          </div>
-        } @else {
-          <div class="actividades-grid-compact">
-            @for (actividad of actividadesFiltradas; track actividad.idActividad; let i = $index) {
-              <div class="actividad-card-compact" [style.animation-delay]="i * 0.1 + 's'">
-                <!-- Imagen de la actividad -->
-                <div class="actividad-image-compact">
-                  <img [src]="getImagenActividad(actividad)" 
-                       [alt]="actividad.nombreActividad"
-                       (error)="actividad.imagenUrl = getImagenPorDefecto(actividad.nombreActividad)">
-                  <div class="image-overlay-compact">
-                    @if (estaInscritoEnActividad(actividad.idActividad)) {
-                      <span class="actividad-badge-compact inscrito-badge">
-                        <i class="fas fa-check-circle"></i>
-                        Inscrito
-                      </span>
-                    }
-                    <span class="actividad-badge-compact time-badge">
-                      <i class="fas fa-clock"></i>
-                      {{ formatearHora(actividad.horaInicio) }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Contenido de la tarjeta -->
-                <div class="actividad-content-compact">
-                  <!-- Header de la tarjeta -->
-                  <div class="actividad-header-compact">
-                    <div class="actividad-title-section">
-                      <h4 class="actividad-title">{{ actividad.nombreActividad }}</h4>
-                      <div class="actividad-meta">
-                        <span class="actividad-duration">
-                          <i class="fas fa-hourglass-half"></i>
-                          {{ formatearHora(actividad.horaFin) }}
-                        </span>
-                      </div>
-                    </div>
-                    <div class="actividad-status-section">
-                      <span class="estatus-badge" [ngClass]="getEstadoActividad(actividad).clase">
-                        {{ getEstadoActividad(actividad).texto }}
-                      </span>
-                    </div>
-                  </div>
-
-                  <!-- Información principal -->
-                  <div class="actividad-info-compact">
-                    <div class="info-row">
-                      <div class="info-item-compact">
-                        <i class="fas fa-calendar-day"></i>
-                        <span>{{ formatearFecha(actividad.fechaActividad) }}</span>
-                      </div>
-                      <div class="info-item-compact">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <span>{{ actividad.lugar }}</span>
-                      </div>
-                    </div>
-           
-                      <div class="info-item-compact">
-                        <i class="fas fa-users"></i>
-                        <span>Cupo: {{ actividad.cupo || 'Ilimitado' }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Descripción (solo si existe) -->
-                  @if (actividad.descripcion) {
-                    <div class="actividad-descripcion-compact">
-                      <p>{{ actividad.descripcion }}</p>
-                    </div>
-                  }
-
-                  <!-- Acciones -->
-                  <div class="actividad-actions-compact">
-                    @if (!estaInscritoEnActividad(actividad.idActividad) && actividad.cupo > 0 && esActividadFutura(actividad)) {
-                      <button class="btn btn-sm btn-primary" 
-                              (click)="inscribirseEnActividad(actividad)"
-                              [disabled]="isLoading">
-                        <i class="fas fa-calendar-plus"></i> Inscribirse
-                      </button>
-                    } @else if (estaInscritoEnActividad(actividad.idActividad)) {
-                      <button class="btn btn-sm btn-warning" 
-                              (click)="cancelarInscripcion(actividad)"
-                              [disabled]="isLoading">
-                        <i class="fas fa-times-circle"></i> Cancelar
-                      </button>
-                    } @else if (actividad.cupo <= 0) {
-                      <button class="btn btn-sm btn-secondary" disabled>
-                        <i class="fas fa-times"></i> Sin Cupo
-                      </button>
-                    } @else {
-                      <button class="btn btn-sm btn-secondary" disabled>
-                        <i class="fas fa-clock"></i> No Disponible
-                      </button>
-                    }
-                    
-                    <button class="btn btn-sm btn-secondary" (click)="verDetallesActividad(actividad)">
-                      <i class="fas fa-info-circle"></i> Detalles
-                    </button>
-                  </div>
-                </div>
-            }
-          </div>
+        <h3>No hay actividades</h3>
+        <p>{{ getMensajeNoActividades() }}</p>
+        @if (filtroActivo !== 'todas') {
+        <button class="btn btn-primary" (click)="mostrarTodasActividades()">
+          <i class="fas fa-list"></i> Ver Todas las Actividades
+        </button>
         }
       </div>
+      } @else {
+      <div class="actividades-grid-compact">
+        @for (actividad of actividadesFiltradas; track actividad.idActividad; let i = $index) {
+        <div class="actividad-card-compact" [style.animation-delay]="i * 0.1 + 's'">
+          <!-- Imagen de la actividad -->
+          <div class="actividad-image-compact">
+            <img [src]="getImagenActividad(actividad)" [alt]="actividad.nombreActividad"
+              (error)="actividad.imagenUrl = getImagenPorDefecto(actividad.nombreActividad)">
+            <div class="image-overlay-compact">
+              @if (estaInscritoEnActividad(actividad.idActividad)) {
+              <span class="actividad-badge-compact inscrito-badge">
+                <i class="fas fa-check-circle"></i>
+                Inscrito
+              </span>
+              }
+              <span class="actividad-badge-compact time-badge">
+                <i class="fas fa-clock"></i>
+                {{ formatearHora(actividad.horaInicio) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Contenido de la tarjeta -->
+          <div class="actividad-content-compact">
+            <!-- Header de la tarjeta -->
+            <div class="actividad-header-compact">
+              <div class="actividad-title-section">
+                <h4 class="actividad-title">{{ actividad.nombreActividad }}</h4>
+                <div class="actividad-meta">
+                  <span class="actividad-duration">
+                    <i class="fas fa-hourglass-half"></i>
+                    {{ formatearHora(actividad.horaFin) }}
+                  </span>
+                </div>
+              </div>
+              <div class="actividad-status-section">
+                <span class="estatus-badge" [ngClass]="getEstadoActividad(actividad).clase">
+                  {{ getEstadoActividad(actividad).texto }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Información principal -->
+            <div class="actividad-info-compact">
+              <div class="info-row">
+                <div class="info-item-compact">
+                  <i class="fas fa-calendar-day"></i>
+                  <span>{{ formatearFecha(actividad.fechaActividad) }}</span>
+                </div>
+                <div class="info-item-compact">
+                  <i class="fas fa-map-marker-alt"></i>
+                  <span>{{ actividad.lugar }}</span>
+                </div>
+              </div>
+
+              <div class="info-item-compact">
+                <i class="fas fa-users"></i>
+                <span>Cupo: {{ actividad.cupo || 'Ilimitado' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Descripción (solo si existe) -->
+          @if (actividad.descripcion) {
+          <div class="actividad-descripcion-compact">
+            <p>{{ actividad.descripcion }}</p>
+          </div>
+          }
+
+          <!-- Acciones -->
+          <div class="actividad-actions-compact">
+            @if (!estaInscritoEnActividad(actividad.idActividad) && actividad.cupo > 0 && esActividadFutura(actividad))
+            {
+            <button class="btn btn-sm btn-primary" (click)="inscribirseEnActividad(actividad)" [disabled]="isLoading">
+              <i class="fas fa-calendar-plus"></i> Inscribirse
+            </button>
+            } @else if (estaInscritoEnActividad(actividad.idActividad)) {
+            <button class="btn btn-sm btn-warning" (click)="cancelarInscripcion(actividad)" [disabled]="isLoading">
+              <i class="fas fa-times-circle"></i> Cancelar
+            </button>
+            } @else if (actividad.cupo <= 0) { <button class="btn btn-sm btn-secondary" disabled>
+              <i class="fas fa-times"></i> Sin Cupo
+              </button>
+              } @else {
+              <button class="btn btn-sm btn-secondary" disabled>
+                <i class="fas fa-clock"></i> No Disponible
+              </button>
+              }
+
+              <button class="btn btn-sm btn-secondary" (click)="verDetallesActividad(actividad)">
+                <i class="fas fa-info-circle"></i> Detalles
+              </button>
+          </div>
+        </div>
+        }
+      </div>
+      }
+    </div>
     }
 
     <!-- PESTAÑA: RUTINAS -->
     @if (tabActiva === 'rutinas') {
-      <div class="dashboard-section">
-        <div class="section-header">
-          <h2><i class="fas fa-dumbbell"></i> Mis Rutinas Asignadas</h2>
-          <span class="activities-count">{{ rutinas.length }}</span>
-        </div>
-        
-        @if (rutinas.length === 0) {
-          <div class="no-activities">
-            <div class="no-activities-icon">
-              <i class="fas fa-dumbbell"></i>
-            </div>
-            <h3>No tienes rutinas asignadas</h3>
-            <p>Contacta con un instructor para que te asigne una rutina personalizada según tus objetivos.</p>
-            <button class="btn btn-primary" (click)="contactarInstructor()">
-              <i class="fas fa-user-tie"></i> Solicitar Rutina
-            </button>
-          </div>
-        } @else {
-          <div class="actividades-grid-compact">
-            @for (rutina of rutinas; track rutina.folioRutina; let i = $index) {
-              <div class="actividad-card-compact" [class.activa]="rutina.estatus === 'Activa'" [style.animation-delay]="i * 0.1 + 's'">
-                <!-- Imagen de la rutina -->
-                <div class="actividad-image-compact rutina-image">
-                  <img [src]="'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400'" 
-                       [alt]="rutina.nombre">
-                  <div class="image-overlay-compact">
-                    <span class="actividad-badge-compact nivel-badge-overlay" [style.background-color]="getColorNivel(rutina.nivel)">
-                      {{ rutina.nivel }}
-                    </span>
-                    <span class="actividad-badge-compact ejercicios-badge">
-                      <i class="fas fa-dumbbell"></i>
-                      {{ contarEjerciciosRutina(rutina) }} ej.
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Contenido de la rutina -->
-                <div class="actividad-content-compact">
-                  <!-- Header de la rutina -->
-                  <div class="actividad-header-compact">
-                    <div class="actividad-title-section">
-                      <h4 class="actividad-title">{{ rutina.nombre }}</h4>
-                      <div class="actividad-meta">
-                        <span class="actividad-time">
-                          <i class="fas fa-clock"></i>
-                          {{ formatearDuracionRutina(rutina) }}
-                        </span>
-                      </div>
-                    </div>
-                    <div class="actividad-status-section">
-                      <span class="estatus-badge" [ngClass]="rutina.estatus === 'Activa' ? 'badge-activa' : 'badge-inactiva'">
-                        {{ rutina.estatus }}
-                      </span>
-                    </div>
-                  </div>
-
-                  <!-- Información de la rutina -->
-                  <div class="actividad-info-compact">
-                    <div class="info-row">
-                      <div class="info-item-compact">
-                        <i class="fas fa-bullseye"></i>
-                        <span>{{ rutina.objetivo || 'General' }}</span>
-                      </div>
-                      <div class="info-item-compact">
-                        <i class="fas fa-dumbbell"></i>
-                        <span>{{ contarEjerciciosRutina(rutina) }} ejercicios</span>
-                      </div>
-                    </div>
-                    <div class="info-row">
-                      <div class="info-item-compact">
-                        <i class="fas fa-calendar"></i>
-                        <span>{{ formatearFecha(rutina.fechaCreacion) }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Descripción -->
-                  @if (rutina.descripcion) {
-                    <div class="actividad-descripcion-compact">
-                      <p>{{ rutina.descripcion }}</p>
-                    </div>
-                  }
-
-                  <!-- Ejercicios (lista compacta) -->
-                  <div class="ejercicios-compact">
-                    <div class="ejercicios-header">
-                      <span class="ejercicios-title">Ejercicios:</span>
-                      <span class="ejercicios-count">{{ contarEjerciciosRutina(rutina) }}</span>
-                    </div>
-                    <div class="ejercicios-list-compact">
-                      @for (ejercicio of rutina.ejercicios || []; track ejercicio.idEjercicio; let i = $index) {
-                        <div class="ejercicio-item-compact" (click)="verDetallesEjercicio(ejercicio)">
-                          <span class="ejercicio-nombre">{{ getNombreEjercicio(ejercicio.idEjercicio) }}</span>
-                          <span class="ejercicio-sets">{{ ejercicio.seriesEjercicio }}x{{ ejercicio.repeticionesEjercicio }}</span>
-                        </div>
-                      }
-                    </div>
-                  </div>
-
-                  <!-- Acciones -->
-                  <div class="actividad-actions-compact">
-                    <button class="btn btn-sm btn-primary" (click)="verRutinaCompleta(rutina)">
-                      <i class="fas fa-expand"></i> Ver Completa
-                    </button>
-                    @if (rutina.estatus === 'Activa') {
-                      <button class="btn btn-sm btn-success" (click)="iniciarRutina(rutina)">
-                        <i class="fas fa-play-circle"></i> Iniciar
-                      </button>
-                    }
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        }
+    <div class="dashboard-section">
+      <div class="section-header">
+        <h2><i class="fas fa-dumbbell"></i> Mis Rutinas Asignadas</h2>
+        <span class="activities-count">{{ rutinas.length }}</span>
       </div>
-    }
 
-    <!-- PESTAÑA: PERFIL -->
-    @if (tabActiva === 'perfil') {
-      <div class="dashboard-content">
-        <!-- Columna izquierda: Información del perfil -->
-        <div class="content-column">
-          <div class="dashboard-section">
-            <div class="section-header">
-              <h2><i class="fas fa-user"></i> Mi Perfil</h2>
-            </div>
-            
-            <div class="perfil-rapido">
-              <div class="perfil-avatar">
-                <img [src]="clienteData?.fotoUrl || 'assets/default-avatar.png'" alt="Foto de perfil">
-              </div>
-              <div class="perfil-info">
-                <h4>{{ clienteData?.nombre || 'Usuario' }}</h4>
-                <p class="perfil-folio">Folio: {{ clienteData?.folioCliente || currentUser?.idPersona }}</p>
-                <p class="perfil-email">{{ clienteData?.email || currentUser?.email || 'No especificado' }}</p>
-                <p class="perfil-estatus">
-                  <span class="estatus-badge badge-activa">
-                    {{ clienteData?.estatus || 'Activo' }}
-                  </span>
-                </p>
-              </div>
-              <div class="perfil-actions">
-                <button class="btn btn-sm btn-primary" (click)="cambiarFoto()">
-                  <i class="fas fa-camera"></i> Cambiar Foto
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Formulario de edición -->
-          <div class="dashboard-section">
-            <div class="section-header">
-              <h2><i class="fas fa-edit"></i> Editar Información</h2>
-            </div>
-            
-            <form [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()" class="form-grid">
-              <div class="info-item">
-                <i class="fas fa-user"></i>
-                <div class="info-content">
-                  <span class="info-label">Nombre Completo *</span>
-                  <input type="text" formControlName="nombre" class="form-control">
-                  @if (perfilForm.get('nombre')?.invalid && perfilForm.get('nombre')?.touched) {
-                    <small class="error-text">El nombre es requerido</small>
-                  }
-                </div>
-              </div>
-              
-              <div class="info-item">
-                <i class="fas fa-envelope"></i>
-                <div class="info-content">
-                  <span class="info-label">Email *</span>
-                  <input type="email" formControlName="email" class="form-control">
-                  @if (perfilForm.get('email')?.invalid && perfilForm.get('email')?.touched) {
-                    <small class="error-text">Ingresa un email válido</small>
-                  }
-                </div>
-              </div>
-              
-              <div class="info-item">
-                <i class="fas fa-phone"></i>
-                <div class="info-content">
-                  <span class="info-label">Teléfono</span>
-                  <input type="tel" formControlName="telefono" class="form-control">
-                </div>
-              </div>
-              
-              <div class="info-item">
-                <i class="fas fa-venus-mars"></i>
-                <div class="info-content">
-                  <span class="info-label">Género</span>
-                  <select formControlName="genero" class="form-control">
-                    <option value="">Seleccionar...</option>
-                    <option value="Masculino">Masculino</option>
-                    <option value="Femenino">Femenino</option>
-                    <option value="Otro">Otro</option>
-                    <option value="Prefiero no decir">Prefiero no decir</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="actividad-actions">
-                <button type="submit" 
-                        class="btn btn-primary" 
-                        [disabled]="!perfilForm.valid || !perfilForm.dirty || isLoading">
-                  <i class="fas fa-save"></i> Guardar Cambios
-                </button>
-                <button type="button" 
-                        class="btn btn-secondary" 
-                        (click)="cancelarEdicion()"
-                        [disabled]="isLoading">
-                  <i class="fas fa-times"></i> Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
+      @if (rutinas.length === 0) {
+      <div class="no-activities">
+        <div class="no-activities-icon">
+          <i class="fas fa-dumbbell"></i>
         </div>
+        <h3>No tienes rutinas asignadas</h3>
+        <p>Contacta con un instructor para que te asigne una rutina personalizada según tus objetivos.</p>
 
-        <!-- Columna derecha: Estadísticas -->
-        <div class="content-column">
-          <div class="dashboard-section">
-            <div class="section-header">
-              <h2><i class="fas fa-chart-bar"></i> Mi Progreso</h2>
-            </div>
-            
-            <div class="progreso-stats">
-              <div class="progreso-item">
-                <div class="progreso-info">
-                  <span class="progreso-label">Actividades Completadas</span>
-                  <span class="progreso-value">{{ estadisticasActividades?.actividadesCompletadas || 0 }}</span>
-                </div>
-                <div class="progreso-bar">
-                  <div class="progreso-fill" 
-                       [style.width]="(estadisticasActividades?.actividadesCompletadas / (estadisticasActividades?.totalActividades || 1) * 100) + '%'">
-                  </div>
-                </div>
-              </div>
-              
-              <div class="progreso-item">
-                <div class="progreso-info">
-                  <span class="progreso-label">Asistencia</span>
-                  <span class="progreso-value">{{ estadisticasActividades?.porcentajeAsistencia || 0 }}%</span>
-                </div>
-                <div class="progreso-bar">
-                  <div class="progreso-fill" 
-                       [style.width]="(estadisticasActividades?.porcentajeAsistencia || 0) + '%'">
-                  </div>
-                </div>
-              </div>
-              
-              <div class="progreso-item">
-                <div class="progreso-info">
-                  <span class="progreso-label">Calificación Promedio</span>
-                  <span class="progreso-value">{{ estadisticasActividades?.promedioCalificacion || 0 }}/5</span>
-                </div>
-                <div class="progreso-bar">
-                  <div class="progreso-fill" 
-                       [style.width]="((estadisticasActividades?.promedioCalificacion || 0) / 5 * 100) + '%'">
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div class="progreso-actions">
-              <button class="btn btn-sm btn-secondary" (click)="verEstadisticasCompletas()">
-                <i class="fas fa-chart-line"></i> Ver Estadísticas Completas
-              </button>
+      </div>
+      } @else {
+      <div class="actividades-grid-compact">
+        @for (rutina of rutinas; track rutina.folioRutina; let i = $index) {
+        <div class="actividad-card-compact" [class.activa]="rutina.estatus === 'Activa'"
+          [style.animation-delay]="i * 0.1 + 's'">
+          <!-- Imagen de la rutina -->
+          <div class="actividad-image-compact rutina-image">
+            <img [src]="'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400'" [alt]="rutina.nombre">
+            <div class="image-overlay-compact">
+              <span class="actividad-badge-compact nivel-badge-overlay"
+                [style.background-color]="getColorNivel(rutina.nivel)">
+                {{ rutina.nivel }}
+              </span>
+              <span class="actividad-badge-compact ejercicios-badge">
+                <i class="fas fa-dumbbell"></i>
+                {{ contarEjerciciosRutina(rutina) }} ej.
+              </span>
             </div>
           </div>
 
-          <!-- Calendario Semanal -->
-          <div class="dashboard-section">
-            <div class="section-header">
-              <h2><i class="fas fa-calendar-alt"></i> Esta Semana</h2>
-            </div>
-            
-            <div class="calendar-week">
-              @for (dia of semana; track dia; let i = $index) {
-                <div class="calendar-day" 
-                     [class.today]="esHoy(dia)" 
-                     [class.has-activities]="tieneActividadesDia(dia)"
-                     [class.has-inscripciones]="tieneInscripcionesDia(dia)"
-                     (click)="seleccionarDia(dia)">
-                  <div class="day-header">
-                    <span class="day-name">{{ getDiaSemana(dia) }}</span>
-                    <span class="day-number">{{ getDiaMes(dia) }}</span>
-                  </div>
-                  <div class="day-activities">
-                    @for (actividad of getActividadesDia(dia); track actividad.idActividad) {
-                      <div class="activity-dot" 
-                           [class.inscrita]="estaInscritoEnActividad(actividad.idActividad)"
-                           [title]="actividad.nombreActividad + (estaInscritoEnActividad(actividad.idActividad) ? ' (Inscrito)' : '')">
-                      </div>
-                    }
-                  </div>
-                  @if (tieneInscripcionesDia(dia)) {
-                    <div class="day-inscripciones">
-                      <i class="fas fa-user-check"></i>
-                    </div>
-                  }
+          <!-- Contenido de la rutina -->
+          <div class="actividad-content-compact">
+            <!-- Header de la rutina -->
+            <div class="actividad-header-compact">
+              <div class="actividad-title-section">
+                <h4 class="actividad-title">{{ rutina.nombre }}</h4>
+                <div class="actividad-meta">
+                  <span class="actividad-time">
+                    <i class="fas fa-clock"></i>
+                    {{ formatearDuracionRutina(rutina) }}
+                  </span>
                 </div>
+              </div>
+              <div class="actividad-status-section">
+                <span class="estatus-badge" [ngClass]="rutina.estatus === 'Activa' ? 'badge-activa' : 'badge-inactiva'">
+                  {{ rutina.estatus }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Información de la rutina -->
+            <div class="actividad-info-compact">
+              <div class="info-row">
+                <div class="info-item-compact">
+                  <i class="fas fa-bullseye"></i>
+                  <span>{{ rutina.objetivo || 'General' }}</span>
+                </div>
+                <div class="info-item-compact">
+                  <i class="fas fa-dumbbell"></i>
+                  <span>{{ contarEjerciciosRutina(rutina) }} ejercicios</span>
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-item-compact">
+                  <i class="fas fa-calendar"></i>
+                  <span>{{ formatearFecha(rutina.fechaCreacion) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Descripción -->
+            @if (rutina.descripcion) {
+            <div class="actividad-descripcion-compact">
+              <p>{{ rutina.descripcion }}</p>
+            </div>
+            }
+
+            <!-- Ejercicios (lista compacta) -->
+            <div class="ejercicios-compact">
+              <div class="ejercicios-header">
+                <span class="ejercicios-title">Ejercicios:</span>
+                <span class="ejercicios-count">{{ contarEjerciciosRutina(rutina) }}</span>
+              </div>
+              <div class="ejercicios-list-compact">
+                @for (ejercicio of rutina.ejercicios || []; track ejercicio.idEjercicio; let i = $index) {
+                <div class="ejercicio-item-compact" (click)="verDetallesEjercicio(ejercicio)">
+                  <span class="ejercicio-nombre">{{ getNombreEjercicio(ejercicio.idEjercicio) }}</span>
+                  <span class="ejercicio-sets">{{ ejercicio.seriesEjercicio }}x{{ ejercicio.repeticionesEjercicio
+                    }}</span>
+                </div>
+                }
+              </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="actividad-actions-compact">
+              <button class="btn btn-sm btn-primary" (click)="verRutinaCompleta(rutina)">
+                <i class="fas fa-expand"></i> Ver Completa
+              </button>
+              @if (rutina.estatus === 'Activa') {
+              <button class="btn btn-sm btn-success" (click)="iniciarRutina(rutina)">
+                <i class="fas fa-play-circle"></i> Iniciar
+              </button>
               }
             </div>
           </div>
         </div>
+        }
       </div>
+      }
+    </div>
+    }
+
+    <!-- PESTAÑA: PERFIL -->
+    @if (tabActiva === 'perfil') {
+    <div class="dashboard-content">
+      <!-- Columna izquierda: Información del perfil -->
+      <div class="content-column">
+        <div class="dashboard-section">
+          <div class="section-header">
+            <h2><i class="fas fa-user"></i> Mi Perfil</h2>
+          </div>
+
+          <div class="perfil-rapido">
+            <div class="perfil-avatar">
+              <img [src]="clienteData?.fotoUrl || 'assets/default-avatar.png'" alt="Foto de perfil">
+            </div>
+            <div class="perfil-info">
+              <h4>{{ clienteData?.nombre || 'Usuario' }}</h4>
+              <p class="perfil-folio">Folio: {{ clienteData?.folioCliente || currentUser?.idPersona }}</p>
+              <p class="perfil-email">{{ clienteData?.email || currentUser?.email || 'No especificado' }}</p>
+              <p class="perfil-estatus">
+                <span class="estatus-badge badge-activa">
+                  {{ clienteData?.estatus || 'Activo' }}
+                </span>
+              </p>
+            </div>
+            <div class="perfil-actions">
+              <button class="btn btn-sm btn-primary" (click)="cambiarFoto()">
+                <i class="fas fa-camera"></i> Cambiar Foto
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario de edición -->
+        <div class="dashboard-section">
+          <div class="section-header">
+            <h2><i class="fas fa-edit"></i> Editar Información</h2>
+          </div>
+
+          <form [formGroup]="perfilForm" (ngSubmit)="guardarPerfil()" class="form-grid">
+            <div class="info-item">
+              <i class="fas fa-user"></i>
+              <div class="info-content">
+                <span class="info-label">Nombre Completo *</span>
+                <input type="text" formControlName="nombre" class="form-control">
+                @if (perfilForm.get('nombre')?.invalid && perfilForm.get('nombre')?.touched) {
+                <small class="error-text">El nombre es requerido</small>
+                }
+              </div>
+            </div>
+
+            <div class="info-item">
+              <i class="fas fa-envelope"></i>
+              <div class="info-content">
+                <span class="info-label">Email *</span>
+                <input type="email" formControlName="email" class="form-control">
+                @if (perfilForm.get('email')?.invalid && perfilForm.get('email')?.touched) {
+                <small class="error-text">Ingresa un email válido</small>
+                }
+              </div>
+            </div>
+
+            <div class="info-item">
+              <i class="fas fa-phone"></i>
+              <div class="info-content">
+                <span class="info-label">Teléfono</span>
+                <input type="tel" formControlName="telefono" class="form-control">
+              </div>
+            </div>
+
+            <div class="info-item">
+              <i class="fas fa-venus-mars"></i>
+              <div class="info-content">
+                <span class="info-label">Género</span>
+                <select formControlName="genero" class="form-control">
+                  <option value="">Seleccionar...</option>
+                  <option value="Masculino">Masculino</option>
+                  <option value="Femenino">Femenino</option>
+                  <option value="Otro">Otro</option>
+                  <option value="Prefiero no decir">Prefiero no decir</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="actividad-actions">
+              <button type="submit" class="btn btn-primary"
+                [disabled]="!perfilForm.valid || !perfilForm.dirty || isLoading">
+                <i class="fas fa-save"></i> Guardar Cambios
+              </button>
+              <button type="button" class="btn btn-secondary" (click)="cancelarEdicion()" [disabled]="isLoading">
+                <i class="fas fa-times"></i> Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Columna derecha: Estadísticas -->
+      <div class="content-column">
+        <div class="dashboard-section">
+          <div class="section-header">
+            <h2><i class="fas fa-chart-bar"></i> Mi Progreso</h2>
+          </div>
+
+          <div class="progreso-stats">
+            <div class="progreso-item">
+              <div class="progreso-info">
+                <span class="progreso-label">Actividades Completadas</span>
+                <span class="progreso-value">{{ estadisticasActividades?.actividadesCompletadas || 0 }}</span>
+              </div>
+              <div class="progreso-bar">
+                <div class="progreso-fill"
+                  [style.width]="(estadisticasActividades?.actividadesCompletadas / (estadisticasActividades?.totalActividades || 1) * 100) + '%'">
+                </div>
+              </div>
+            </div>
+
+            <div class="progreso-item">
+              <div class="progreso-info">
+                <span class="progreso-label">Asistencia</span>
+                <span class="progreso-value">{{ estadisticasActividades?.porcentajeAsistencia || 0 }}%</span>
+              </div>
+              <div class="progreso-bar">
+                <div class="progreso-fill" [style.width]="(estadisticasActividades?.porcentajeAsistencia || 0) + '%'">
+                </div>
+              </div>
+            </div>
+
+            <div class="progreso-item">
+              <div class="progreso-info">
+                <span class="progreso-label">Calificación Promedio</span>
+                <span class="progreso-value">{{ estadisticasActividades?.promedioCalificacion || 0 }}/5</span>
+              </div>
+              <div class="progreso-bar">
+                <div class="progreso-fill"
+                  [style.width]="((estadisticasActividades?.promedioCalificacion || 0) / 5 * 100) + '%'">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="progreso-actions">
+            <button class="btn btn-sm btn-secondary" (click)="verEstadisticasCompletas()">
+              <i class="fas fa-chart-line"></i> Ver Estadísticas Completas
+            </button>
+          </div>
+        </div>
+
+        <!-- Calendario Semanal -->
+        <div class="dashboard-section">
+          <div class="section-header">
+            <h2><i class="fas fa-calendar-alt"></i> Esta Semana</h2>
+          </div>
+
+          <div class="calendar-week">
+            @for (dia of semana; track dia; let i = $index) {
+            <div class="calendar-day" [class.today]="esHoy(dia)" [class.has-activities]="tieneActividadesDia(dia)"
+              [class.has-inscripciones]="tieneInscripcionesDia(dia)" (click)="seleccionarDia(dia)">
+              <div class="day-header">
+                <span class="day-name">{{ getDiaSemana(dia) }}</span>
+                <span class="day-number">{{ getDiaMes(dia) }}</span>
+              </div>
+              <div class="day-activities">
+                @for (actividad of getActividadesDia(dia); track actividad.idActividad) {
+                <div class="activity-dot" [class.inscrita]="estaInscritoEnActividad(actividad.idActividad)"
+                  [title]="actividad.nombreActividad + (estaInscritoEnActividad(actividad.idActividad) ? ' (Inscrito)' : '')">
+                </div>
+                }
+              </div>
+              @if (tieneInscripcionesDia(dia)) {
+              <div class="day-inscripciones">
+                <i class="fas fa-user-check"></i>
+              </div>
+              }
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
     }
   </div>
 </div>
