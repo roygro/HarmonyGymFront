@@ -7,11 +7,11 @@
       <h1><i class="fas fa-cash-register"></i> Registrar Nuevo Pago</h1>
       <p class="header-subtitle">Complete los datos para registrar una nueva venta</p>
     </div>
-<div class="header-actions">
-  <button class="btn btn-secondary" (click)="volverALista()">
-    <i class="fas fa-arrow-left"></i> Volver a la lista
-  </button>
-</div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="volverALista()">
+        <i class="fas fa-arrow-left"></i> Volver a la lista
+      </button>
+    </div>
   </div>
 
   <!-- Loading Spinner Mejorado -->
@@ -38,14 +38,22 @@
           <label>
             <i class="fas fa-user-tie"></i> Recepcionista *
           </label>
-          <input 
-            type="text" 
+          <select 
             class="form-control" 
-            formControlName="idRecepcionista" 
-            value="REC001" 
-            readonly
+            formControlName="idRecepcionista"
+            [class.error]="f['idRecepcionista'].invalid && f['idRecepcionista'].touched"
           >
-          <small class="help-text">Recepcionista asignado automáticamente por el sistema</small>
+            <option value="" disabled selected>-- Seleccione un recepcionista --</option>
+            <option *ngFor="let recepcionista of recepcionistas" [value]="recepcionista.idRecepcionista">
+              {{ recepcionista.nombre }} - {{ recepcionista.idRecepcionista }}
+            </option>
+          </select>
+          <small *ngIf="f['idRecepcionista'].invalid && f['idRecepcionista'].touched" class="error-text">
+            Seleccione un recepcionista
+          </small>
+          <small *ngIf="f['idRecepcionista'].valid && f['idRecepcionista'].touched" class="success-text">
+            Recepcionista seleccionado
+          </small>
         </div>
 
         <!-- Cliente -->

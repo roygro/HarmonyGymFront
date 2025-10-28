@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map, catchError } from 'rxjs';
 
 export interface ClienteMembresia {
   id_membresia_cliente: number;
@@ -66,11 +67,25 @@ export class ClienteMembresiaService {
   }
 
   /**
-   * Renovar una membresía existente
-   */
-  renovarMembresia(id: number): Observable<ClienteMembresia> {
-    return this.http.post<ClienteMembresia>(`${this.apiUrl}/${id}/renovar`, {});
-  }
+// En ClienteMembresiaService, modifica el método renovarMembresia:
+
+/**
+ * Renovar una membresía existente
+ */
+renovarMembresia(id: number): Observable<ClienteMembresia> {
+  return this.http.post<{success: boolean, message: string, membresia: ClienteMembresia}>(
+    `${this.apiUrl}/${id}/renovar`, 
+    {}
+  ).pipe(
+    map(response => {
+      if (response.success) {
+        return response.membresia;
+      } else {
+        throw new Error(response.message);
+      }
+    })
+  );
+}
 
   /**
    * Cancelar una membresía

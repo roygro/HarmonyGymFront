@@ -86,7 +86,7 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
 
   ngOnInit(): void {
     this.verificarMembresiasDisponibles();
-    this.cargarMembresiasActivas();
+    this.cargarTodasLasMembresias();
     this.cargarNombres();
   }
 
@@ -249,41 +249,75 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
     });
   }
 
-  cargarMembresiasActivas(): void {
-    this.loading = true;
-    this.clienteMembresiaService.obtenerMembresiasActivas().subscribe({
-      next: (data: any) => {
-        console.log('Datos recibidos del servicio:', data);
-        
-        if (data && data.membresias && Array.isArray(data.membresias)) {
-          // Mapear correctamente la estructura del backend
-          this.membresias = data.membresias.map((item: any) => this.mapearMembresiaBackend(item));
-        } else if (data && Array.isArray(data)) {
-          this.membresias = data.map((item: any) => this.mapearMembresiaBackend(item));
-        } else {
-          console.warn('Formato de respuesta inesperado:', data);
-          this.membresias = [];
-        }
-        
-        console.log('Membresías después del mapeo:', this.membresias);
-        this.membresiasFiltradas = [...this.membresias];
-        this.loading = false;
-        
-        // Crear gráficos después de cargar los datos
-        setTimeout(() => {
-          this.crearGraficoDistribucion();
-          this.crearGraficoEstado();
-        }, 100);
-      },
-      error: (error: any) => {
-        console.error('Error al cargar membresías:', error);
-        this.mostrarSnackbar('Error al cargar las membresías activas', 'error');
+  cargarTodasLasMembresias(): void {
+  this.loading = true;
+  
+  this.clienteMembresiaService.obtenerTodasMembresias().subscribe({
+    next: (data: any) => {
+      console.log('Todas las membresías recibidas:', data);
+      
+      if (data && Array.isArray(data)) {
+        // Si viene directamente como array
+        this.membresias = data.map((item: any) => this.mapearMembresiaBackend(item));
+      } else if (data && data.membresias && Array.isArray(data.membresias)) {
+        // Si viene dentro de un objeto con propiedad 'membresias'
+        this.membresias = data.membresias.map((item: any) => this.mapearMembresiaBackend(item));
+      } else {
+        console.warn('Formato de respuesta inesperado:', data);
         this.membresias = [];
-        this.membresiasFiltradas = [];
-        this.loading = false;
       }
-    });
-  }
+      
+      console.log('Todas las membresías cargadas:', this.membresias);
+      this.membresiasFiltradas = [...this.membresias];
+      this.loading = false;
+      
+      // Crear gráficos después de cargar los datos
+      setTimeout(() => {
+        this.crearGraficoDistribucion();
+        this.crearGraficoEstado();
+      }, 100);
+    },
+    error: (error: any) => {
+      console.error('Error al cargar todas las membresías:', error);
+      
+      // Si falla, intentar con el método de activas como respaldo
+      this.mostrarSnackbar('No se pudieron cargar todas las membresías. Cargando solo activas...', 'warning');
+      this.cargarMembresiasActivasComoRespaldo();
+    }
+  });
+}
+
+// Método de respaldo que usa solo las activas
+cargarMembresiasActivasComoRespaldo(): void {
+  this.clienteMembresiaService.obtenerMembresiasActivas().subscribe({
+    next: (data: any) => {
+      console.log('Membresías activas (respaldo):', data);
+      
+      if (data && Array.isArray(data)) {
+        this.membresias = data.map((item: any) => this.mapearMembresiaBackend(item));
+      } else if (data && data.membresias && Array.isArray(data.membresias)) {
+        this.membresias = data.membresias.map((item: any) => this.mapearMembresiaBackend(item));
+      } else {
+        this.membresias = [];
+      }
+      
+      this.membresiasFiltradas = [...this.membresias];
+      this.loading = false;
+      
+      setTimeout(() => {
+        this.crearGraficoDistribucion();
+        this.crearGraficoEstado();
+      }, 100);
+    },
+    error: (error: any) => {
+      console.error('Error al cargar membresías activas:', error);
+      this.mostrarSnackbar('Error al cargar las membresías', 'error');
+      this.membresias = [];
+      this.membresiasFiltradas = [];
+      this.loading = false;
+    }
+  });
+}
 
   private mapearMembresiaBackend(backendData: any): ClienteMembresia {
     console.log('Mapeando datos del backend:', backendData);
@@ -366,7 +400,7 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
     ).subscribe({
       next: (membresia: ClienteMembresia) => {
         this.mostrarSnackbar('Membresía asignada exitosamente', 'success');
-        this.cargarMembresiasActivas();
+        this.cargarTodasLasMembresias();
         this.showAsignarDialog = false;
         this.loading = false;
       },
@@ -388,35 +422,139 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
     });
   }
 
-  renovarMembresia(membresia: ClienteMembresia): void {
-    if (confirm('¿Estás seguro de que deseas renovar esta membresía?')) {
-      this.clienteMembresiaService.renovarMembresia(membresia.id_membresia_cliente).subscribe({
-        next: (membresiaRenovada: ClienteMembresia) => {
-          this.mostrarSnackbar('Membresía renovada exitosamente', 'success');
-          this.cargarMembresiasActivas();
-        },
-        error: (error: any) => {
-          console.error('Error al renovar membresía:', error);
-          this.mostrarSnackbar('Error al renovar la membresía: ' + error.error?.message, 'error');
-        }
-      });
+renovarMembresia(membresia: ClienteMembresia): void {
+  // Verificar si la membresía está activa
+  if (membresia.estatus !== 'Activa') {
+    const mensaje = this.obtenerMensajeRenovacion(membresia.estatus);
+    
+    if (confirm(`${mensaje}\n\n¿Desea proceder con la renovación?`)) {
+      this.procesarRenovacion(membresia);
     }
+  } else {
+    // Membresía activa - renovación normal
+    if (confirm('¿Estás seguro de que deseas renovar esta membresía activa? Se creará una nueva membresía y la actual se marcará como expirada.')) {
+      this.procesarRenovacion(membresia);
+    }
+  }
+}
+
+// Método auxiliar para obtener mensaje según el estatus
+private obtenerMensajeRenovacion(estatus: string): string {
+  const mensajes: { [key: string]: string } = {
+    'Expirada': 'Esta membresía está EXPIRADA. La renovación creará una nueva membresía activa.',
+    'Cancelada': 'Esta membresía está CANCELADA. La renovación creará una nueva membresía activa.',
+    'Inactiva': 'Esta membresía está INACTIVA. La renovación la reactivará.',
+    'Activa': 'Renovar membresía activa.'
+  };
+  
+  return mensajes[estatus] || `Esta membresía tiene estatus: ${estatus}. ¿Desea renovarla?`;
+}
+
+// En ClienteMembresiaComponent, modifica el método procesarRenovacion:
+
+private procesarRenovacion(membresia: ClienteMembresia): void {
+  this.clienteMembresiaService.renovarMembresia(membresia.id_membresia_cliente).subscribe({
+    next: (response: any) => {
+      // Manejar tanto la respuesta antigua como la nueva
+      let membresiaRenovada: ClienteMembresia;
+      let mensaje: string;
+
+      if (response.success !== undefined) {
+        // Nueva estructura de respuesta
+        membresiaRenovada = response.membresia;
+        mensaje = response.message || 'Membresía renovada exitosamente';
+      } else {
+        // Estructura antigua (directamente la membresía)
+        membresiaRenovada = response;
+        mensaje = 'Membresía renovada exitosamente';
+      }
+
+      this.mostrarSnackbar(mensaje, 'success');
+      
+      // Actualizar la lista de membresías
+      this.actualizarListaDespuesRenovacion(membresia.id_membresia_cliente, membresiaRenovada);
+    },
+    error: (error: any) => {
+      console.error('Error al renovar membresía:', error);
+      
+      let mensajeError = 'Error al renovar la membresía';
+      if (error.error?.message) {
+        mensajeError += ': ' + error.error.message;
+      } else if (error.message) {
+        mensajeError += ': ' + error.message;
+      } else if (error.status === 400) {
+        mensajeError += ': No se puede renovar esta membresía en su estado actual';
+      }
+      
+      this.mostrarSnackbar(mensajeError, 'error');
+    }
+  });
+}
+
+// Método para actualizar la lista después de la renovación
+private actualizarListaDespuesRenovacion(idMembresiaAntigua: number, nuevaMembresia: ClienteMembresia): void {
+  // Encontrar y actualizar la membresía antigua
+  const membresiaIndex = this.membresias.findIndex(m => m.id_membresia_cliente === idMembresiaAntigua);
+  
+  if (membresiaIndex !== -1) {
+    // Marcar la membresía antigua como expirada
+    this.membresias[membresiaIndex].estatus = 'Expirada';
+    
+    // Agregar la nueva membresía al principio de la lista
+    this.membresias.unshift(nuevaMembresia);
+    
+    // Actualizar la lista filtrada
+    this.membresiasFiltradas = [...this.membresias];
+    
+    // Actualizar gráficos
+    this.actualizarGraficos();
+  } else {
+    // Si no encuentra la membresía antigua, recargar todo
+    this.cargarTodasLasMembresias();
+  }
+}
+
+
+cancelarMembresia(membresia: ClienteMembresia): void {
+  // Verificar si ya está cancelada
+  if (membresia.estatus === 'Cancelada') {
+    this.mostrarSnackbar('Esta membresía ya está cancelada', 'warning');
+    return;
   }
 
-  cancelarMembresia(membresia: ClienteMembresia): void {
-    if (confirm('¿Estás seguro de que deseas cancelar esta membresía?')) {
-      this.clienteMembresiaService.cancelarMembresia(membresia.id_membresia_cliente).subscribe({
-        next: (membresiaCancelada: ClienteMembresia) => {
-          this.mostrarSnackbar('Membresía cancelada exitosamente', 'success');
-          this.cargarMembresiasActivas();
-        },
-        error: (error: any) => {
-          console.error('Error al cancelar membresía:', error);
-          this.mostrarSnackbar('Error al cancelar la membresía: ' + error.error?.message, 'error');
-        }
-      });
-    }
+  // Verificar si está expirada
+  if (membresia.estatus === 'Expirada') {
+    this.mostrarSnackbar('Esta membresía ya está expirada, no es necesario cancelarla');
+    return;
   }
+
+  const mensaje = this.obtenerMensajeCancelacion(membresia.estatus);
+  
+  if (confirm(mensaje)) {
+    this.clienteMembresiaService.cancelarMembresia(membresia.id_membresia_cliente).subscribe({
+      next: (membresiaCancelada: ClienteMembresia) => {
+        this.mostrarSnackbar('Membresía cancelada exitosamente', 'success');
+        this.cargarTodasLasMembresias();
+      },
+      error: (error: any) => {
+        console.error('Error al cancelar membresía:', error);
+        this.mostrarSnackbar('Error al cancelar la membresía: ' + error.error?.message, 'error');
+      }
+    });
+  }
+}
+
+// Método auxiliar para mensajes de cancelación
+private obtenerMensajeCancelacion(estatus: string): string {
+  const mensajes: { [key: string]: string } = {
+    'Activa': '¿Estás seguro de que deseas cancelar esta membresía ACTIVA? El cliente perderá el acceso inmediatamente.',
+    'Inactiva': '¿Estás seguro de que deseas cancelar esta membresía INACTIVA?',
+    'Expirada': 'Esta membresía ya está expirada. ¿Desea marcarla como cancelada?',
+    'Cancelada': 'Esta membresía ya está cancelada.'
+  };
+  
+  return mensajes[estatus] || `¿Estás seguro de que deseas cancelar esta membresía (${estatus})?`;
+}
 
   verificarAcceso(membresia: ClienteMembresia): void {
     this.clienteMembresiaService.verificarAcceso(membresia.folio_cliente).subscribe({
