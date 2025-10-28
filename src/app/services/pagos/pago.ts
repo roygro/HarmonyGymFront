@@ -6,21 +6,25 @@ import { Observable } from 'rxjs';
 export interface Pago {
   idVenta?: number;
   idRecepcionista: string;
-  codigoProducto: string;
+  codigoProducto?: string;
+  idMembresia?: string; // Nuevo campo opcional
   fechaVenta?: string;
   cantidad: number;
   precioUnitario: number;
   total: number;
   folioCliente: string;
+  tipoPago: string; // 'producto' o 'membresia'
 }
 
 export interface PagoDTO {
   idRecepcionista: string;
-  codigoProducto: string;
+  codigoProducto?: string;
+  idMembresia?: string;
   cantidad: number;
   precioUnitario: number;
   total: number;
   folioCliente: string;
+  tipoPago: string;
 }
 
 export interface EstadisticasDia {

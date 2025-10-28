@@ -10,6 +10,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 import { PagoService, Pago, EstadisticasDia, Cliente, Producto, Recepcionista } from '../../../services/pagos/pago';
+import { MembresiaService, Membresia } from '../../../services/membresia/membresia'; // Agregar esta importación
 
 @Component({
   selector: 'app-pago-list',
@@ -38,25 +39,29 @@ export class PagoList implements OnInit {
   filtroFechaInicio: string = '';
   filtroFechaFin: string = '';
 
-
-   // AGREGAR estas propiedades para los nombres
+  // AGREGAR estas propiedades para los nombres
   clientesMap: Map<string, string> = new Map();
   recepcionistasMap: Map<string, string> = new Map();
   productosMap: Map<string, string> = new Map();
 
+  // NUEVAS propiedades
+  clientes: any[] = [];
+  recepcionistas: any[] = [];
+  productos: any[] = [];
+  membresias: Membresia[] = []; // Agregar membresías
+
   constructor(
     private pagoService: PagoService,
+    private membresiaService: MembresiaService, // Inyectar servicio de membresías
     private router: Router
   ) { }
 
   ngOnInit(): void {
     this.cargarPagos();
     this.cargarEstadisticas();
-    this.cargarNombres(); // <- AGREGAR esta línea
+    this.cargarNombres();
   }
 
-
-  
   cargarPagos(): void {
     this.cargando = true;
     this.error = '';
@@ -76,52 +81,78 @@ export class PagoList implements OnInit {
     });
   }
 
+  // ACTUALIZAR este método para cargar membresías también
+  cargarNombres(): void {
+    // Cargar clientes
+    this.pagoService.obtenerClientes().subscribe({
+      next: (clientes: any) => {
+        this.clientes = clientes;
+        console.log('Clientes cargados:', this.clientes);
+      }
+    });
 
-   // AGREGAR este método simple
-  // Reemplaza tu método cargarNombres() por este:
-// Propiedades
-clientes: any[] = [];
-recepcionistas: any[] = [];
-productos: any[] = [];
+    // Cargar recepcionistas
+    this.pagoService.obtenerRecepcionistas().subscribe({
+      next: (recepcionistas: any) => {
+        this.recepcionistas = recepcionistas;
+        console.log('Recepcionistas cargados:', this.recepcionistas);
+      }
+    });
 
-cargarNombres(): void {
-  this.pagoService.obtenerClientes().subscribe({
-    next: (clientes: any) => {
-      this.clientes = clientes;
-      console.log('Clientes cargados:', this.clientes);
+    // Cargar productos
+    this.pagoService.obtenerProductos().subscribe({
+      next: (productos: any) => {
+        this.productos = productos;
+        console.log('Productos cargados:', this.productos);
+      }
+    });
+
+    // Cargar membresías
+    this.membresiaService.getMembresias().subscribe({
+      next: (membresias: Membresia[]) => {
+        this.membresias = membresias;
+        console.log('Membresías cargadas:', this.membresias);
+      },
+      error: (error) => {
+        console.error('Error al cargar membresías:', error);
+      }
+    });
+  }
+
+  // Métodos corregidos - ACTUALIZAR obtenerNombreProducto
+  obtenerNombreCliente(folio: string): string {
+    const cliente = this.clientes.find((c: any) => c.folioCliente === folio);
+    return cliente ? cliente.nombre : folio;
+  }
+
+  obtenerNombreRecepcionista(id: string): string {
+    const recepcionista = this.recepcionistas.find((r: any) => r.idRecepcionista === id);
+    return recepcionista ? recepcionista.nombre : id;
+  }
+
+  // NUEVO método para obtener nombre del item (producto o membresía)
+  obtenerNombreItem(pago: Pago): string {
+    if (pago.tipoPago === 'membresia' && pago.idMembresia) {
+      const membresia = this.membresias.find(m => m.idMembresia === pago.idMembresia);
+      return membresia ? `Membresía ${membresia.tipo}` : `Membresía ${pago.idMembresia}`;
+    } else if (pago.codigoProducto) {
+      const producto = this.productos.find(p => p.codigo === pago.codigoProducto);
+      return producto ? producto.nombre : pago.codigoProducto;
     }
-  });
+    return 'N/A';
+  }
 
-  this.pagoService.obtenerRecepcionistas().subscribe({
-    next: (recepcionistas: any) => {
-      this.recepcionistas = recepcionistas;
-      console.log('Recepcionistas cargados:', this.recepcionistas);
-    }
-  });
+  // Mantener el método original para compatibilidad, pero marcarlo como deprecated
+  obtenerNombreProducto(codigo: string | undefined): string {
+    if (!codigo) return 'N/A';
+    const producto = this.productos.find((p: any) => p.codigo === codigo);
+    return producto ? producto.nombre : codigo;
+  }
 
-  this.pagoService.obtenerProductos().subscribe({
-    next: (productos: any) => {
-      this.productos = productos;
-      console.log('Productos cargados:', this.productos);
-    }
-  });
-}
-
-// Métodos corregidos
-obtenerNombreCliente(folio: string): string {
-  const cliente = this.clientes.find((c: any) => c.folioCliente === folio);
-  return cliente ? cliente.nombre : folio;
-}
-
-obtenerNombreRecepcionista(id: string): string {
-  const recepcionista = this.recepcionistas.find((r: any) => r.idRecepcionista === id);
-  return recepcionista ? recepcionista.nombre : id;
-}
-
-obtenerNombreProducto(codigo: string): string {
-  const producto = this.productos.find((p: any) => p.codigo === codigo);
-  return producto ? producto.nombre : codigo;
-}
+  // NUEVO método para obtener el tipo de pago formateado
+  obtenerTipoPago(pago: Pago): string {
+    return pago.tipoPago === 'membresia' ? 'Membresía' : 'Producto';
+  }
 
   cargarEstadisticas(): void {
     this.cargandoEstadisticas = true;
@@ -151,7 +182,7 @@ obtenerNombreProducto(codigo: string): string {
   }
 
   // Filtrar pagos
-    get pagosFiltrados(): Pago[] {
+  get pagosFiltrados(): Pago[] {
     let filtered = this.pagos;
 
     if (this.filtroCliente) {
@@ -207,7 +238,7 @@ obtenerNombreProducto(codigo: string): string {
     this.filtroFechaFin = '';
   }
 
-  // Exportar pagos a CSV
+  // Exportar pagos a CSV - ACTUALIZAR para incluir tipo de pago
   exportarPagos(): void {
     try {
       const csvContent = this.crearCSV();
@@ -231,17 +262,18 @@ obtenerNombreProducto(codigo: string): string {
     }
   }
 
-  // Crear contenido CSV
+  // Crear contenido CSV - ACTUALIZAR para incluir tipo de pago
   private crearCSV(): string {
-    const headers = ['ID Venta', 'Cliente', 'Producto', 'Cantidad', 'Total', 'Fecha', 'Recepcionista'];
+    const headers = ['ID Venta', 'Tipo', 'Cliente', 'Producto/Membresía', 'Cantidad', 'Total', 'Fecha', 'Recepcionista'];
     const rows = this.pagosFiltrados.map(pago => [
       pago.idVenta?.toString() || '',
+      this.obtenerTipoPago(pago),
       this.obtenerNombreCliente(pago.folioCliente),
-      this.obtenerNombreProducto(pago.codigoProducto), // Usar nombre en lugar de código
+      this.obtenerNombreItem(pago), // Usar el nuevo método
       pago.cantidad.toString(),
       this.formatearMoneda(pago.total),
       pago.fechaVenta ? this.formatearFechaParaCSV(pago.fechaVenta) : '',
-      this.obtenerNombreRecepcionista(pago.idRecepcionista) // Usar nombre en lugar de ID
+      this.obtenerNombreRecepcionista(pago.idRecepcionista)
     ]);
 
     return [headers, ...rows]
@@ -254,7 +286,7 @@ obtenerNombreProducto(codigo: string): string {
     return new Date(fecha).toLocaleDateString('es-MX');
   }
 
-  // Descargar recibo individual en PDF
+  // Descargar recibo individual en PDF - ACTUALIZAR para manejar membresías
   async descargarRecibo(pago: Pago): Promise<void> {
     try {
       this.error = '';
@@ -303,7 +335,7 @@ obtenerNombreProducto(codigo: string): string {
     }
   }
 
-  // Crear elemento HTML para el recibo
+  // Crear elemento HTML para el recibo - ACTUALIZAR para membresías
   private crearElementoRecibo(pago: Pago): HTMLDivElement {
     const reciboDiv = document.createElement('div');
     reciboDiv.style.cssText = `
@@ -341,12 +373,13 @@ obtenerNombreProducto(codigo: string): string {
             <td style="width: 50%; vertical-align: top;">
               <h3 style="color: #1D3557; margin-bottom: 10px;">Información del Pago</h3>
               <p><strong>ID Venta:</strong> #${pago.idVenta || 'N/A'}</p>
+              <p><strong>Tipo:</strong> ${this.obtenerTipoPago(pago)}</p>
               <p><strong>Fecha de Venta:</strong> ${pago.fechaVenta ? this.formatearFecha(pago.fechaVenta) : 'N/A'}</p>
               <p><strong>Fecha de Emisión:</strong> ${fechaEmision}</p>
             </td>
             <td style="width: 50%; vertical-align: top;">
               <h3 style="color: #1D3557; margin-bottom: 10px;">Información del Cliente</h3>
-              <p><strong>Folio Cliente:</strong> ${this.obtenerNombreCliente(pago.folioCliente)}</p>
+              <p><strong>Cliente:</strong> ${this.obtenerNombreCliente(pago.folioCliente)}</p>
               <p><strong>Recepcionista:</strong> ${this.obtenerNombreRecepcionista(pago.idRecepcionista)}</p>
             </td>
           </tr>
@@ -354,11 +387,11 @@ obtenerNombreProducto(codigo: string): string {
       </div>
 
       <div style="margin-bottom: 30px;">
-        <h3 style="color: #1D3557; margin-bottom: 15px;">Detalles del Producto/Servicio</h3>
+        <h3 style="color: #1D3557; margin-bottom: 15px;">Detalles del ${pago.tipoPago === 'membresia' ? 'Servicio' : 'Producto'}</h3>
         <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
           <thead>
             <tr style="background-color: #f8f9fa;">
-              <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Producto</th>
+              <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">${pago.tipoPago === 'membresia' ? 'Membresía' : 'Producto'}</th>
               <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">Cantidad</th>
               <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">Precio Unitario</th>
               <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">Total</th>
@@ -366,7 +399,7 @@ obtenerNombreProducto(codigo: string): string {
           </thead>
           <tbody>
             <tr>
-              <td style="border: 1px solid #ddd; padding: 10px;">${this.obtenerNombreProducto(pago.codigoProducto)}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;">${this.obtenerNombreItem(pago)}</td>
               <td style="border: 1px solid #ddd; padding: 10px; text-align: center;">${pago.cantidad}</td>
               <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${this.formatearMoneda(pago.precioUnitario)}</td>
               <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${this.formatearMoneda(pago.total)}</td>
@@ -375,13 +408,13 @@ obtenerNombreProducto(codigo: string): string {
         </table>
       </div>
 
-<div style="text-align: right; margin-bottom: 40px;">
-  <div style="display: inline-block; text-align: left;">
-    <p style="margin: 5px 0; font-size: 16px; font-weight: bold; color: #E63946;">
-      <strong>TOTAL:</strong> ${this.formatearMoneda(pago.total)}
-    </p>
-  </div>
-</div>
+      <div style="text-align: right; margin-bottom: 40px;">
+        <div style="display: inline-block; text-align: left;">
+          <p style="margin: 5px 0; font-size: 16px; font-weight: bold; color: #E63946;">
+            <strong>TOTAL:</strong> ${this.formatearMoneda(pago.total)}
+          </p>
+        </div>
+      </div>
 
       <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd;">
         <p style="text-align: center; color: #666; font-size: 10px;">
@@ -431,14 +464,13 @@ obtenerNombreProducto(codigo: string): string {
     }).format(monto);
   }
 
-  // Obtener badge según el tipo de producto
-  getBadgeClass(codigoProducto: string): string {
-    if (codigoProducto.startsWith('MEM_')) {
+  // Obtener badge según el tipo de pago
+  getBadgeClass(pago: Pago): string {
+    if (pago.tipoPago === 'membresia') {
       return 'bg-primary'; // Membresías - azul
-    } else if (codigoProducto.startsWith('PROD')) {
+    } else {
       return 'bg-success'; // Productos - verde
     }
-    return 'bg-secondary'; // Otros - gris
   }
 
   // Calcular total de los pagos filtrados
@@ -450,5 +482,6 @@ obtenerNombreProducto(codigo: string): string {
   recargar(): void {
     this.cargarPagos();
     this.cargarEstadisticas();
+    this.cargarNombres();
   }
 }
