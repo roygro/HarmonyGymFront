@@ -1,3 +1,4 @@
+// header-admin.ts
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -67,7 +68,7 @@ export class HeaderAdministradorComponent implements OnInit {
   currentPageTitle = 'Harmony Gym';
   currentPageSubtitle = 'Panel de administración';
   
-  // Definir los títulos para cada ruta DEL ADMINISTRADOR
+  // Definir los títulos para cada ruta DEL ADMINISTRADOR - ACTUALIZADO
   private pageTitles: { [key: string]: { title: string; subtitle: string } } = {
     '/membresias': {
       title: 'Gestión de Membresías',
@@ -77,9 +78,17 @@ export class HeaderAdministradorComponent implements OnInit {
       title: 'Gestión de Instructores',
       subtitle: 'Administra y organiza el personal de instructores'
     },
-    '/reportes': {
-      title: 'Reportes y Estadísticas',
-      subtitle: 'Analiza el rendimiento del gimnasio'
+    '/administradores': {
+      title: 'Gestión de Administradores',
+      subtitle: 'Administra los usuarios administradores del sistema'
+    },
+    '/recepcionista': {
+      title: 'Gestión de Recepcionistas',
+      subtitle: 'Administra el personal de recepción'
+    },
+    '/pagos': {
+      title: 'Gestión de Pagos',
+      subtitle: 'Controla y monitorea los pagos del gimnasio'
     }
   };
   

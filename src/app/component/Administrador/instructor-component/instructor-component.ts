@@ -1,9 +1,10 @@
+// instructor.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
-import { Instructor, InstructorEstadisticas, InstructorService } from '../../../services/instructor/instructorService';
+import { Instructor, InstructorEstadisticas, InstructorService, ApiResponse } from '../../../services/instructor/instructorService';
 
 @Component({
   selector: 'app-instructor-component',
@@ -38,6 +39,7 @@ export class InstructorComponent implements OnInit {
   // Variables para filtros con debounce
   private filtroEspecialidadSubject = new Subject<string>();
   private busquedaNombreSubject = new Subject<string>();
+  private busquedaEmailSubject = new Subject<string>();
   
   folioGenerado: string = 'INS001';
   modoEdicion: boolean = false;
@@ -45,10 +47,13 @@ export class InstructorComponent implements OnInit {
   mostrarEstadisticas: boolean = false;
   cargando: boolean = false;
   nombreInvalido: boolean = false;
+  emailInvalido: boolean = false;
+  emailExistente: boolean = false;
   
   filtroEstatus: string = '';
   filtroEspecialidad: string = '';
   terminoBusqueda: string = '';
+  terminoBusquedaEmail: string = '';
   
   estadisticas: InstructorEstadisticas = {
     totalActividades: 0,
@@ -61,12 +66,6 @@ export class InstructorComponent implements OnInit {
 
   mensaje: string = '';
   tipoMensaje: 'success' | 'error' | 'warning' = 'success';
-
-  // NUEVAS PROPIEDADES PARA FOTOS
-  fotoPrevia: string | ArrayBuffer | null = null;
-  archivoFoto: File | null = null;
-  eliminandoFoto: boolean = false;
-  cargandoFoto: boolean = false;
 
   constructor(private instructorService: InstructorService) {}
 
@@ -87,6 +86,13 @@ export class InstructorComponent implements OnInit {
     ).subscribe(nombre => {
       this.buscarPorNombre();
     });
+
+    this.busquedaEmailSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(email => {
+      this.buscarPorEmail();
+    });
   }
 
   private inicializarInstructor(): Instructor {
@@ -96,13 +102,13 @@ export class InstructorComponent implements OnInit {
       nombre: '',
       app: '',
       apm: '',
+      email: '',
       horaEntrada: '',
       horaSalida: '',
       especialidad: '',
       fechaContratacion: today,
       estatus: 'Activo',
-      especialidadPersonalizada: '',
-      nombreArchivoFoto: ''
+      especialidadPersonalizada: ''
     };
   }
 
@@ -110,7 +116,7 @@ export class InstructorComponent implements OnInit {
     this.cargando = true;
     
     this.instructorService.obtenerInstructores().subscribe({
-      next: (data) => {
+      next: (data: Instructor[]) => {
         console.log('✅ Instructores cargados:', data);
         this.instructores = data;
         this.instructoresFiltrados = data;
@@ -119,7 +125,7 @@ export class InstructorComponent implements OnInit {
         // Generar próximo folio basado en los datos existentes
         this.generarProximoFolio();
       },
-      error: (error) => {
+      error: (error: { status: number; statusText: any; }) => {
         console.error('❌ Error al cargar instructores:', error);
         
         if (error.status === 0) {
@@ -165,17 +171,21 @@ export class InstructorComponent implements OnInit {
     this.busquedaNombreSubject.next(this.terminoBusqueda);
   }
 
+  onBuscarEmailChange(): void {
+    this.busquedaEmailSubject.next(this.terminoBusquedaEmail);
+  }
+
   aplicarFiltros(): void {
     this.cargando = true;
     this.instructorService.obtenerInstructoresFiltrados(
       this.filtroEstatus || undefined,
       this.filtroEspecialidad || undefined
     ).subscribe({
-      next: (data) => {
+      next: (data: Instructor[]) => {
         this.instructoresFiltrados = data;
         this.cargando = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error al aplicar filtros:', error);
         this.mostrarMensaje('Error al aplicar filtros', 'error');
         this.cargando = false;
@@ -191,13 +201,33 @@ export class InstructorComponent implements OnInit {
 
     this.cargando = true;
     this.instructorService.buscarInstructoresPorNombre(this.terminoBusqueda).subscribe({
-      next: (data) => {
+      next: (data: Instructor[]) => {
         this.instructoresFiltrados = data;
         this.cargando = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error al buscar:', error);
         this.mostrarMensaje('Error al buscar instructores', 'error');
+        this.cargando = false;
+      }
+    });
+  }
+
+  buscarPorEmail(): void {
+    if (!this.terminoBusquedaEmail.trim()) {
+      this.aplicarFiltros();
+      return;
+    }
+
+    this.cargando = true;
+    this.instructorService.buscarInstructoresPorEmail(this.terminoBusquedaEmail).subscribe({
+      next: (data: Instructor[]) => {
+        this.instructoresFiltrados = data;
+        this.cargando = false;
+      },
+      error: (error: any) => {
+        console.error('Error al buscar por email:', error);
+        this.mostrarMensaje('Error al buscar instructores por email', 'error');
         this.cargando = false;
       }
     });
@@ -207,6 +237,7 @@ export class InstructorComponent implements OnInit {
     this.filtroEstatus = '';
     this.filtroEspecialidad = '';
     this.terminoBusqueda = '';
+    this.terminoBusquedaEmail = '';
     this.instructoresFiltrados = this.instructores;
   }
 
@@ -216,11 +247,8 @@ export class InstructorComponent implements OnInit {
     this.modoEdicion = false;
     this.mostrarEstadisticas = false;
     this.nombreInvalido = false;
-    
-    // Limpiar foto
-    this.fotoPrevia = null;
-    this.archivoFoto = null;
-    this.eliminandoFoto = false;
+    this.emailInvalido = false;
+    this.emailExistente = false;
     
     // Generar folio automáticamente
     this.generarProximoFolio();
@@ -230,124 +258,89 @@ export class InstructorComponent implements OnInit {
     this.nombreInvalido = !this.nuevoInstructor.nombre.trim();
   }
 
-  // NUEVO MÉTODO: Manejar selección de archivo
-  onFileSelected(event: any, esEdicion: boolean = false): void {
-    const file = event.target.files[0];
-    if (file) {
-      // Validar tipo de archivo
-      if (!file.type.startsWith('image/')) {
-        this.mostrarMensaje('Por favor selecciona un archivo de imagen válido', 'error');
-        return;
-      }
-
-      // Validar tamaño (5MB máximo)
-      if (file.size > 5 * 1024 * 1024) {
-        this.mostrarMensaje('La imagen no debe superar los 5MB', 'error');
-        return;
-      }
-
-      this.archivoFoto = file;
-      this.eliminandoFoto = false;
-
-      // Crear vista previa
-      const reader = new FileReader();
-      reader.onload = () => {
-        this.fotoPrevia = reader.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  // NUEVO MÉTODO: Eliminar foto seleccionada
-  eliminarFotoSeleccionada(esEdicion: boolean = false): void {
-    this.fotoPrevia = null;
-    this.archivoFoto = null;
+  validarEmail(): void {
+    const email = this.nuevoInstructor.email;
+    this.emailInvalido = !this.validarFormatoEmail(email);
     
-    if (esEdicion && this.instructorSeleccionado.nombreArchivoFoto) {
-      this.eliminandoFoto = true;
+    // Verificar si el email ya existe
+    if (email && this.validarFormatoEmail(email)) {
+      this.instructorService.existeInstructorPorEmail(email).subscribe({
+        next: (existe: boolean) => {
+          this.emailExistente = existe;
+        },
+        error: (error: any) => {
+          console.error('Error al verificar email:', error);
+        }
+      });
+    } else {
+      this.emailExistente = false;
     }
   }
 
-  // NUEVO MÉTODO: Cargar foto existente
-  cargarFotoExistente(folioInstructor: string): void {
-    this.cargandoFoto = true;
-    this.instructorService.obtenerFotoInstructor(folioInstructor).subscribe({
-      next: (blob) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          this.fotoPrevia = reader.result;
-          this.cargandoFoto = false;
-        };
-        reader.readAsDataURL(blob);
-      },
-      error: (error) => {
-        console.error('Error al cargar foto:', error);
-        this.cargandoFoto = false;
-        // No mostrar error si no hay foto
-      }
-    });
+  validarEmailEdicion(): void {
+    const email = this.instructorSeleccionado.email;
+    this.emailInvalido = !this.validarFormatoEmail(email);
+  }
+
+  private validarFormatoEmail(email: string): boolean {
+    if (!email) return false;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   }
 
   crearInstructor(): void {
+    // Validaciones
     if (!this.nuevoInstructor.nombre.trim()) {
       this.nombreInvalido = true;
       this.mostrarMensaje('El nombre es requerido', 'error');
       return;
     }
 
+    if (!this.nuevoInstructor.email || !this.validarFormatoEmail(this.nuevoInstructor.email)) {
+      this.emailInvalido = true;
+      this.mostrarMensaje('El email es requerido y debe tener un formato válido', 'error');
+      return;
+    }
+
+    if (this.emailExistente) {
+      this.mostrarMensaje('El email ya está registrado para otro instructor', 'error');
+      return;
+    }
+
     // Procesar especialidad si seleccionó "Otra"
     this.procesarEspecialidad(this.nuevoInstructor);
 
-    // Asignar el folio generado automáticamente
-    this.nuevoInstructor.folioInstructor = this.folioGenerado;
-
     this.cargando = true;
-    
-    // Preparar datos para enviar
-    const instructorData = {
-      nombre: this.nuevoInstructor.nombre,
-      app: this.nuevoInstructor.app || '',
-      apm: this.nuevoInstructor.apm || '',
-      horaEntrada: this.nuevoInstructor.horaEntrada || '',
-      horaSalida: this.nuevoInstructor.horaSalida || '',
-      especialidad: this.nuevoInstructor.especialidad || '',
-      fechaContratacion: this.nuevoInstructor.fechaContratacion,
-      estatus: this.nuevoInstructor.estatus
-    };
 
-    // Usar el método con foto si hay archivo seleccionado
-    if (this.archivoFoto) {
-      this.instructorService.crearInstructorConFoto(instructorData, this.archivoFoto).subscribe({
-        next: (instructor) => {
-          this.mostrarMensaje(`Instructor ${instructor.folioInstructor} creado exitosamente`, 'success');
+    // Usar el método que envía credenciales por email
+    this.instructorService.crearInstructor(
+      this.nuevoInstructor.nombre,
+      this.nuevoInstructor.app || '',
+      this.nuevoInstructor.apm || '',
+      this.nuevoInstructor.email,
+      this.nuevoInstructor.horaEntrada || '',
+      this.nuevoInstructor.horaSalida || '',
+      this.nuevoInstructor.especialidad || '',
+      this.nuevoInstructor.fechaContratacion,
+      this.nuevoInstructor.estatus
+    ).subscribe({
+      next: (response: ApiResponse) => {
+        if (response.success) {
+          this.mostrarMensaje(response.message, 'success');
           this.cargarInstructores();
           this.cerrarFormulario();
-          this.cargando = false;
-        },
-        error: (error) => {
-          const errorMessage = error.error?.error || 'Error al crear instructor';
-          this.mostrarMensaje(errorMessage, 'error');
-          this.cargando = false;
-          console.error('Error:', error);
+        } else {
+          this.mostrarMensaje(response.message, 'error');
         }
-      });
-    } else {
-      // Usar método original si no hay foto
-      this.instructorService.crearInstructor(this.nuevoInstructor).subscribe({
-        next: (instructor) => {
-          this.mostrarMensaje(`Instructor ${instructor.folioInstructor} creado exitosamente`, 'success');
-          this.cargarInstructores();
-          this.cerrarFormulario();
-          this.cargando = false;
-        },
-        error: (error) => {
-          const errorMessage = error.error?.error || 'Error al crear instructor';
-          this.mostrarMensaje(errorMessage, 'error');
-          this.cargando = false;
-          console.error('Error:', error);
-        }
-      });
-    }
+        this.cargando = false;
+      },
+      error: (error: { error: { message: string; }; }) => {
+        const errorMessage = error.error?.message || 'Error al crear instructor';
+        this.mostrarMensaje(errorMessage, 'error');
+        this.cargando = false;
+        console.error('Error:', error);
+      }
+    });
   }
 
   seleccionarInstructor(instructor: Instructor): void {
@@ -364,18 +357,10 @@ export class InstructorComponent implements OnInit {
       this.instructorSeleccionado.especialidad = 'Otra';
     }
     
-    // Cargar foto si existe
-    this.fotoPrevia = null;
-    this.archivoFoto = null;
-    this.eliminandoFoto = false;
-    
-    if (instructor.nombreArchivoFoto) {
-      this.cargarFotoExistente(instructor.folioInstructor);
-    }
-    
     this.mostrarFormulario = true;
     this.modoEdicion = true;
     this.mostrarEstadisticas = false;
+    this.emailInvalido = false;
   }
 
   actualizarInstructor(): void {
@@ -384,64 +369,47 @@ export class InstructorComponent implements OnInit {
       return;
     }
 
+    if (this.instructorSeleccionado.email && !this.validarFormatoEmail(this.instructorSeleccionado.email)) {
+      this.emailInvalido = true;
+      this.mostrarMensaje('El email debe tener un formato válido', 'error');
+      return;
+    }
+
     // Procesar especialidad si seleccionó "Otra"
     this.procesarEspecialidad(this.instructorSeleccionado);
 
     this.cargando = true;
 
-    // Preparar datos para enviar
-    const instructorData = {
-      nombre: this.instructorSeleccionado.nombre,
-      app: this.instructorSeleccionado.app || '',
-      apm: this.instructorSeleccionado.apm || '',
-      horaEntrada: this.instructorSeleccionado.horaEntrada || '',
-      horaSalida: this.instructorSeleccionado.horaSalida || '',
-      especialidad: this.instructorSeleccionado.especialidad || '',
-      fechaContratacion: this.instructorSeleccionado.fechaContratacion,
-      estatus: this.instructorSeleccionado.estatus
-    };
-
-    // Usar el método con foto si hay cambios en la foto
-    if (this.archivoFoto || this.eliminandoFoto) {
-      this.instructorService.actualizarInstructorConFoto(
-        this.instructorSeleccionado.folioInstructor,
-        instructorData,
-        this.archivoFoto || undefined,
-        this.eliminandoFoto
-      ).subscribe({
-        next: (instructor) => {
-          this.mostrarMensaje(`Instructor ${instructor.folioInstructor} actualizado exitosamente`, 'success');
+    // Usar el método de actualización con parámetros individuales
+    this.instructorService.actualizarInstructor(
+      this.instructorSeleccionado.folioInstructor,
+      this.instructorSeleccionado.nombre,
+      this.instructorSeleccionado.app || '',
+      this.instructorSeleccionado.apm || '',
+      this.instructorSeleccionado.email || '',
+      this.instructorSeleccionado.horaEntrada || '',
+      this.instructorSeleccionado.horaSalida || '',
+      this.instructorSeleccionado.especialidad || '',
+      this.instructorSeleccionado.fechaContratacion,
+      this.instructorSeleccionado.estatus
+    ).subscribe({
+      next: (response: ApiResponse) => {
+        if (response.success) {
+          this.mostrarMensaje(response.message, 'success');
           this.cargarInstructores();
           this.cerrarFormulario();
-          this.cargando = false;
-        },
-        error: (error) => {
-          const errorMessage = error.error?.error || 'Error al actualizar instructor';
-          this.mostrarMensaje(errorMessage, 'error');
-          this.cargando = false;
-          console.error('Error:', error);
+        } else {
+          this.mostrarMensaje(response.message, 'error');
         }
-      });
-    } else {
-      // Usar método original si no hay cambios en la foto
-      this.instructorService.actualizarInstructor(
-        this.instructorSeleccionado.folioInstructor,
-        this.instructorSeleccionado
-      ).subscribe({
-        next: (instructor) => {
-          this.mostrarMensaje(`Instructor ${instructor.folioInstructor} actualizado exitosamente`, 'success');
-          this.cargarInstructores();
-          this.cerrarFormulario();
-          this.cargando = false;
-        },
-        error: (error) => {
-          const errorMessage = error.error?.error || 'Error al actualizar instructor';
-          this.mostrarMensaje(errorMessage, 'error');
-          this.cargando = false;
-          console.error('Error:', error);
-        }
-      });
-    }
+        this.cargando = false;
+      },
+      error: (error: { error: { message: string; }; }) => {
+        const errorMessage = error.error?.message || 'Error al actualizar instructor';
+        this.mostrarMensaje(errorMessage, 'error');
+        this.cargando = false;
+        console.error('Error:', error);
+      }
+    });
   }
 
   private procesarEspecialidad(instructor: Instructor): void {
@@ -459,13 +427,17 @@ export class InstructorComponent implements OnInit {
     if (confirm('¿Estás seguro de que deseas desactivar este instructor?')) {
       this.cargando = true;
       this.instructorService.eliminarInstructor(folioInstructor).subscribe({
-        next: () => {
-          this.mostrarMensaje('Instructor desactivado exitosamente', 'success');
-          this.cargarInstructores();
+        next: (response: ApiResponse) => {
+          if (response.success) {
+            this.mostrarMensaje(response.message, 'success');
+            this.cargarInstructores();
+          } else {
+            this.mostrarMensaje(response.message, 'error');
+          }
           this.cargando = false;
         },
-        error: (error) => {
-          const errorMessage = error.error?.error || 'Error al desactivar instructor';
+        error: (error: { error: { message: string; }; }) => {
+          const errorMessage = error.error?.message || 'Error al desactivar instructor';
           this.mostrarMensaje(errorMessage, 'error');
           this.cargando = false;
           console.error('Error:', error);
@@ -477,13 +449,17 @@ export class InstructorComponent implements OnInit {
   activarInstructor(folioInstructor: string): void {
     this.cargando = true;
     this.instructorService.activarInstructor(folioInstructor).subscribe({
-      next: () => {
-        this.mostrarMensaje('Instructor activado exitosamente', 'success');
-        this.cargarInstructores();
+      next: (response: ApiResponse) => {
+        if (response.success) {
+          this.mostrarMensaje(response.message, 'success');
+          this.cargarInstructores();
+        } else {
+          this.mostrarMensaje(response.message, 'error');
+        }
         this.cargando = false;
       },
-      error: (error) => {
-        const errorMessage = error.error?.error || 'Error al activar instructor';
+      error: (error: { error: { message: string; }; }) => {
+        const errorMessage = error.error?.message || 'Error al activar instructor';
         this.mostrarMensaje(errorMessage, 'error');
         this.cargando = false;
         console.error('Error:', error);
@@ -497,10 +473,10 @@ export class InstructorComponent implements OnInit {
     this.mostrarFormulario = false;
 
     this.instructorService.obtenerEstadisticas(instructor.folioInstructor).subscribe({
-      next: (estadisticas) => {
+      next: (estadisticas: any) => {
         this.estadisticas = estadisticas;
       },
-      error: (error) => {
+      error: (error: any) => {
         this.mostrarMensaje('Error al cargar estadísticas', 'error');
         console.error('Error:', error);
       }
@@ -521,11 +497,8 @@ export class InstructorComponent implements OnInit {
     this.instructorSeleccionado = this.inicializarInstructor();
     this.nuevoInstructor = this.inicializarInstructor();
     this.nombreInvalido = false;
-    
-    // Limpiar foto
-    this.fotoPrevia = null;
-    this.archivoFoto = null;
-    this.eliminandoFoto = false;
+    this.emailInvalido = false;
+    this.emailExistente = false;
   }
 
   obtenerClaseEstatus(estatus: string): string {
@@ -542,17 +515,6 @@ export class InstructorComponent implements OnInit {
       return new Date(fecha).toLocaleDateString('es-ES');
     } catch (e) {
       return 'Fecha inválida';
-    }
-  }
-  handleImageError(event: any): void {
-    const img = event.target;
-    img.style.display = 'none';
-    
-    // Buscar el contenedor padre y mostrar el placeholder
-    const container = img.closest('.instructor-avatar');
-    if (container) {
-      container.innerHTML = '<i class="fas fa-user-tie"></i>';
-      container.classList.add('no-photo');
     }
   }
 

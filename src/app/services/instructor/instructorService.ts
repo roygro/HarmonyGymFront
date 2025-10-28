@@ -1,3 +1,4 @@
+// instructor.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -7,14 +8,13 @@ export interface Instructor {
   nombre: string;
   app: string;
   apm: string;
+  email: string;
   horaEntrada: string;
   horaSalida: string;
   especialidad: string;
   fechaContratacion: string;
   estatus: string;
   especialidadPersonalizada?: string;
-  nombreArchivoFoto?: string;
-  fotoFile?: File;
 }
 
 export interface InstructorEstadisticas {
@@ -24,6 +24,14 @@ export interface InstructorEstadisticas {
   totalClientesRutinas: number;
   promedioCalificacionActividades: number;
   promedioCalificacionRutinas: number;
+}
+
+// Interface para la respuesta del API
+export interface ApiResponse {
+  success: boolean;
+  message: string;
+  instructor?: Instructor;
+  data?: any;
 }
 
 @Injectable({
@@ -53,92 +61,84 @@ export class InstructorService {
     return this.http.get<Instructor>(`${this.apiUrl}/${folioInstructor}`);
   }
 
-  // CREAR instructor con foto (usa el endpoint principal)
-  crearInstructorConFoto(instructorData: any, fotoFile?: File): Observable<any> {
-    const formData = new FormData();
-    
-    // Agregar todos los campos del instructor
-    Object.keys(instructorData).forEach(key => {
-      if (instructorData[key] !== null && instructorData[key] !== undefined) {
-        formData.append(key, instructorData[key]);
-      }
-    });
-    
-    // Agregar archivo de foto si existe
-    if (fotoFile) {
-      formData.append('foto', fotoFile);
-    }
-    
-    return this.http.post<any>(this.apiUrl, formData);
+  // Crear instructor con parámetros individuales (para envío de credenciales)
+  crearInstructor(
+    nombre: string,
+    app: string,
+    apm: string,
+    email: string,
+    horaEntrada: string,
+    horaSalida: string,
+    especialidad: string,
+    fechaContratacion: string,
+    estatus: string
+  ): Observable<ApiResponse> {
+    const params = new HttpParams()
+      .set('nombre', nombre)
+      .set('app', app || '')
+      .set('apm', apm || '')
+      .set('email', email || '')
+      .set('horaEntrada', horaEntrada || '')
+      .set('horaSalida', horaSalida || '')
+      .set('especialidad', especialidad || '')
+      .set('fechaContratacion', fechaContratacion || '')
+      .set('estatus', estatus || 'Activo');
+
+    return this.http.post<ApiResponse>(this.apiUrl, params);
   }
 
-  // ACTUALIZAR instructor con foto (usa el endpoint principal)
-  actualizarInstructorConFoto(folioInstructor: string, instructorData: any, fotoFile?: File, eliminarFoto: boolean = false): Observable<any> {
-    const formData = new FormData();
-    
-    // Agregar todos los campos del instructor
-    Object.keys(instructorData).forEach(key => {
-      if (instructorData[key] !== null && instructorData[key] !== undefined) {
-        formData.append(key, instructorData[key]);
-      }
-    });
-    
-    // Agregar archivo de foto si existe
-    if (fotoFile) {
-      formData.append('foto', fotoFile);
-    }
-    
-    // Indicar si se debe eliminar la foto
-    formData.append('eliminarFoto', eliminarFoto.toString());
-    
-    return this.http.put<any>(`${this.apiUrl}/${folioInstructor}`, formData);
+  // Crear instructor con objeto (alternativo)
+  crearInstructorConObjeto(instructor: Instructor): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/crear`, instructor);
   }
 
-  // Método original para crear instructor (sin foto)
-  crearInstructor(instructor: Instructor): Observable<Instructor> {
-    // Para mantener compatibilidad, pero recomiendo usar crearInstructorConFoto
-    const formData = new FormData();
-    Object.keys(instructor).forEach(key => {
-      if (instructor[key as keyof Instructor] !== null && instructor[key as keyof Instructor] !== undefined) {
-        formData.append(key, instructor[key as keyof Instructor] as string);
-      }
-    });
-    
-    return this.http.post<Instructor>(this.apiUrl, formData);
+  // Actualizar instructor con parámetros individuales
+  actualizarInstructor(
+    folioInstructor: string,
+    nombre?: string,
+    app?: string,
+    apm?: string,
+    email?: string,
+    horaEntrada?: string,
+    horaSalida?: string,
+    especialidad?: string,
+    fechaContratacion?: string,
+    estatus?: string
+  ): Observable<ApiResponse> {
+    let params = new HttpParams();
+    if (nombre) params = params.set('nombre', nombre);
+    if (app) params = params.set('app', app);
+    if (apm) params = params.set('apm', apm);
+    if (email) params = params.set('email', email);
+    if (horaEntrada) params = params.set('horaEntrada', horaEntrada);
+    if (horaSalida) params = params.set('horaSalida', horaSalida);
+    if (especialidad) params = params.set('especialidad', especialidad);
+    if (fechaContratacion) params = params.set('fechaContratacion', fechaContratacion);
+    if (estatus) params = params.set('estatus', estatus);
+
+    return this.http.put<ApiResponse>(`${this.apiUrl}/${folioInstructor}`, params);
   }
 
-  // Método original para actualizar instructor (sin foto)
-  actualizarInstructor(folioInstructor: string, instructor: Instructor): Observable<Instructor> {
-    const formData = new FormData();
-    Object.keys(instructor).forEach(key => {
-      if (instructor[key as keyof Instructor] !== null && instructor[key as keyof Instructor] !== undefined) {
-        formData.append(key, instructor[key as keyof Instructor] as string);
-      }
-    });
-    
-    return this.http.put<Instructor>(`${this.apiUrl}/${folioInstructor}`, formData);
+  // Actualizar instructor con objeto (alternativo)
+  actualizarInstructorConObjeto(folioInstructor: string, instructor: Instructor): Observable<ApiResponse> {
+    return this.http.put<ApiResponse>(`${this.apiUrl}/actualizar/${folioInstructor}`, instructor);
   }
 
   // Eliminar instructor (desactivar)
-  eliminarInstructor(folioInstructor: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${folioInstructor}`);
+  eliminarInstructor(folioInstructor: string): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/${folioInstructor}`);
   }
 
   // Cambiar estatus
-  cambiarEstatusInstructor(folioInstructor: string, estatus: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${folioInstructor}/estatus`, null, {
+  cambiarEstatusInstructor(folioInstructor: string, estatus: string): Observable<ApiResponse> {
+    return this.http.put<ApiResponse>(`${this.apiUrl}/${folioInstructor}/estatus`, null, {
       params: { estatus }
     });
   }
 
   // Activar instructor
-  activarInstructor(folioInstructor: string): Observable<any> {
+  activarInstructor(folioInstructor: string): Observable<ApiResponse> {
     return this.cambiarEstatusInstructor(folioInstructor, 'Activo');
-  }
-
-  // Desactivar instructor
-  desactivarInstructor(folioInstructor: string): Observable<any> {
-    return this.cambiarEstatusInstructor(folioInstructor, 'Inactivo');
   }
 
   // Obtener estadísticas
@@ -158,18 +158,30 @@ export class InstructorService {
     });
   }
 
-  // Verificar existencia
-  verificarInstructor(folioInstructor: string): Observable<{existe: boolean}> {
-    return this.http.get<{existe: boolean}>(`${this.apiUrl}/verificar/${folioInstructor}`);
+  // Buscar por email
+  buscarInstructoresPorEmail(email: string): Observable<Instructor[]> {
+    return this.http.get<Instructor[]>(`${this.apiUrl}/buscar-email`, {
+      params: { email }
+    });
+  }
+
+  // Verificar si existe instructor por email
+  existeInstructorPorEmail(email: string): Observable<boolean> {
+    return this.http.get<boolean>(`${this.apiUrl}/existe-email/${email}`);
   }
 
   // Contar instructores activos
-  contarInstructoresActivos(): Observable<{totalInstructoresActivos: number}> {
-    return this.http.get<{totalInstructoresActivos: number}>(`${this.apiUrl}/conteo/activos`);
+  contarInstructoresActivos(): Observable<number> {
+    return this.http.get<number>(`${this.apiUrl}/contar-activos`);
   }
 
-  // Obtener foto del instructor
-  obtenerFotoInstructor(folioInstructor: string): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/${folioInstructor}/foto`, { responseType: 'blob' });
+  // Obtener instructores por especialidad
+  obtenerInstructoresPorEspecialidad(especialidad: string): Observable<Instructor[]> {
+    return this.http.get<Instructor[]>(`${this.apiUrl}/especialidad/${especialidad}`);
+  }
+
+  // Eliminar instructor completamente
+  eliminarInstructorCompleto(folioInstructor: string): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.apiUrl}/eliminar/${folioInstructor}`);
   }
 }
