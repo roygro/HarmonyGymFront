@@ -89,7 +89,11 @@ export class HeaderAdministradorComponent implements OnInit {
     '/pagos': {
       title: 'Gestión de Pagos',
       subtitle: 'Controla y monitorea los pagos del gimnasio'
-    }
+    },
+    '/cliente': {  // NUEVA RUTA AGREGADA
+    title: 'Gestión de Clientes',
+    subtitle: 'Administra y gestiona los clientes del gimnasio'
+  }
   };
   
   constructor(

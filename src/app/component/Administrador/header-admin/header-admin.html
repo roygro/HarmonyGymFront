@@ -77,6 +77,21 @@
             <div class="tab-glow"></div>
           </a>
 
+          <!-- Después de la pestaña de Membresías, agrega: -->
+
+<a class="nav-tab" routerLink="/cliente" [class.active]="isRouteActive('cliente')">
+  <div class="tab-content">
+    <span class="tab-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" stroke="currentColor" stroke-width="2"/>
+        <path d="M16 15H8a4 4 0 0 0-4 4v0a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v0a4 4 0 0 0-4-4Z" stroke="currentColor" stroke-width="2"/>
+        <path d="M12 12h.01" stroke="currentColor" stroke-width="2"/>
+      </svg>
+    </span>
+    <span class="tab-text">Clientes</span>
+  </div>
+  <div class="tab-glow"></div>
+</a>
           <!-- NUEVA PESTAÑA: PAGOS -->
           <a class="nav-tab" routerLink="/pagos" [class.active]="isRouteActive('pagos')">
             <div class="tab-content">

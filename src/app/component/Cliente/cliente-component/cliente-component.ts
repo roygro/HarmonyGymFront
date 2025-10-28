@@ -2,10 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Cliente, CrearClienteRequest, ActualizarClienteRequest, ClienteService } from '../../../services/cliente/ClienteService';
+import { HeaderAdministradorComponent } from '../../Administrador/header-admin/header-admin';
 
 @Component({
   selector: 'app-cliente-component',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HeaderAdministradorComponent],
   templateUrl: './cliente-component.html',
   styleUrl: './cliente-component.css'
 })
