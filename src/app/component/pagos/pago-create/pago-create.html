@@ -5,7 +5,7 @@
   <div class="header">
     <div class="header-content">
       <h1><i class="fas fa-cash-register"></i> Registrar Nuevo Pago</h1>
-      <p class="header-subtitle">Complete los datos para registrar una nueva venta</p>
+      <p class="header-subtitle">Complete los datos para registrar una nueva venta (Productos o Membresías)</p>
     </div>
     <div class="header-actions">
       <button class="btn btn-secondary" (click)="volverALista()">
@@ -33,6 +33,27 @@
       </div>
       
       <form [formGroup]="pagoForm" (ngSubmit)="onSubmit()" #pagoFormElement="ngForm">
+        
+        <!-- Tipo de Pago -->
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-cube"></i> Tipo de Pago *
+          </label>
+          <select 
+            class="form-control" 
+            formControlName="tipoPago"
+            (change)="onTipoPagoChange()"
+            [class.error]="f['tipoPago'].invalid && f['tipoPago'].touched"
+          >
+            <option value="" disabled selected>-- Seleccione el tipo de pago --</option>
+            <option value="producto">Pago de Producto</option>
+            <option value="membresia">Pago de Membresía</option>
+          </select>
+          <small *ngIf="f['tipoPago'].invalid && f['tipoPago'].touched" class="error-text">
+            Seleccione el tipo de pago
+          </small>
+        </div>
+
         <!-- Recepcionista -->
         <div class="form-group full-width">
           <label>
@@ -79,8 +100,8 @@
           </small>
         </div>
 
-        <!-- Producto -->
-        <div class="form-group full-width">
+        <!-- Producto (se muestra solo para tipo producto) -->
+        <div class="form-group full-width" *ngIf="pagoForm.get('tipoPago')?.value === 'producto'">
           <label>
             <i class="fas fa-box"></i> Producto *
           </label>
@@ -102,8 +123,31 @@
           </small>
         </div>
 
-        <div class="form-row">
-          <!-- Cantidad -->
+        <!-- Membresía (se muestra solo para tipo membresía) -->
+        <div class="form-group full-width" *ngIf="pagoForm.get('tipoPago')?.value === 'membresia'">
+          <label>
+            <i class="fas fa-id-card"></i> Membresía *
+          </label>
+          <select 
+            class="form-control"
+            formControlName="idMembresia"
+            [class.error]="f['idMembresia'].invalid && f['idMembresia'].touched"
+          >
+            <option value="" disabled selected>-- Seleccione una membresía --</option>
+            <option *ngFor="let membresia of membresias" [value]="membresia.idMembresia">
+              {{ membresia.tipo }} - {{ formatearMoneda(membresia.precio) }} - {{ membresia.duracion }} días
+            </option>
+          </select>
+          <small *ngIf="f['idMembresia'].invalid && f['idMembresia'].touched" class="error-text">
+            Seleccione una membresía
+          </small>
+          <small *ngIf="f['idMembresia'].valid && f['idMembresia'].touched" class="success-text">
+            Membresía seleccionada
+          </small>
+        </div>
+
+        <div class="form-row" *ngIf="pagoForm.get('tipoPago')?.value === 'producto'">
+          <!-- Cantidad (solo para productos) -->
           <div class="form-group">
             <label>
               <i class="fas fa-hashtag"></i> Cantidad *
@@ -148,6 +192,13 @@
               Precio válido
             </small>
           </div>
+        </div>
+
+        <!-- Para membresías, cantidad fija en 1 -->
+        <div *ngIf="pagoForm.get('tipoPago')?.value === 'membresia'" class="form-group full-width">
+          <small class="info-text">
+            <i class="fas fa-info-circle"></i> Las membresías se venden por unidad (cantidad: 1)
+          </small>
         </div>
 
         <!-- Total a Pagar -->
