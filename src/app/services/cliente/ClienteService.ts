@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 export interface Cliente {
   folioCliente: string;
@@ -21,16 +22,16 @@ export interface CrearClienteRequest {
   email?: string;
   fechaNacimiento?: string;
   genero?: string;
-  estatus?: string; // AÑADIDO
+  estatus?: string;
 }
 
 export interface ActualizarClienteRequest {
-  nombre?: string; // Hacer opcional
+  nombre?: string;
   telefono?: string;
   email?: string;
   fechaNacimiento?: string;
   genero?: string;
-  estatus?: string; // AÑADIDO
+  estatus?: string;
 }
 
 @Injectable({
@@ -47,35 +48,54 @@ export class ClienteService {
    * Obtener todos los clientes
    */
   obtenerTodosLosClientes(): Observable<Cliente[]> {
-    return this.http.get<Cliente[]>(this.apiUrl);
+    return this.http.get<Cliente[]>(this.apiUrl).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   /**
    * Obtener cliente por ID
    */
   obtenerClientePorId(folioCliente: string): Observable<Cliente> {
-    return this.http.get<Cliente>(`${this.apiUrl}/${folioCliente}`);
+    return this.http.get<Cliente>(`${this.apiUrl}/${folioCliente}`).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   /**
    * Crear nuevo cliente
    */
   crearCliente(cliente: CrearClienteRequest): Observable<Cliente> {
-    return this.http.post<Cliente>(this.apiUrl, cliente);
+    // Convertir a FormData para multipart/form-data
+    const formData = this.crearFormDataDesdeCliente(cliente);
+    return this.http.post<Cliente>(this.apiUrl, formData).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   /**
-   * Actualizar cliente existente
+   * Actualizar cliente existente - CORREGIDO para usar FormData
    */
-  actualizarCliente(folioCliente: string, cliente: ActualizarClienteRequest): Observable<Cliente> {
-    return this.http.put<Cliente>(`${this.apiUrl}/${folioCliente}`, cliente);
+  actualizarCliente(folioCliente: string, cliente: ActualizarClienteRequest): Observable<any> {
+    const formData = this.crearFormDataDesdeCliente(cliente);
+    
+    console.log('🔄 Enviando actualización con FormData:');
+    formData.forEach((value, key) => {
+      console.log(`  ${key}:`, value);
+    });
+    
+    return this.http.put<any>(`${this.apiUrl}/${folioCliente}`, formData).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   /**
    * Eliminar cliente permanentemente
    */
   eliminarCliente(folioCliente: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${folioCliente}`);
+    return this.http.delete(`${this.apiUrl}/${folioCliente}`).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   /**
@@ -84,7 +104,9 @@ export class ClienteService {
   darDeBajaCliente(folioCliente: string): Observable<any> {
     return this.http.put(`${this.apiUrl}/${folioCliente}/estatus`, null, {
       params: { estatus: 'Inactivo' }
-    });
+    }).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   /**
@@ -93,23 +115,29 @@ export class ClienteService {
   activarCliente(folioCliente: string): Observable<any> {
     return this.http.put(`${this.apiUrl}/${folioCliente}/estatus`, null, {
       params: { estatus: 'Activo' }
-    });
+    }).pipe(
+      catchError(this.manejarError)
+    );
   }
 
-  // ===== NUEVOS MÉTODOS PARA FOTOS =====
+  // ===== MÉTODOS PARA FOTOS =====
 
   /**
    * Crear cliente con foto
    */
   crearClienteConFoto(formData: FormData): Observable<any> {
-    return this.http.post<any>(this.apiUrl, formData);
+    return this.http.post<any>(this.apiUrl, formData).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   /**
    * Actualizar cliente con foto
    */
   actualizarClienteConFoto(folioCliente: string, formData: FormData): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/${folioCliente}`, formData);
+    return this.http.put<any>(`${this.apiUrl}/${folioCliente}`, formData).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   /**
@@ -118,7 +146,9 @@ export class ClienteService {
   obtenerFotoCliente(folioCliente: string): Observable<Blob> {
     return this.http.get(`${this.apiUrl}/${folioCliente}/foto`, {
       responseType: 'blob'
-    });
+    }).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   // ===== MÉTODOS DE BÚSQUEDA Y FILTRADO =====
@@ -129,7 +159,9 @@ export class ClienteService {
   buscarClientes(termino: string): Observable<Cliente[]> {
     return this.http.get<Cliente[]>(`${this.apiUrl}/buscar`, {
       params: { nombre: termino }
-    });
+    }).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   /**
@@ -137,21 +169,36 @@ export class ClienteService {
    */
   obtenerClientesPorEstatus(estatus: string): Observable<Cliente[]> {
     const params = new HttpParams().set('estatus', estatus);
-    return this.http.get<Cliente[]>(`${this.apiUrl}/filtros`, { params });
+    return this.http.get<Cliente[]>(`${this.apiUrl}/filtros`, { params }).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   /**
    * Obtener solo clientes activos
    */
   obtenerClientesActivos(): Observable<Cliente[]> {
-    return this.http.get<Cliente[]>(`${this.apiUrl}/activos`);
+    return this.http.get<Cliente[]>(`${this.apiUrl}/activos`).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   /**
    * Obtener clientes con membresía activa
    */
   obtenerClientesConMembresiaActiva(): Observable<Cliente[]> {
-    return this.http.get<Cliente[]>(`${this.apiUrl}/con-membresia-activa`);
+    return this.http.get<Cliente[]>(`${this.apiUrl}/con-membresia-activa`).pipe(
+      catchError(this.manejarError)
+    );
+  }
+
+  /**
+   * Obtener clientes no asignados a una rutina
+   */
+  obtenerClientesNoAsignadosARutina(folioRutina: string): Observable<Cliente[]> {
+    return this.http.get<Cliente[]>(`${this.apiUrl}/no-asignados/${folioRutina}`).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   // ===== MÉTODOS DE VALIDACIÓN =====
@@ -179,7 +226,6 @@ export class ClienteService {
    * Verificar disponibilidad de username (placeholder)
    */
   verificarDisponibilidadUsername(username: string): Observable<any> {
-    // Este es un placeholder - el backend genera el username automáticamente
     return of({ disponible: true });
   }
 
@@ -209,14 +255,18 @@ export class ClienteService {
    * Obtener estadísticas generales de clientes
    */
   obtenerEstadisticasClientes(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/estadisticas-generales`);
+    return this.http.get<any>(`${this.apiUrl}/estadisticas-generales`).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   /**
    * Obtener estadísticas de un cliente específico
    */
   obtenerEstadisticasCliente(folioCliente: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/${folioCliente}/estadisticas`);
+    return this.http.get<any>(`${this.apiUrl}/${folioCliente}/estadisticas`).pipe(
+      catchError(this.manejarError)
+    );
   }
 
   /**
@@ -241,6 +291,63 @@ export class ClienteService {
   }
 
   // ===== MÉTODOS DE UTILIDAD =====
+
+  /**
+   * Crear FormData desde objeto cliente
+   */
+  private crearFormDataDesdeCliente(cliente: any): FormData {
+    const formData = new FormData();
+    
+    // Agregar solo los campos que tienen valor
+    if (cliente.nombre) formData.append('nombre', cliente.nombre);
+    if (cliente.telefono) formData.append('telefono', cliente.telefono);
+    if (cliente.email) formData.append('email', cliente.email);
+    if (cliente.fechaNacimiento) formData.append('fechaNacimiento', cliente.fechaNacimiento);
+    if (cliente.genero) formData.append('genero', cliente.genero);
+    if (cliente.estatus) formData.append('estatus', cliente.estatus);
+    
+    return formData;
+  }
+
+  /**
+   * Manejo centralizado de errores
+   */
+  private manejarError(error: HttpErrorResponse): Observable<never> {
+    console.error('Error en ClienteService:', error);
+    
+    let mensajeError = 'Ha ocurrido un error inesperado';
+    
+    if (error.error instanceof ErrorEvent) {
+      // Error del lado del cliente
+      mensajeError = `Error: ${error.error.message}`;
+    } else {
+      // Error del lado del servidor
+      if (error.status === 0) {
+        mensajeError = 'Error de conexión con el servidor. Verifica que el backend esté funcionando.';
+      } else if (error.status === 404) {
+        mensajeError = 'Recurso no encontrado';
+      } else if (error.status === 400) {
+        mensajeError = error.error?.message || 'Datos inválidos';
+      } else if (error.status === 409) {
+        mensajeError = error.error?.message || 'Conflicto: El email o teléfono ya están registrados';
+      } else if (error.error?.message) {
+        mensajeError = error.error.message;
+      } else {
+        mensajeError = `${error.status}: ${error.message}`;
+      }
+    }
+    
+    return throwError(() => new Error(mensajeError));
+  }
+
+  /**
+   * Verificar si el servidor está disponible
+   */
+  verificarServidor(): Observable<any> {
+    return this.http.get(this.apiUrl).pipe(
+      catchError(this.manejarError)
+    );
+  }
 
   /**
    * Calcular edad a partir de la fecha de nacimiento
