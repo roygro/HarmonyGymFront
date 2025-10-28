@@ -5,19 +5,22 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PagoService, Pago } from '../../../services/pagos/pago';
 import { ProductoService, Producto } from '../../../services/productos/producto';
-import { ClienteService,Cliente } from '../../../services/cliente/ClienteService';
+import { ClienteService, Cliente } from '../../../services/cliente/ClienteService';
+import { RecepcionistaService, Recepcionista } from '../../../services/recepcionista/recepcionistaService';
 import { HeaderRecepcionistaComponent } from '../../recepcionista/header-recepcionista/header-recepcionista';
 
 @Component({
   selector: 'app-pago-create',
   templateUrl: './pago-create.html',
   styleUrls: ['./pago-create.css'],
+  standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, HeaderRecepcionistaComponent]
 })
 export class PagoCreate implements OnInit {
   pagoForm: FormGroup;
   productos: Producto[] = [];
   clientes: Cliente[] = [];
+  recepcionistas: Recepcionista[] = [];
   
   cargando: boolean = true;
   enviando: boolean = false;
@@ -28,6 +31,7 @@ export class PagoCreate implements OnInit {
     private pagoService: PagoService,
     private productoService: ProductoService,
     private clienteService: ClienteService,
+    private recepcionistaService: RecepcionistaService,
     private router: Router
   ) {
     this.pagoForm = this.createForm();
@@ -42,10 +46,27 @@ export class PagoCreate implements OnInit {
 
     Promise.all([
       this.cargarProductos(),
-      this.cargarClientes()
+      this.cargarClientes(),
+      this.cargarRecepcionistas()
     ]).finally(() => {
       this.cargando = false;
       this.setupCalculos();
+    });
+  }
+
+  cargarRecepcionistas(): Promise<void> {
+    return new Promise((resolve) => {
+      this.recepcionistaService.obtenerRecepcionistas().subscribe({
+        next: (recepcionistas) => {
+          this.recepcionistas = recepcionistas;
+          resolve();
+        },
+        error: (error) => {
+          console.error('Error al cargar recepcionistas:', error);
+          this.recepcionistas = [];
+          resolve();
+        }
+      });
     });
   }
 
@@ -65,9 +86,8 @@ export class PagoCreate implements OnInit {
     });
   }
 
-cargarClientes(): Promise<void> {
+  cargarClientes(): Promise<void> {
     return new Promise((resolve) => {
-      // CAMBIÉ: obtenerClientes() → obtenerTodosLosClientes()
       this.clienteService.obtenerTodosLosClientes().subscribe({
         next: (clientes) => {
           this.clientes = clientes;
@@ -84,7 +104,7 @@ cargarClientes(): Promise<void> {
 
   createForm(): FormGroup {
     return this.fb.group({
-      idRecepcionista: ['REC001', [Validators.required]],
+      idRecepcionista: ['', [Validators.required]],
       codigoProducto: ['', [Validators.required]],
       cantidad: [1, [Validators.required, Validators.min(1), Validators.max(100)]],
       precioUnitario: [0, [Validators.required, Validators.min(0)]],
@@ -184,6 +204,6 @@ cargarClientes(): Promise<void> {
   }
 
   volverALista(): void {
-  this.router.navigate(['/pagos']);
-}
+    this.router.navigate(['/pagos']);
+  }
 }
