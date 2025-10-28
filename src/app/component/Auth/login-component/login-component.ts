@@ -140,9 +140,9 @@ export class LoginComponent {
     
     // Mapeo de tipos de usuario a rutas
     const routeMap: { [key: string]: string } = {
-      'Administrador': '/admin',
+      'Administrador': '/membresias',
       'Recepcionista': '/recepcionista', 
-      'Instructor': '/instructores',
+      'Instructor': '/actividades',
       'Cliente': '/cliente/dashboard'
     };
 

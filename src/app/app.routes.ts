@@ -1,8 +1,8 @@
 import { Routes } from '@angular/router';
-import { RecepcionistaComponent } from './component/recepcionista/recepcionista-component/recepcionista-component';
+import { RecepcionistaComponent } from './component/Administrador/recepcionista-component/recepcionista-component';
 import { MembresiaList } from './component/membresias/membresia-list/membresia-list';
 import { MembresiaForm } from './component/membresias/membresia-form/membresia-form';
-import { InstructorComponent } from './component/instructor/instructor-component/instructor-component';
+import { InstructorComponent } from './component/Administrador/instructor-component/instructor-component';
 import { RutinaComponent } from './component/instructor/rutina/rutina-component/rutina-component';
 import { ClienteComponent } from './component/Cliente/cliente-component/cliente-component';
 import { PagoList } from './component/pagos/pago-list/pago-list';
@@ -75,7 +75,7 @@ export const routes: Routes = [
   // Ruta para recepcionista
   {
     path: 'recepcionista', 
-    loadComponent: () => import('./component/recepcionista/recepcionista-component/recepcionista-component').then(m => m.RecepcionistaComponent)
+    loadComponent: () => import('./component/Administrador/recepcionista-component/recepcionista-component').then(m => m.RecepcionistaComponent)
   },
   
 // Ruta para instructor

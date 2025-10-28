@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 
 import { RecepcionistaComponent } from './recepcionista-component';
-import { HeaderAdministradorComponent } from '../../Administrador/header-admin/header-admin';
+import { HeaderAdministradorComponent } from '../header-admin/header-admin';
 
 describe('RecepcionistaComponent', () => {
   let component: RecepcionistaComponent;

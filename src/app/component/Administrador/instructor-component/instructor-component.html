@@ -1,3 +1,4 @@
+<!-- instructor.component.html -->
 <div class="instructor-container">
   @if (mensaje) {
     <div [class]="'alert alert-' + tipoMensaje">
@@ -46,6 +47,14 @@
                [disabled]="cargando">
       </div>
 
+      <div class="filtro-group">
+        <label><i class="fas fa-envelope"></i> Buscar por email:</label>
+        <input type="text" [(ngModel)]="terminoBusquedaEmail" 
+               (input)="onBuscarEmailChange()" 
+               placeholder="Escribe el email..." 
+               [disabled]="cargando">
+      </div>
+
       <button class="btn btn-secondary" (click)="limpiarFiltros()" [disabled]="cargando">
         <i class="fas fa-undo"></i> Limpiar
       </button>
@@ -75,8 +84,9 @@
         <table class="instructores-table">
           <thead>
             <tr>
-              <th></th>
+              <th>Folio</th>
               <th>Nombre Completo</th>
+              <th>Email</th>
               <th>Especialidad</th>
               <th>Horario</th>
               <th>Fecha Contratación</th>
@@ -87,10 +97,20 @@
           <tbody>
             @for (instructor of instructoresFiltrados; track instructor.folioInstructor) {
               <tr>
+                <td class="folio-cell">
+                  <strong>{{ instructor.folioInstructor }}</strong>
+                </td>
                 <td>
                   <div class="instructor-name">
                     {{ instructor.nombre }} {{ instructor.app }} {{ instructor.apm }}
                   </div>
+                </td>
+                <td>
+                  @if (instructor.email) {
+                    <span class="email-text">{{ instructor.email }}</span>
+                  } @else {
+                    <span class="text-muted">No asignado</span>
+                  }
                 </td>
                 <td>{{ instructor.especialidad || 'Sin especialidad' }}</td>
                 <td>
@@ -107,30 +127,36 @@
                   </span>
                 </td>
                 <td class="acciones">
+                  <button class="btn btn-sm btn-info" 
+                          (click)="verEstadisticas(instructor)"
+                          title="Ver estadísticas">
+                    <i class="fas fa-chart-line"></i>
+                  </button>
+                  
                   <button class="btn btn-sm btn-warning" 
                           (click)="seleccionarInstructor(instructor)"
                           title="Editar instructor">
-                    <i class="fas fa-edit"></i> Editar
+                    <i class="fas fa-edit"></i>
                   </button>
                   
                   @if (instructor.estatus === 'Activo') {
                     <button class="btn btn-sm btn-danger" 
                             (click)="eliminarInstructor(instructor.folioInstructor)"
                             title="Desactivar instructor">
-                      <i class="fas fa-ban"></i> Desactivar
+                      <i class="fas fa-ban"></i>
                     </button>
                   } @else {
                     <button class="btn btn-sm btn-success" 
                             (click)="activarInstructor(instructor.folioInstructor)"
                             title="Activar instructor">
-                      <i class="fas fa-play-circle"></i> Activar
+                      <i class="fas fa-play-circle"></i>
                     </button>
                   }
                 </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="6" class="no-data">
+                <td colspan="8" class="no-data">
                   <div class="no-instructores">
                     <div class="no-instructores-icon">
                       <i class="fas fa-user-tie"></i>
@@ -162,80 +188,118 @@
         </div>
 
         <form (ngSubmit)="crearInstructor()" class="modal-body">
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-user"></i> Nombre *</label>
-              <input type="text" 
-                     [(ngModel)]="nuevoInstructor.nombre" 
-                     name="nombreNuevo" 
-                     required
-                     [disabled]="cargando"
-                     placeholder="Nombre del instructor"
-                     (input)="validarNombre()">
-              @if (nombreInvalido) {
-                <small class="error-text">El nombre es requerido</small>
-              }
-            </div>
-
-            <div class="form-group">
-              <label><i class="fas fa-user"></i> Apellido Paterno</label>
-              <input type="text" 
-                     [(ngModel)]="nuevoInstructor.app" 
-                     name="appNuevo"
-                     [disabled]="cargando"
-                     placeholder="Apellido paterno">
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-user"></i> Apellido Materno</label>
-              <input type="text" 
-                     [(ngModel)]="nuevoInstructor.apm" 
-                     name="apmNuevo"
-                     [disabled]="cargando"
-                     placeholder="Apellido materno">
-            </div>
-
-            <div class="form-group">
-              <label><i class="fas fa-graduation-cap"></i> Especialidad</label>
-              <select [(ngModel)]="nuevoInstructor.especialidad" 
-                      name="especialidadNuevo" 
-                      [disabled]="cargando"
-                      class="form-select">
-                <option value="">Selecciona una especialidad</option>
-                @for (especialidad of especialidades; track especialidad) {
-                  <option [value]="especialidad">{{ especialidad }}</option>
-                }
-                <option value="Otra">Otra especialidad</option>
-              </select>
-              
-              @if (nuevoInstructor.especialidad === 'Otra') {
+          <div class="form-section">
+            <h3><i class="fas fa-id-card"></i> Información Personal</h3>
+            
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label><i class="fas fa-user"></i> Nombre Completo *</label>
                 <input type="text" 
-                       [(ngModel)]="nuevoInstructor.especialidadPersonalizada" 
-                       name="especialidadPersonalizadaNuevo"
+                       [(ngModel)]="nuevoInstructor.nombre" 
+                       name="nombreNuevo" 
+                       required
                        [disabled]="cargando"
-                       placeholder="Escribe tu especialidad"
-                       class="custom-specialty-input">
-              }
+                       placeholder="Nombre del instructor"
+                       (input)="validarNombre()">
+                @if (nombreInvalido) {
+                  <small class="error-text">El nombre es requerido</small>
+                }
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-user"></i> Apellido Paterno</label>
+                <input type="text" 
+                       [(ngModel)]="nuevoInstructor.app" 
+                       name="appNuevo"
+                       [disabled]="cargando"
+                       placeholder="Apellido paterno">
+              </div>
+
+              <div class="form-group">
+                <label><i class="fas fa-user"></i> Apellido Materno</label>
+                <input type="text" 
+                       [(ngModel)]="nuevoInstructor.apm" 
+                       name="apmNuevo"
+                       [disabled]="cargando"
+                       placeholder="Apellido materno">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label><i class="fas fa-envelope"></i> Email *</label>
+                <input type="email" 
+                       [(ngModel)]="nuevoInstructor.email" 
+                       name="emailNuevo" 
+                       required
+                       [disabled]="cargando"
+                       placeholder="correo@ejemplo.com"
+                       (input)="validarEmail()">
+                @if (emailInvalido) {
+                  <small class="error-text">El email es requerido y debe ser válido</small>
+                }
+                @if (emailExistente) {
+                  <small class="error-text">Este email ya está registrado</small>
+                }
+                <small class="info-text">Se enviarán las credenciales de acceso a este email</small>
+              </div>
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-clock"></i> Hora Entrada</label>
-              <input type="time" 
-                     [(ngModel)]="nuevoInstructor.horaEntrada" 
-                     name="horaEntradaNuevo"
-                     [disabled]="cargando">
+          <div class="form-section">
+            <h3><i class="fas fa-briefcase"></i> Información Laboral</h3>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-graduation-cap"></i> Especialidad</label>
+                <select [(ngModel)]="nuevoInstructor.especialidad" 
+                        name="especialidadNuevo" 
+                        [disabled]="cargando"
+                        class="form-select">
+                  <option value="">Selecciona una especialidad</option>
+                  @for (especialidad of especialidades; track especialidad) {
+                    <option [value]="especialidad">{{ especialidad }}</option>
+                  }
+                  <option value="Otra">Otra especialidad</option>
+                </select>
+                
+                @if (nuevoInstructor.especialidad === 'Otra') {
+                  <input type="text" 
+                         [(ngModel)]="nuevoInstructor.especialidadPersonalizada" 
+                         name="especialidadPersonalizadaNuevo"
+                         [disabled]="cargando"
+                         placeholder="Escribe tu especialidad"
+                         class="custom-specialty-input">
+                }
+              </div>
+
+              <div class="form-group">
+                <label><i class="fas fa-circle"></i> Estatus</label>
+                <select [(ngModel)]="nuevoInstructor.estatus" name="estatusNuevo" [disabled]="cargando">
+                  <option value="Activo">Activo</option>
+                  <option value="Inactivo">Inactivo</option>
+                </select>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label><i class="fas fa-clock"></i> Hora Salida</label>
-              <input type="time" 
-                     [(ngModel)]="nuevoInstructor.horaSalida" 
-                     name="horaSalidaNuevo"
-                     [disabled]="cargando">
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-clock"></i> Hora Entrada</label>
+                <input type="time" 
+                       [(ngModel)]="nuevoInstructor.horaEntrada" 
+                       name="horaEntradaNuevo"
+                       [disabled]="cargando">
+              </div>
+
+              <div class="form-group">
+                <label><i class="fas fa-clock"></i> Hora Salida</label>
+                <input type="time" 
+                       [(ngModel)]="nuevoInstructor.horaSalida" 
+                       name="horaSalidaNuevo"
+                       [disabled]="cargando">
+              </div>
             </div>
           </div>
 
@@ -253,7 +317,7 @@
             </button>
             <button type="submit" 
                     class="btn btn-primary" 
-                    [disabled]="cargando || !nuevoInstructor.nombre.trim()">
+                    [disabled]="cargando || !nuevoInstructor.nombre.trim() || !nuevoInstructor.email || emailInvalido || emailExistente">
               <i class="fas fa-save"></i> {{ cargando ? 'Creando...' : 'Crear Instructor' }}
             </button>
           </div>
@@ -274,86 +338,109 @@
         </div>
 
         <form (ngSubmit)="actualizarInstructor()" class="modal-body">
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-user"></i> Nombre *</label>
-              <input type="text" 
-                     [(ngModel)]="instructorSeleccionado.nombre" 
-                     name="nombreEdit" 
-                     required
-                     [disabled]="cargando"
-                     placeholder="Nombre del instructor">
-            </div>
-
-            <div class="form-group">
-              <label><i class="fas fa-user"></i> Apellido Paterno</label>
-              <input type="text" 
-                     [(ngModel)]="instructorSeleccionado.app" 
-                     name="appEdit"
-                     [disabled]="cargando"
-                     placeholder="Apellido paterno">
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-user"></i> Apellido Materno</label>
-              <input type="text" 
-                     [(ngModel)]="instructorSeleccionado.apm" 
-                     name="apmEdit"
-                     [disabled]="cargando"
-                     placeholder="Apellido materno">
-            </div>
-
-            <div class="form-group">
-              <label><i class="fas fa-graduation-cap"></i> Especialidad</label>
-              <select [(ngModel)]="instructorSeleccionado.especialidad" 
-                      name="especialidadEdit" 
-                      [disabled]="cargando"
-                      class="form-select">
-                <option value="">Selecciona una especialidad</option>
-                @for (especialidad of especialidades; track especialidad) {
-                  <option [value]="especialidad">{{ especialidad }}</option>
-                }
-                <option value="Otra">Otra especialidad</option>
-              </select>
-              
-              @if (instructorSeleccionado.especialidad === 'Otra') {
+          <div class="form-section">
+            <h3><i class="fas fa-id-card"></i> Información Personal</h3>
+            
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label><i class="fas fa-user"></i> Nombre Completo *</label>
                 <input type="text" 
-                       [(ngModel)]="instructorSeleccionado.especialidadPersonalizada" 
-                       name="especialidadPersonalizadaEdit"
+                       [(ngModel)]="instructorSeleccionado.nombre" 
+                       name="nombreEdit" 
+                       required
                        [disabled]="cargando"
-                       placeholder="Escribe tu especialidad"
-                       class="custom-specialty-input">
-              }
+                       placeholder="Nombre del instructor">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-user"></i> Apellido Paterno</label>
+                <input type="text" 
+                       [(ngModel)]="instructorSeleccionado.app" 
+                       name="appEdit"
+                       [disabled]="cargando"
+                       placeholder="Apellido paterno">
+              </div>
+
+              <div class="form-group">
+                <label><i class="fas fa-user"></i> Apellido Materno</label>
+                <input type="text" 
+                       [(ngModel)]="instructorSeleccionado.apm" 
+                       name="apmEdit"
+                       [disabled]="cargando"
+                       placeholder="Apellido materno">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label><i class="fas fa-envelope"></i> Email</label>
+                <input type="email" 
+                       [(ngModel)]="instructorSeleccionado.email" 
+                       name="emailEdit"
+                       [disabled]="cargando"
+                       placeholder="correo@ejemplo.com"
+                       (input)="validarEmailEdicion()">
+                @if (emailInvalido) {
+                  <small class="error-text">El email debe tener un formato válido</small>
+                }
+              </div>
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-clock"></i> Hora Entrada</label>
-              <input type="time" 
-                     [(ngModel)]="instructorSeleccionado.horaEntrada" 
-                     name="horaEntradaEdit"
-                     [disabled]="cargando">
+          <div class="form-section">
+            <h3><i class="fas fa-briefcase"></i> Información Laboral</h3>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-graduation-cap"></i> Especialidad</label>
+                <select [(ngModel)]="instructorSeleccionado.especialidad" 
+                        name="especialidadEdit" 
+                        [disabled]="cargando"
+                        class="form-select">
+                  <option value="">Selecciona una especialidad</option>
+                  @for (especialidad of especialidades; track especialidad) {
+                    <option [value]="especialidad">{{ especialidad }}</option>
+                  }
+                  <option value="Otra">Otra especialidad</option>
+                </select>
+                
+                @if (instructorSeleccionado.especialidad === 'Otra') {
+                  <input type="text" 
+                         [(ngModel)]="instructorSeleccionado.especialidadPersonalizada" 
+                         name="especialidadPersonalizadaEdit"
+                         [disabled]="cargando"
+                         placeholder="Escribe tu especialidad"
+                         class="custom-specialty-input">
+                }
+              </div>
+
+              <div class="form-group">
+                <label><i class="fas fa-circle"></i> Estatus</label>
+                <select [(ngModel)]="instructorSeleccionado.estatus" name="estatusEdit" [disabled]="cargando">
+                  <option value="Activo">Activo</option>
+                  <option value="Inactivo">Inactivo</option>
+                </select>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label><i class="fas fa-clock"></i> Hora Salida</label>
-              <input type="time" 
-                     [(ngModel)]="instructorSeleccionado.horaSalida" 
-                     name="horaSalidaEdit"
-                     [disabled]="cargando">
-            </div>
-          </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-clock"></i> Hora Entrada</label>
+                <input type="time" 
+                       [(ngModel)]="instructorSeleccionado.horaEntrada" 
+                       name="horaEntradaEdit"
+                       [disabled]="cargando">
+              </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-circle"></i> Estatus</label>
-              <select [(ngModel)]="instructorSeleccionado.estatus" name="estatusEdit" [disabled]="cargando">
-                <option value="Activo">Activo</option>
-                <option value="Inactivo">Inactivo</option>
-              </select>
+              <div class="form-group">
+                <label><i class="fas fa-clock"></i> Hora Salida</label>
+                <input type="time" 
+                       [(ngModel)]="instructorSeleccionado.horaSalida" 
+                       name="horaSalidaEdit"
+                       [disabled]="cargando">
+              </div>
             </div>
           </div>
 
@@ -371,7 +458,7 @@
             </button>
             <button type="submit" 
                     class="btn btn-primary" 
-                    [disabled]="cargando">
+                    [disabled]="cargando || !instructorSeleccionado.nombre.trim() || emailInvalido">
               <i class="fas fa-save"></i> {{ cargando ? 'Actualizando...' : 'Actualizar Instructor' }}
             </button>
           </div>
