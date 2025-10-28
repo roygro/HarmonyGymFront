@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { HeaderInstructorComponent } from "../header-instructor/header-instructor";
+import { AuthService } from '../../../services/Auth/AuthService';
 
 // Definir tipos para los iconos
 type IconType = 'warning' | 'error' | 'success' | 'info' | 'question';
@@ -378,8 +379,8 @@ export class ActividadesComponent implements OnInit {
   lugarSeleccionado: string = '';
   mostrarCampoPersonalizado: boolean = false;
 
-  // Instructor fijo
-  instructorFijo = 'INS003';
+  // REEMPLAZAR instructor fijo por usuario autenticado
+  instructorActual: string = '';
 
   // NUEVAS PROPIEDADES PARA EL CALENDARIO MODAL
   mostrarCalendarioModal: boolean = false;
@@ -414,8 +415,12 @@ export class ActividadesComponent implements OnInit {
     private actividadService: ActividadService,
     private fb: FormBuilder,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    // Inyectar AuthService
+    private authService: AuthService
   ) {
+    // Inicializar el formulario después de obtener el instructor actual
+    this.inicializarInstructor();
     this.actividadForm = this.createForm();
     this.generarHorasDisponibles();
     this.inicializarAnosDisponibles();
@@ -423,9 +428,23 @@ export class ActividadesComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    console.log('🎯 ActividadesComponent inicializado - Instructor:', this.instructorFijo);
+    console.log('🎯 ActividadesComponent inicializado - Instructor:', this.instructorActual);
     this.cargarActividadesInstructor();
     this.generarCalendario();
+  }
+
+  // NUEVO MÉTODO: Inicializar instructor desde AuthService
+  private inicializarInstructor(): void {
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser && currentUser.idPersona) {
+      this.instructorActual = currentUser.idPersona;
+      console.log('👤 Instructor autenticado:', this.instructorActual);
+    } else {
+      console.error('❌ No se pudo obtener el instructor autenticado');
+      this.mostrarError('Error de Autenticación', 'No se pudo identificar al instructor. Por favor, inicie sesión nuevamente.');
+      // Opcional: redirigir al login
+      // this.router.navigate(['/login']);
+    }
   }
 
   // NUEVO MÉTODO PARA INICIALIZAR AÑOS DISPONIBLES (CORREGIDO)
@@ -672,7 +691,8 @@ export class ActividadesComponent implements OnInit {
       descripcion: [''],
       cupo: [0, [Validators.required, Validators.min(0), Validators.max(50)]],
       lugar: ['', Validators.required],
-      folioInstructor: [this.instructorFijo, Validators.required],
+      // USAR instructorActual en lugar del valor fijo
+      folioInstructor: [this.instructorActual, Validators.required],
       imagenUrl: [this.getRandomDefaultImage()]
     });
   }
@@ -745,9 +765,17 @@ export class ActividadesComponent implements OnInit {
     }
   }
 
+  // MODIFICAR cargarActividadesInstructor para usar instructorActual
   cargarActividadesInstructor(): void {
+    // Verificar que tenemos un instructor antes de cargar
+    if (!this.instructorActual) {
+      console.error('❌ No hay instructor autenticado para cargar actividades');
+      this.mostrarError('Error', 'No se pudo identificar al instructor');
+      return;
+    }
+
     this.isLoading = true;
-    this.actividadService.obtenerActividadesPorInstructor(this.instructorFijo).subscribe({
+    this.actividadService.obtenerActividadesPorInstructor(this.instructorActual).subscribe({
       next: (data) => {
         this.actividades = data || [];
         this.actividadesFiltradas = [...this.actividades];
@@ -762,12 +790,14 @@ export class ActividadesComponent implements OnInit {
     });
   }
 
+  // MODIFICAR cargarTodasActividades para filtrar por instructorActual
   cargarTodasActividades(): void {
     this.isLoading = true;
     this.actividadService.obtenerTodasActividades().subscribe({
       next: (data) => {
+        // Filtrar por el instructor autenticado
         this.actividades = (data || []).filter(actividad => 
-          actividad.folioInstructor === this.instructorFijo
+          actividad.folioInstructor === this.instructorActual
         );
         this.actividadesFiltradas = [...this.actividades];
         this.isLoading = false;
@@ -784,7 +814,14 @@ export class ActividadesComponent implements OnInit {
     });
   }
 
+  // MODIFICAR mostrarFormularioNuevo para usar instructorActual
   mostrarFormularioNuevo(): void {
+    // Verificar que tenemos un instructor antes de mostrar el formulario
+    if (!this.instructorActual) {
+      this.mostrarError('Error de Autenticación', 'No se pudo identificar al instructor. Por favor, inicie sesión nuevamente.');
+      return;
+    }
+
     this.isEditing = false;
     this.selectedActividad = null;
     this.selectedDate = '';
@@ -802,7 +839,8 @@ export class ActividadesComponent implements OnInit {
       descripcion: '',
       cupo: '',
       lugar: '',
-      folioInstructor: this.instructorFijo,
+      // USAR instructorActual
+      folioInstructor: this.instructorActual,
       imagenUrl: this.getRandomDefaultImage()
     });
     
@@ -1237,6 +1275,7 @@ export class ActividadesComponent implements OnInit {
     });
   }
 
+  // MODIFICAR cancelarEdicion para resetear con instructorActual
   cancelarEdicion(): void {
     this.showForm = false;
     this.isEditing = false;
@@ -1248,7 +1287,8 @@ export class ActividadesComponent implements OnInit {
     this.lugarSeleccionado = '';
     this.mostrarCampoPersonalizado = false;
     this.actividadForm.reset({
-      folioInstructor: this.instructorFijo,
+      // USAR instructorActual
+      folioInstructor: this.instructorActual,
       imagenUrl: this.getRandomDefaultImage()
     });
   }
@@ -1258,8 +1298,9 @@ export class ActividadesComponent implements OnInit {
       this.actividadService.buscarActividadesPorNombre(this.searchTerm)
         .subscribe({
           next: (data) => {
+            // Filtrar por el instructor autenticado
             this.actividades = (data || []).filter(actividad => 
-              actividad.folioInstructor === this.instructorFijo
+              actividad.folioInstructor === this.instructorActual
             );
             this.actividadesFiltradas = [...this.actividades];
             console.log('🔍 Resultados de búsqueda:', this.actividades.length);

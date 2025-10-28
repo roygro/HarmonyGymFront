@@ -173,6 +173,10 @@ obtenerClientesNoAsignadosARutina(folioRutina: string): Observable<Cliente[]> {
     return this.http.get<Rutina>(`${this.rutinasUrl}/instructor/${folioRutina}`)
       .pipe(catchError(this.manejarError));
   }
+  obtenerRutinasPorInstructor(folioInstructor: string): Observable<Rutina[]> {
+  return this.http.get<Rutina[]>(`${this.rutinasUrl}/instructor/${folioInstructor}`)
+    .pipe(catchError(this.manejarError));
+}
 
   obtenerRutinaConInstructor(folioRutina: string): Observable<Rutina> {
     return this.http.get<Rutina>(`${this.rutinasUrl}/${folioRutina}/with-instructor`)
@@ -196,11 +200,7 @@ obtenerClientesNoAsignadosARutina(folioRutina: string): Observable<Cliente[]> {
 
   // ===== MÉTODOS PARA INSTRUCTORES =====
 
-  obtenerRutinasPorInstructor(folioInstructor: string): Observable<Rutina[]> {
-    return this.http.get<Rutina[]>(`${this.rutinasUrl}/instructor/${folioInstructor}`)
-      .pipe(catchError(this.manejarError));
-  }
-
+ 
   obtenerRutinasPorInstructorConInstructor(folioInstructor: string): Observable<Rutina[]> {
     return this.http.get<Rutina[]>(`${this.rutinasUrl}/instructor/${folioInstructor}/with-instructor`)
       .pipe(catchError(this.manejarError));

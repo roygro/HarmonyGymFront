@@ -6,7 +6,7 @@ import { Rutina, Ejercicio, EjercicioRutina, RutinaService, Cliente, CrearEjerci
 import { HeaderInstructorComponent } from "../../header-instructor/header-instructor";
 
 // Importaciones de Angular Material
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -18,6 +18,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+
+import { AuthService } from '../../../../services/Auth/AuthService';
+import { AlertDialogComponent, ConfirmDialogComponent } from '../../actividades-component/actividades-component';
+
+// Importar componentes de diálogo (debes crear estos componentes o ajustar las rutas)
+
+// Definir tipos para los iconos
+type IconType = 'warning' | 'error' | 'success' | 'info' | 'question';
 
 @Component({
   selector: 'app-rutina',
@@ -38,7 +47,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     MatIconModule,
     MatBadgeModule,
     MatChipsModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatDialogModule,
+    MatSnackBarModule
   ],
   templateUrl: './rutina-component.html',
   styleUrls: ['./rutina-component.css']
@@ -105,9 +116,9 @@ export class RutinaComponent implements OnInit {
   showCrearEjercicioModal = false;
   creandoEjercicio = false;
   
-  // Instructor temporal para pruebas
-  private instructorTemporal = 'INS003';
-  
+  // REEMPLAZADO: Instructor temporal por instructor autenticado
+  private instructorActual: string = '';
+
   // Formularios
   rutinaForm: FormGroup;
   ejercicioForm: FormGroup;
@@ -117,12 +128,17 @@ export class RutinaComponent implements OnInit {
 
   // Servicios de Angular Material
   private snackBar = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
 
   constructor(
     private fb: FormBuilder,
     private http: HttpClient,
-    private rutinaService: RutinaService
+    private rutinaService: RutinaService,
+    // Inyectar AuthService
+    private authService: AuthService
   ) {
+    // Inicializar instructor antes de crear formularios
+    this.inicializarInstructor();
     this.rutinaForm = this.createRutinaForm();
     this.ejercicioForm = this.createEjercicioForm();
   }
@@ -131,6 +147,140 @@ export class RutinaComponent implements OnInit {
     this.cargarRutinas();
     this.cargarEjerciciosDisponibles();
   }
+
+  // NUEVO MÉTODO: Inicializar instructor desde AuthService
+  private inicializarInstructor(): void {
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser && currentUser.idPersona) {
+      this.instructorActual = currentUser.idPersona;
+      console.log('👤 Instructor autenticado:', this.instructorActual);
+    } else {
+      console.error('❌ No se pudo obtener el instructor autenticado');
+      this.mostrarError('Error de Autenticación', 'No se pudo identificar al instructor. Por favor, inicie sesión nuevamente.');
+    }
+  }
+
+  // ===== SISTEMA DE ALERTAS ESTANDARIZADO =====
+
+  private mostrarExito(titulo: string, mensaje: string): void {
+    this.dialog.open(AlertDialogComponent, {
+      width: '420px',
+      data: {
+        title: titulo,
+        message: mensaje,
+        icon: 'check_circle',
+        iconType: 'success',
+        buttonText: 'Aceptar'
+      }
+    });
+  }
+
+  private mostrarError(titulo: string, mensaje: string): void {
+    this.dialog.open(AlertDialogComponent, {
+      width: '420px',
+      data: {
+        title: titulo,
+        message: mensaje,
+        icon: 'error',
+        iconType: 'error',
+        buttonText: 'Entendido'
+      }
+    });
+  }
+
+  private mostrarAdvertencia(titulo: string, mensaje: string): void {
+    this.dialog.open(AlertDialogComponent, {
+      width: '420px',
+      data: {
+        title: titulo,
+        message: mensaje,
+        icon: 'warning',
+        iconType: 'warning',
+        buttonText: 'Entendido'
+      }
+    });
+  }
+
+  private mostrarInfo(titulo: string, mensaje: string): void {
+    this.dialog.open(AlertDialogComponent, {
+      width: '420px',
+      data: {
+        title: titulo,
+        message: mensaje,
+        icon: 'info',
+        iconType: 'info',
+        buttonText: 'Aceptar'
+      }
+    });
+  }
+
+  private mostrarSnackbar(mensaje: string, tipo: 'success' | 'error' | 'warning' | 'info' = 'success'): void {
+    this.snackBar.open(mensaje, 'Cerrar', {
+      duration: 3000,
+      panelClass: [`snackbar-${tipo}`],
+      horizontalPosition: 'end',
+      verticalPosition: 'top'
+    });
+  }
+
+  private mostrarConfirmacion(
+    titulo: string, 
+    mensaje: string, 
+    iconType: IconType = 'question',
+    confirmButtonText: string = 'Confirmar',
+    cancelButtonText: string = 'Cancelar'
+  ): Promise<boolean> {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '450px',
+      data: {
+        title: titulo,
+        message: mensaje,
+        confirmText: confirmButtonText,
+        cancelText: cancelButtonText,
+        iconType: iconType
+      }
+    });
+
+    return dialogRef.afterClosed().toPromise() || Promise.resolve(false);
+  }
+
+  // Método de compatibilidad (para no romper el código existente)
+  private showAlert(message: string, type: 'success' | 'danger' | 'warning' | 'info'): void {
+    const typeMap = {
+      'success': 'success',
+      'danger': 'error',
+      'warning': 'warning',
+      'info': 'info'
+    };
+    
+    const mappedType = typeMap[type];
+    
+    if (mappedType === 'success') {
+      this.mostrarExito('Éxito', message);
+    } else if (mappedType === 'error') {
+      this.mostrarError('Error', message);
+    } else if (mappedType === 'warning') {
+      this.mostrarAdvertencia('Advertencia', message);
+    } else {
+      this.mostrarInfo('Información', message);
+    }
+  }
+
+  // Método para alertas de acción con botones de confirmación
+  private mostrarAlertaAccion(mensaje: string, accion: string, callback: () => void): void {
+    const snackBarRef = this.snackBar.open(mensaje, accion, {
+      duration: 8000,
+      panelClass: ['snackbar-warning'],
+      horizontalPosition: 'end',
+      verticalPosition: 'top'
+    });
+
+    snackBarRef.onAction().subscribe(() => {
+      callback();
+    });
+  }
+
+  // ===== MÉTODOS EXISTENTES ACTUALIZADOS CON NUEVAS ALERTAS =====
 
  getEquiposByCategory(categoria: 'basico' | 'maquinas' | 'accesorios'): string[] {
   const equiposCategorizados = {
@@ -193,7 +343,7 @@ getEquipoIcon(equipo: string): string {
    */
   selectEjercicioForModal(idEjercicio: string): void {
     if (this.isEjercicioEnRutina(idEjercicio)) {
-      this.showAlert('Este ejercicio ya está en la rutina', 'warning');
+      this.mostrarAdvertencia('Ejercicio Duplicado', 'Este ejercicio ya está en la rutina');
       return;
     }
     
@@ -318,17 +468,17 @@ getEquipoIcon(equipo: string): string {
    */
   agregarEjercicioDesdeModal(): void {
     if (!this.selectedRutina || !this.ejercicioSeleccionado) {
-      this.showAlert('No hay rutina seleccionada o ejercicio no válido', 'warning');
+      this.mostrarAdvertencia('Datos Incompletos', 'No hay rutina seleccionada o ejercicio no válido');
       return;
     }
 
     if (this.isEjercicioEnRutina(this.ejercicioSeleccionado)) {
-      this.showAlert('Este ejercicio ya está en la rutina. No se pueden agregar duplicados.', 'warning');
+      this.mostrarAdvertencia('Ejercicio Duplicado', 'Este ejercicio ya está en la rutina. No se pueden agregar duplicados.');
       return;
     }
 
     if (!this.esEjercicioValidoModal()) {
-      this.showAlert('Por favor completa todos los campos requeridos correctamente.', 'warning');
+      this.mostrarAdvertencia('Formulario Incompleto', 'Por favor completa todos los campos requeridos correctamente.');
       return;
     }
 
@@ -345,7 +495,7 @@ getEquipoIcon(equipo: string): string {
       next: (rutinaActualizada) => {
         this.selectedRutina = rutinaActualizada;
         this.showConfigurarEjercicioModal = false;
-        this.showAlert('Ejercicio agregado exitosamente', 'success');
+        this.mostrarExito('¡Éxito!', 'Ejercicio agregado exitosamente');
         
         // Actualizar la lista de rutinas
         const index = this.rutinas.findIndex(r => r.folioRutina === rutinaActualizada.folioRutina);
@@ -364,9 +514,9 @@ getEquipoIcon(equipo: string): string {
       },
       error: (error) => {
         if (error.message.includes('duplicate key') || error.message.includes('ya existe')) {
-          this.showAlert('Este ejercicio ya está en la rutina. No se pueden agregar duplicados.', 'warning');
+          this.mostrarAdvertencia('Ejercicio Duplicado', 'Este ejercicio ya está en la rutina. No se pueden agregar duplicados.');
         } else {
-          this.showAlert('Error al agregar el ejercicio: ' + error.message, 'danger');
+          this.mostrarError('Error', 'Error al agregar el ejercicio: ' + error.message);
         }
       }
     });
@@ -377,7 +527,7 @@ getEquipoIcon(equipo: string): string {
    */
   showAgregarEjercicioMejorado(): void {
     if (!this.selectedRutina) {
-      this.showAlert('Selecciona una rutina primero', 'warning');
+      this.mostrarAdvertencia('Selección Requerida', 'Selecciona una rutina primero');
       return;
     }
     
@@ -425,131 +575,80 @@ getEquipoIcon(equipo: string): string {
     return this.esEjercicioValidoModal();
   }
 
-  // ===== MÉTODOS DE ALERTAS ACTUALIZADOS =====
-
-  /**
-   * Muestra una alerta usando Angular Material SnackBar
-   */
-  showAlert(message: string, type: 'success' | 'danger' | 'warning' | 'info'): void {
-    const panelClass = this.getSnackBarClass(type);
-    const duration = type === 'danger' ? 6000 : 4000;
-
-    this.snackBar.open(message, 'Cerrar', {
-      duration,
-      panelClass,
-      horizontalPosition: 'end',
-      verticalPosition: 'top'
-    });
-  }
-
-  /**
-   * Muestra una alerta de acción con botones de confirmación
-   */
-  showActionAlert(message: string, action: string, callback: () => void): void {
-    const snackBarRef = this.snackBar.open(message, action, {
-      duration: 8000,
-      panelClass: ['snackbar-warning'],
-      horizontalPosition: 'end',
-      verticalPosition: 'top'
-    });
-
-    snackBarRef.onAction().subscribe(() => {
-      callback();
-    });
-  }
-
-  /**
-   * Obtiene la clase CSS para el SnackBar basado en el tipo
-   */
-  private getSnackBarClass(type: 'success' | 'danger' | 'warning' | 'info'): string[] {
-    switch (type) {
-      case 'success':
-        return ['snackbar-success'];
-      case 'danger':
-        return ['snackbar-error'];
-      case 'warning':
-        return ['snackbar-warning'];
-      case 'info':
-        return ['snackbar-info'];
-      default:
-        return ['snackbar-info'];
-    }
-  }
-
-  /**
-   * Muestra una alerta de carga
-   */
-  showLoadingAlert(message: string): void {
-    this.snackBar.open(message, '', {
-      duration: 3000,
-      panelClass: ['snackbar-info'],
-      horizontalPosition: 'end',
-      verticalPosition: 'top'
-    });
-  }
-
-  // ===== MÉTODOS MODIFICADOS CON ALERTAS DE ACCIÓN =====
+  // ===== MÉTODOS CON ALERTAS DE ACCIÓN ACTUALIZADAS =====
 
   desasignarCliente(folioCliente: string): void {
     if (!this.selectedRutina) return;
 
-    this.showActionAlert(
+    this.mostrarConfirmacion(
+      '¿Desasignar Cliente?',
       '¿Estás seguro de que deseas desasignar este cliente de la rutina?',
-      'DESASIGNAR',
-      () => {
+      'warning',
+      'Sí, desasignar',
+      'Cancelar'
+    ).then((result) => {
+      if (result) {
         this.rutinaService.desasignarRutinaDeCliente(this.selectedRutina!.folioRutina, folioCliente)
           .subscribe({
             next: (response) => {
               if (response.success) {
-                this.showAlert('Cliente desasignado exitosamente', 'success');
+                this.mostrarExito('¡Éxito!', 'Cliente desasignado exitosamente');
                 this.cargarClientesAsignadosParaRutina(this.selectedRutina!.folioRutina);
                 this.cargarClientesAsignadosParaModal();
               } else {
-                this.showAlert('Error al desasignar cliente: ' + response.message, 'danger');
+                this.mostrarError('Error', 'Error al desasignar cliente: ' + response.message);
               }
             },
             error: (error) => {
-              this.showAlert('Error al desasignar cliente: ' + error.message, 'danger');
+              this.mostrarError('Error', 'Error al desasignar cliente: ' + error.message);
             }
           });
       }
-    );
+    });
   }
 
   deleteRutina(): void {
     if (!this.selectedRutina) return;
 
-    this.showActionAlert(
+    this.mostrarConfirmacion(
+      '¿Eliminar Rutina?',
       `¿Estás seguro de que deseas eliminar la rutina "${this.selectedRutina.nombre}"? Esta acción no se puede deshacer.`,
-      'ELIMINAR',
-      () => {
+      'warning',
+      'Sí, eliminar',
+      'Cancelar'
+    ).then((result) => {
+      if (result) {
         this.rutinaService.eliminarRutina(this.selectedRutina!.folioRutina).subscribe({
           next: () => {
             this.clientesPorRutina.delete(this.selectedRutina!.folioRutina);
             this.rutinas = this.rutinas.filter(r => r.folioRutina !== this.selectedRutina!.folioRutina);
             this.selectedRutina = null;
-            this.showAlert('Rutina eliminada exitosamente', 'success');
+            this.mostrarExito('¡Eliminada!', 'Rutina eliminada exitosamente');
             this.filterRutinas();
           },
           error: (error) => {
-            this.showAlert('Error al eliminar la rutina: ' + error.message, 'danger');
+            this.mostrarError('Error', 'Error al eliminar la rutina: ' + error.message);
           }
         });
       }
-    );
+    });
   }
 
   eliminarEjercicio(idEjercicio: string): void {
     if (!this.selectedRutina) return;
 
-    this.showActionAlert(
+    this.mostrarConfirmacion(
+      '¿Eliminar Ejercicio?',
       '¿Estás seguro de que deseas eliminar este ejercicio de la rutina?',
-      'ELIMINAR',
-      () => {
+      'warning',
+      'Sí, eliminar',
+      'Cancelar'
+    ).then((result) => {
+      if (result) {
         this.rutinaService.eliminarEjercicioDeRutina(this.selectedRutina!.folioRutina, idEjercicio).subscribe({
           next: (rutinaActualizada) => {
             this.selectedRutina = rutinaActualizada;
-            this.showAlert('Ejercicio eliminado exitosamente', 'success');
+            this.mostrarExito('¡Éxito!', 'Ejercicio eliminado exitosamente');
             
             const index = this.rutinas.findIndex(r => r.folioRutina === rutinaActualizada.folioRutina);
             if (index !== -1) {
@@ -557,42 +656,47 @@ getEquipoIcon(equipo: string): string {
             }
           },
           error: (error) => {
-            this.showAlert('Error al eliminar el ejercicio: ' + error.message, 'danger');
+            this.mostrarError('Error', 'Error al eliminar el ejercicio: ' + error.message);
           }
         });
       }
-    );
+    });
   }
 
   cambiarEstatusRutina(rutina: Rutina, nuevoEstatus: string): void {
-    const action = nuevoEstatus === 'Inactiva' ? 'DESACTIVAR' : 'ACTIVAR';
-    const message = nuevoEstatus === 'Inactiva' 
-      ? `¿Estás seguro de que quieres inactivar la rutina "${rutina.nombre}"?` 
-      : `¿Estás seguro de que quieres activar la rutina "${rutina.nombre}"?`;
-
-    this.showActionAlert(message, action, () => {
-      this.rutinaService.cambiarEstatusRutina(rutina.folioRutina, nuevoEstatus)
-        .subscribe({
-          next: (response: any) => {
-            const actionText = nuevoEstatus === 'Inactiva' ? 'desactivada' : 'activada';
-            this.showAlert(`Rutina ${actionText} exitosamente`, 'success');
-            
-            const index = this.rutinas.findIndex(r => r.folioRutina === rutina.folioRutina);
-            if (index !== -1) {
-              this.rutinas[index].estatus = nuevoEstatus;
+    const actionText = nuevoEstatus === 'Inactiva' ? 'inactivar' : 'activar';
+    
+    this.mostrarConfirmacion(
+      `¿${actionText.charAt(0).toUpperCase() + actionText.slice(1)} Rutina?`,
+      `¿Estás seguro de que quieres ${actionText} la rutina "${rutina.nombre}"?`,
+      'question',
+      `Sí, ${actionText}`,
+      'Cancelar'
+    ).then((result) => {
+      if (result) {
+        this.rutinaService.cambiarEstatusRutina(rutina.folioRutina, nuevoEstatus)
+          .subscribe({
+            next: (response: any) => {
+              const actionText = nuevoEstatus === 'Inactiva' ? 'desactivada' : 'activada';
+              this.mostrarExito('¡Éxito!', `Rutina ${actionText} exitosamente`);
+              
+              const index = this.rutinas.findIndex(r => r.folioRutina === rutina.folioRutina);
+              if (index !== -1) {
+                this.rutinas[index].estatus = nuevoEstatus;
+              }
+              
+              if (this.selectedRutina && this.selectedRutina.folioRutina === rutina.folioRutina) {
+                this.selectedRutina.estatus = nuevoEstatus;
+              }
+              
+              this.filterRutinas();
+            },
+            error: (error) => {
+              console.error('Error al cambiar estatus:', error);
+              this.mostrarError('Error', 'Error al cambiar el estatus de la rutina');
             }
-            
-            if (this.selectedRutina && this.selectedRutina.folioRutina === rutina.folioRutina) {
-              this.selectedRutina.estatus = nuevoEstatus;
-            }
-            
-            this.filterRutinas();
-          },
-          error: (error) => {
-            console.error('Error al cambiar estatus:', error);
-            this.showAlert('Error al cambiar el estatus de la rutina', 'danger');
-          }
-        });
+          });
+      }
     });
   }
 
@@ -606,8 +710,6 @@ getEquipoIcon(equipo: string): string {
     this.cambiarEstatusRutina(rutina, 'Activa');
   }
 
- 
-
   // FORMULARIOS
   createRutinaForm(): FormGroup {
     return this.fb.group({
@@ -616,7 +718,8 @@ getEquipoIcon(equipo: string): string {
       nivel: [''],
       objetivo: [''],
       estatus: ['Activa'],
-      folioInstructor: [this.instructorTemporal, Validators.required]
+      // USAR instructorActual en lugar del valor fijo
+      folioInstructor: [this.instructorActual, Validators.required]
     });
   }
 
@@ -637,23 +740,23 @@ getEquipoIcon(equipo: string): string {
   // NUEVOS MÉTODOS PARA MANEJAR CLIENTES POR RUTINA
   async showVerClientesAsignados(): Promise<void> {
     if (!this.selectedRutina) {
-      this.showAlert('No hay rutina seleccionada', 'warning');
+      this.mostrarAdvertencia('Selección Requerida', 'No hay rutina seleccionada');
       return;
     }
     
-    this.showLoadingAlert('Cargando clientes asignados...');
+    this.mostrarSnackbar('Cargando clientes asignados...', 'info');
     
     try {
       await this.cargarClientesAsignadosParaModal();
       
       if (this.clientesAsignados.length === 0) {
-        this.showAlert('No hay clientes asignados para mostrar', 'warning');
+        this.mostrarInfo('Sin Clientes', 'No hay clientes asignados para mostrar');
         this.showVerClientesModal = true;
       } else {
         this.showVerClientesModal = true;
       }
     } catch (error) {
-      this.showAlert('Error al cargar clientes asignados', 'danger');
+      this.mostrarError('Error', 'Error al cargar clientes asignados');
       console.error('Error:', error);
     }
   }
@@ -977,7 +1080,7 @@ getEquipoIcon(equipo: string): string {
       },
       error: (error) => {
         console.error('Error al cargar todos los clientes:', error);
-        this.showAlert('Error al cargar la lista de clientes: ' + error.message, 'danger');
+        this.mostrarError('Error', 'Error al cargar la lista de clientes: ' + error.message);
       }
     });
   }
@@ -990,7 +1093,7 @@ getEquipoIcon(equipo: string): string {
       },
       error: (error) => {
         console.error('Error al cargar todos los clientes:', error);
-        this.showAlert('Error al cargar la lista de clientes: ' + error.message, 'danger');
+        this.mostrarError('Error', 'Error al cargar la lista de clientes: ' + error.message);
       }
     });
   }
@@ -1003,7 +1106,7 @@ getEquipoIcon(equipo: string): string {
 
   asignarRutinaAClientes() {
     if (!this.selectedRutina || this.clientesSeleccionados.length === 0) {
-      this.showAlert('Selecciona al menos un cliente para asignar la rutina', 'warning');
+      this.mostrarAdvertencia('Selección Requerida', 'Selecciona al menos un cliente para asignar la rutina');
       return;
     }
 
@@ -1011,7 +1114,8 @@ getEquipoIcon(equipo: string): string {
 
     const request = {
       foliosClientes: this.clientesSeleccionados,
-      folioInstructor: this.instructorTemporal
+      // USAR instructorActual en lugar del valor fijo
+      folioInstructor: this.instructorActual
     };
 
     this.rutinaService.asignarRutinaAMultiplesClientes(this.selectedRutina.folioRutina, request)
@@ -1020,23 +1124,23 @@ getEquipoIcon(equipo: string): string {
           this.asignando = false;
           
           if (response.success) {
-            this.showAlert(`Rutina asignada exitosamente a ${response.resultado?.totalExitosas || 0} clientes`, 'success');
+            this.mostrarExito('¡Éxito!', `Rutina asignada exitosamente a ${response.resultado?.totalExitosas || 0} clientes`);
             
             if (response.resultado && response.resultado.errores.length > 0) {
               const errores = response.resultado.errores.join(', ');
-              this.showAlert(`Algunos clientes no pudieron ser asignados: ${errores}`, 'warning');
+              this.mostrarAdvertencia('Asignación Parcial', `Algunos clientes no pudieron ser asignados: ${errores}`);
             }
             
             this.cargarClientesAsignadosParaRutina(this.selectedRutina!.folioRutina);
             this.cargarClientesAsignadosParaModal();
             this.closeAsignarModal();
           } else {
-            this.showAlert('Error al asignar la rutina: ' + response.message, 'danger');
+            this.mostrarError('Error', 'Error al asignar la rutina: ' + response.message);
           }
         },
         error: (error) => {
           this.asignando = false;
-          this.showAlert('Error al asignar la rutina: ' + error.message, 'danger');
+          this.mostrarError('Error', 'Error al asignar la rutina: ' + error.message);
         }
       });
   }
@@ -1105,14 +1209,59 @@ getEquipoIcon(equipo: string): string {
 
   // CARGA DE DATOS MODIFICADA
   cargarRutinas() {
-    this.rutinaService.obtenerTodasLasRutinas().subscribe({
+    // Verificar que tenemos un instructor autenticado
+    if (!this.instructorActual) {
+      console.error('❌ No hay instructor autenticado para cargar rutinas');
+      this.mostrarError('Error de Autenticación', 'No se pudo identificar al instructor');
+      return;
+    }
+
+    console.log('👤 Cargando rutinas para el instructor:', this.instructorActual);
+
+    // Cargar solo las rutinas del instructor autenticado
+    this.rutinaService.obtenerRutinasPorInstructor(this.instructorActual).subscribe({
       next: (rutinas) => {
-        this.rutinas = rutinas;
-        this.filteredRutinas = rutinas;
+        this.rutinas = rutinas || [];
+        this.filteredRutinas = [...this.rutinas];
         this.precargarClientesDeTodasLasRutinas();
+        console.log('✅ Rutinas del instructor cargadas:', this.rutinas.length);
+        
+        // Mostrar mensaje si no hay rutinas
+        if (this.rutinas.length === 0) {
+          this.mostrarInfo('Sin Rutinas', 'No tienes rutinas creadas. ¡Crea tu primera rutina!');
+        }
       },
       error: (error) => {
-        this.showAlert('Error al cargar las rutinas: ' + error.message, 'danger');
+        console.error('❌ Error al cargar rutinas del instructor:', error);
+        // Fallback: cargar todas las rutinas y filtrar localmente
+        this.cargarTodasLasRutinasYFiltrar();
+      }
+    });
+  }
+
+  // Método fallback
+  private cargarTodasLasRutinasYFiltrar(): void {
+    console.log('🔄 Intentando cargar todas las rutinas y filtrar...');
+    
+    this.rutinaService.obtenerTodasLasRutinas().subscribe({
+      next: (rutinas) => {
+        // Filtrar localmente por el instructor autenticado
+        this.rutinas = (rutinas || []).filter(rutina => 
+          rutina.folioInstructor === this.instructorActual
+        );
+        this.filteredRutinas = [...this.rutinas];
+        this.precargarClientesDeTodasLasRutinas();
+        console.log('✅ Rutinas filtradas localmente:', this.rutinas.length);
+        
+        if (this.rutinas.length === 0) {
+          this.mostrarInfo('Sin Rutinas', 'No tienes rutinas creadas. ¡Crea tu primera rutina!');
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar todas las rutinas:', error);
+        this.rutinas = [];
+        this.filteredRutinas = [];
+        this.mostrarError('Error', 'No se pudieron cargar las rutinas. Por favor, intente nuevamente.');
       }
     });
   }
@@ -1125,7 +1274,7 @@ getEquipoIcon(equipo: string): string {
       },
       error: (error) => {
         console.error('Error al cargar ejercicios:', error);
-        this.showAlert('Error al cargar ejercicios disponibles: ' + error.message, 'warning');
+        this.mostrarAdvertencia('Advertencia', 'Error al cargar ejercicios disponibles: ' + error.message);
       }
     });
   }
@@ -1234,7 +1383,8 @@ getEquipoIcon(equipo: string): string {
     this.isEditing = false;
     this.rutinaForm.reset({
       estatus: 'Activa',
-      folioInstructor: this.instructorTemporal
+      // USAR instructorActual en lugar del valor fijo
+      folioInstructor: this.instructorActual
     });
   }
 
@@ -1263,11 +1413,15 @@ getEquipoIcon(equipo: string): string {
 
   // OPERACIONES CRUD
   saveRutina() {
-    if (this.rutinaForm.invalid) return;
+    if (this.rutinaForm.invalid) {
+      this.mostrarAdvertencia('Formulario Incompleto', 'Por favor complete todos los campos requeridos');
+      return;
+    }
 
     const rutinaData = {
       ...this.rutinaForm.value,
-      folioInstructor: this.instructorTemporal
+      // USAR instructorActual en lugar del valor fijo
+      folioInstructor: this.instructorActual
     };
 
     if (this.isCreating) {
@@ -1277,11 +1431,11 @@ getEquipoIcon(equipo: string): string {
           this.clientesPorRutina.set(nuevaRutina.folioRutina, []);
           this.selectRutina(nuevaRutina);
           this.isCreating = false;
-          this.showAlert('Rutina creada exitosamente', 'success');
+          this.mostrarExito('¡Éxito!', 'Rutina creada exitosamente');
           this.filterRutinas();
         },
         error: (error) => {
-          this.showAlert('Error al crear la rutina: ' + error.message, 'danger');
+          this.mostrarError('Error', 'Error al crear la rutina: ' + error.message);
         }
       });
     } else if (this.isEditing && this.selectedRutina) {
@@ -1293,11 +1447,11 @@ getEquipoIcon(equipo: string): string {
           }
           this.selectedRutina = rutinaActualizada;
           this.isEditing = false;
-          this.showAlert('Rutina actualizada exitosamente', 'success');
+          this.mostrarExito('¡Éxito!', 'Rutina actualizada exitosamente');
           this.filterRutinas();
         },
         error: (error) => {
-          this.showAlert('Error al actualizar la rutina: ' + error.message, 'danger');
+          this.mostrarError('Error', 'Error al actualizar la rutina: ' + error.message);
         }
       });
     }
@@ -1327,7 +1481,10 @@ getEquipoIcon(equipo: string): string {
   }
 
   crearEjercicio() {
-    if (this.ejercicioForm.invalid) return;
+    if (this.ejercicioForm.invalid) {
+      this.mostrarAdvertencia('Formulario Incompleto', 'Por favor complete todos los campos requeridos');
+      return;
+    }
 
     this.creandoEjercicio = true;
     
@@ -1353,7 +1510,7 @@ getEquipoIcon(equipo: string): string {
           this.showEjercicioModal = true;
         }
         
-        this.showAlert('Ejercicio creado exitosamente', 'success');
+        this.mostrarExito('¡Éxito!', 'Ejercicio creado exitosamente');
         this.ejercicioForm.reset({
           estatus: 'Activo',
           equipoNecesario: []
@@ -1361,7 +1518,7 @@ getEquipoIcon(equipo: string): string {
       },
       error: (error) => {
         this.creandoEjercicio = false;
-        this.showAlert('Error al crear el ejercicio: ' + error.message, 'danger');
+        this.mostrarError('Error', 'Error al crear el ejercicio: ' + error.message);
       }
     });
   }
@@ -1387,7 +1544,7 @@ cargarRutinaDetalle(folioRutina: string) {
       this.vistaActual = 'detalle'; // Asegurar que muestre el detalle
     },
     error: (error) => {
-      this.showAlert('Error al cargar los detalles de la rutina: ' + error.message, 'danger');
+      this.mostrarError('Error', 'Error al cargar los detalles de la rutina: ' + error.message);
       this.vistaActual = 'lista'; // En caso de error, volver a la lista
     }
   });
@@ -1420,7 +1577,8 @@ cargarRutinaDetalle(folioRutina: string) {
       nivel: rutina.nivel,
       objetivo: rutina.objetivo,
       estatus: 'Activa',
-      folioInstructor: this.instructorTemporal,
+      // USAR instructorActual en lugar del valor fijo
+      folioInstructor: this.instructorActual,
       ejercicios: rutina.ejercicios ? [...rutina.ejercicios] : []
     };
 
@@ -1429,11 +1587,11 @@ cargarRutinaDetalle(folioRutina: string) {
         this.rutinas.push(nuevaRutina);
         this.clientesPorRutina.set(nuevaRutina.folioRutina, []);
         this.selectRutina(nuevaRutina);
-        this.showAlert('Rutina duplicada exitosamente', 'success');
+        this.mostrarExito('¡Éxito!', 'Rutina duplicada exitosamente');
         this.filterRutinas();
       },
       error: (error) => {
-        this.showAlert('Error al duplicar la rutina: ' + error.message, 'danger');
+        this.mostrarError('Error', 'Error al duplicar la rutina: ' + error.message);
       }
     });
   }
@@ -1470,7 +1628,7 @@ cargarRutinaDetalle(folioRutina: string) {
       },
       error: (error) => {
         console.error('Error al filtrar rutinas por estatus:', error);
-        this.showAlert('Error al filtrar rutinas por estatus', 'danger');
+        this.mostrarError('Error', 'Error al filtrar rutinas por estatus');
       }
     });
   }

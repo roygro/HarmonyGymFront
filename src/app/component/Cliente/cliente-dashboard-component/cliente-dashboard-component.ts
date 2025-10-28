@@ -330,28 +330,101 @@ export class ClienteDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ===== MÉTODOS DE FORMATO CORREGIDOS PARA FECHAS =====
+
+  formatearFecha(fecha: string | Date): string {
+    return this.formatearFechaConZonaHoraria(fecha);
+  }
+
+  formatearFechaConZonaHoraria(fecha: string | Date): string {
+    if (!fecha) return 'Fecha no definida';
+    
+    try {
+      // Crear fecha en zona horaria local
+      const fechaLocal = new Date(fecha);
+      
+      // Ajustar para compensar la diferencia de zona horaria
+      const fechaAjustada = new Date(fechaLocal.getTime() + fechaLocal.getTimezoneOffset() * 60000);
+      
+      return fechaAjustada.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error formateando fecha:', error, fecha);
+      return 'Fecha inválida';
+    }
+  }
+
+  // Método alternativo más simple para fechas
+  formatearFechaSimple(fecha: string | Date): string {
+    if (!fecha) return 'Fecha no definida';
+    
+    try {
+      const fechaObj = new Date(fecha);
+      return fechaObj.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error formateando fecha simple:', error, fecha);
+      return 'Fecha inválida';
+    }
+  }
+
+  formatearHora(hora: string): string {
+    if (!hora) return 'Horario no definido';
+    
+    try {
+      // Para horas en formato HH:MM:SS o HH:MM
+      const [horas, minutos] = hora.split(':');
+      return `${horas.padStart(2, '0')}:${minutos.padStart(2, '0')}`;
+    } catch (error) {
+      console.error('Error formateando hora:', error, hora);
+      return 'Hora inválida';
+    }
+  }
+
+  // ===== MÉTODOS PARA COMPARACIONES DE FECHAS CORREGIDOS =====
+
   esHoy(dia: Date): boolean {
     const hoy = new Date();
-    return dia.toDateString() === hoy.toDateString();
+    const diaLocal = new Date(dia);
+    
+    // Comparar solo año, mes y día
+    return diaLocal.getFullYear() === hoy.getFullYear() &&
+           diaLocal.getMonth() === hoy.getMonth() &&
+           diaLocal.getDate() === hoy.getDate();
   }
 
   tieneActividadesDia(dia: Date): boolean {
-    const diaStr = dia.toISOString().split('T')[0];
+    const diaStr = this.obtenerFechaLocalString(dia);
     return this.actividades.some(actividad => {
       if (!actividad.fechaActividad) return false;
-      const fechaActividadStr = new Date(actividad.fechaActividad).toISOString().split('T')[0];
+      const fechaActividadStr = this.obtenerFechaLocalString(new Date(actividad.fechaActividad));
       return fechaActividadStr === diaStr;
     });
   }
 
   tieneInscripcionesDia(dia: Date): boolean {
-    const diaStr = dia.toISOString().split('T')[0];
+    const diaStr = this.obtenerFechaLocalString(dia);
     return this.actividadesInscritas.some(inscripcion => {
       const actividad = this.actividades.find(a => a.idActividad === inscripcion.idActividad);
       if (!actividad?.fechaActividad) return false;
-      const fechaActividadStr = new Date(actividad.fechaActividad).toISOString().split('T')[0];
+      const fechaActividadStr = this.obtenerFechaLocalString(new Date(actividad.fechaActividad));
       return fechaActividadStr === diaStr && inscripcion.estatus === 'Inscrito';
     });
+  }
+
+  // Método auxiliar para obtener fecha en string local (YYYY-MM-DD)
+  obtenerFechaLocalString(fecha: Date): string {
+    const año = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    return `${año}-${mes}-${dia}`;
   }
 
   seleccionarDia(dia: Date): void {
@@ -369,10 +442,10 @@ export class ClienteDashboardComponent implements OnInit, OnDestroy {
   }
 
   getActividadesDia(dia: Date): any[] {
-    const diaStr = dia.toISOString().split('T')[0];
+    const diaStr = this.obtenerFechaLocalString(dia);
     return this.actividades.filter(actividad => {
       if (!actividad.fechaActividad) return false;
-      const fechaActividadStr = new Date(actividad.fechaActividad).toISOString().split('T')[0];
+      const fechaActividadStr = this.obtenerFechaLocalString(new Date(actividad.fechaActividad));
       return fechaActividadStr === diaStr;
     }).map(actividad => ({
       nombre: actividad.nombreActividad,
@@ -382,10 +455,10 @@ export class ClienteDashboardComponent implements OnInit, OnDestroy {
   }
 
   private filtrarActividadesPorDia(dia: Date): void {
-    const diaStr = dia.toISOString().split('T')[0];
+    const diaStr = this.obtenerFechaLocalString(dia);
     this.actividadesFiltradas = this.actividades.filter(actividad => {
       if (!actividad.fechaActividad) return false;
-      const fechaActividadStr = new Date(actividad.fechaActividad).toISOString().split('T')[0];
+      const fechaActividadStr = this.obtenerFechaLocalString(new Date(actividad.fechaActividad));
       return fechaActividadStr === diaStr;
     });
   }
@@ -418,6 +491,8 @@ export class ClienteDashboardComponent implements OnInit, OnDestroy {
     this.filtrarActividades();
   }
 
+  // ===== MÉTODOS DE FILTRADO CORREGIDOS =====
+
   mostrarTodasActividades(): void {
     this.filtroActivo = 'todas';
     this.actividadesFiltradas = [...this.actividades];
@@ -426,23 +501,30 @@ export class ClienteDashboardComponent implements OnInit, OnDestroy {
 
   mostrarActividadesHoy(): void {
     this.filtroActivo = 'hoy';
-    const hoyStr = new Date().toISOString().split('T')[0];
+    const hoyStr = this.obtenerFechaLocalString(new Date());
+    
     this.actividadesFiltradas = this.actividades.filter(actividad => {
       if (!actividad.fechaActividad) return false;
-      const fechaActividadStr = new Date(actividad.fechaActividad).toISOString().split('T')[0];
+      const fechaActividadStr = this.obtenerFechaLocalString(new Date(actividad.fechaActividad));
       return fechaActividadStr === hoyStr;
     });
+    
     this.filtrarActividades();
   }
 
   mostrarProximasActividades(): void {
     this.filtroActivo = 'proximas';
     const hoy = new Date();
+    // Establecer hora a 0 para comparar solo fechas
+    hoy.setHours(0, 0, 0, 0);
+    
     this.actividadesFiltradas = this.actividades.filter(actividad => {
       if (!actividad.fechaActividad) return false;
       const fechaActividad = new Date(actividad.fechaActividad);
-      return fechaActividad > hoy;
+      fechaActividad.setHours(0, 0, 0, 0);
+      return fechaActividad >= hoy;
     });
+    
     this.filtrarActividades();
   }
 
@@ -459,10 +541,10 @@ export class ClienteDashboardComponent implements OnInit, OnDestroy {
   }
 
   filtrarActividades(): void {
-    const hoyStr = new Date().toISOString().split('T')[0];
+    const hoyStr = this.obtenerFechaLocalString(new Date());
     this.actividadesHoy = this.actividades.filter(actividad => {
       if (!actividad.fechaActividad) return false;
-      const fechaActividadStr = new Date(actividad.fechaActividad).toISOString().split('T')[0];
+      const fechaActividadStr = this.obtenerFechaLocalString(new Date(actividad.fechaActividad));
       return fechaActividadStr === hoyStr;
     });
   }
@@ -627,10 +709,10 @@ export class ClienteDashboardComponent implements OnInit, OnDestroy {
   }
 
   getTotalActividadesHoy(): number {
-    const hoyStr = new Date().toISOString().split('T')[0];
+    const hoyStr = this.obtenerFechaLocalString(new Date());
     return this.actividades.filter(actividad => {
       if (!actividad.fechaActividad) return false;
-      const fechaActividadStr = new Date(actividad.fechaActividad).toISOString().split('T')[0];
+      const fechaActividadStr = this.obtenerFechaLocalString(new Date(actividad.fechaActividad));
       return fechaActividadStr === hoyStr;
     }).length;
   }
@@ -643,9 +725,12 @@ export class ClienteDashboardComponent implements OnInit, OnDestroy {
 
   getProximaActividad(): Actividad | null {
     const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
     const actividadesFuturas = this.actividades.filter(actividad => {
       if (!actividad.fechaActividad) return false;
       const fechaActividad = new Date(actividad.fechaActividad);
+      fechaActividad.setHours(0, 0, 0, 0);
       return fechaActividad >= hoy;
     }).sort((a, b) => {
       const fechaA = new Date(a.fechaActividad!);
@@ -671,7 +756,11 @@ export class ClienteDashboardComponent implements OnInit, OnDestroy {
   esActividadFutura(actividad: Actividad): boolean {
     if (!actividad.fechaActividad) return false;
     const fechaActividad = new Date(actividad.fechaActividad);
+    fechaActividad.setHours(0, 0, 0, 0);
+    
     const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
     return fechaActividad >= hoy;
   }
 
@@ -741,16 +830,6 @@ export class ClienteDashboardComponent implements OnInit, OnDestroy {
       'inscritas': 'No estás inscrito en ninguna actividad.'
     };
     return mensajes[this.filtroActivo] || 'No hay actividades para mostrar.';
-  }
-
-  // ===== MÉTODOS DE FORMATO =====
-
-  formatearFecha(fecha: string): string {
-    return this.actividadService.formatearFechaParaMostrar(fecha);
-  }
-
-  formatearHora(hora: string): string {
-    return this.actividadService.formatearHoraParaMostrar(hora);
   }
 
   getImagenActividad(actividad: Actividad): string {
