@@ -4,12 +4,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
-import { Instructor, InstructorEstadisticas, InstructorService, ApiResponse } from '../../../services/instructor/instructorService';
+import { 
+  Instructor, 
+  InstructorEstadisticas, 
+  InstructorService, 
+  ApiResponse 
+} from '../../../services/instructor/instructorService';
+import { HeaderAdministradorComponent } from '../header-admin/header-admin'; // Importar el header
 
 @Component({
   selector: 'app-instructor-component',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, FormsModule, HttpClientModule, HeaderAdministradorComponent],
   templateUrl: './instructor-component.html',
   styleUrls: ['./instructor-component.css']
 })

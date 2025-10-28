@@ -4,11 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { Recepcionista, RecepcionistaEstadisticas, RecepcionistaService } from '../../../services/recepcionista/recepcionistaService';
+import { HeaderAdministradorComponent } from '../header-admin/header-admin';
+
 
 @Component({
   selector: 'app-recepcionista-component',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, FormsModule, HttpClientModule, HeaderAdministradorComponent],
   templateUrl: './recepcionista-component.html',
   styleUrls: ['./recepcionista-component.css']
 })
