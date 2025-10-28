@@ -30,6 +30,13 @@
       </div>
     </div>
 
+    <!-- Botón de cerrar sesión mejorado -->
+<button class="btn btn-logout" (click)="confirmarCerrarSesion()" [disabled]="isLoading">
+  <i class="fas fa-sign-out-alt"></i>
+  <span class="btn-text">Cerrar Sesión</span>
+  <div class="btn-hover-effect"></div>
+</button>
+  
     <!-- Filtros en una fila separada -->
     <div class="header-filters">
       <div class="filters-container">
@@ -44,12 +51,7 @@
         </button>
       </div>
 
-      <!-- Contador de actividades -->
-      <div class="activities-counter">
-        <span class="counter-badge">{{ getContadorActual() }}</span>
-      </div>
-    </div>
-  </div>
+</div>
 
   <!-- Loading Spinner -->
   @if (isLoading) {
@@ -388,8 +390,7 @@
 
           <div class="perfil-rapido">
             <div class="perfil-avatar">
-              <img [src]="clienteData?.fotoUrl || 'assets/default-avatar.png'" alt="Foto de perfil">
-            </div>
+<img [src]="getFotoPerfil()" class="perfil-img" alt="Foto de perfil" (error)="clienteData.fotoUrl = getFotoPorDefecto()">            </div>
             <div class="perfil-info">
               <h4>{{ clienteData?.nombre || 'Usuario' }}</h4>
               <p class="perfil-folio">Folio: {{ clienteData?.folioCliente || currentUser?.idPersona }}</p>
@@ -400,11 +401,23 @@
                 </span>
               </p>
             </div>
-            <div class="perfil-actions">
-              <button class="btn btn-sm btn-primary" (click)="cambiarFoto()">
-                <i class="fas fa-camera"></i> Cambiar Foto
-              </button>
-            </div>
+<div class="perfil-actions">
+  <div class="input-group mb-2">
+    <input 
+      type="url" 
+      class="form-control form-control-sm" 
+      placeholder="Pega la URL de tu foto" 
+      [(ngModel)]="nuevaFotoUrl"
+      #fotoInput
+    >
+    <button class="btn btn-sm btn-success" (click)="aplicarNuevaFoto()">
+      <i class="fas fa-check"></i> Aplicar
+    </button>
+  </div>
+  <button class="btn btn-sm btn-primary" (click)="mostrarInputFoto()">
+
+  </button>
+</div>
           </div>
         </div>
 
@@ -557,4 +570,3 @@
     </div>
     }
   </div>
-</div>

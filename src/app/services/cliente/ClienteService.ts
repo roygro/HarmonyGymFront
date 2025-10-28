@@ -72,7 +72,11 @@ export class ClienteService {
       catchError(this.manejarError)
     );
   }
-
+actualizarClienteConFoto(folioCliente: string, formData: FormData): Observable<any> {
+  return this.http.put<any>(`${this.apiUrl}/${folioCliente}`, formData).pipe(
+    catchError(this.manejarError)
+  );
+}
   /**
    * Actualizar cliente existente - CORREGIDO para usar FormData
    */
@@ -130,16 +134,16 @@ export class ClienteService {
       catchError(this.manejarError)
     );
   }
-
-  /**
-   * Actualizar cliente con foto
-   */
-  actualizarClienteConFoto(folioCliente: string, formData: FormData): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/${folioCliente}`, formData).pipe(
+actualizarFotoUrl(folioCliente: string, urlFoto: string): Observable<any> {
+  const formData = new FormData();
+  formData.append('nombreArchivoFoto', urlFoto);
+  
+  return this.http.put<any>(`${this.apiUrl}/${folioCliente}/foto-url`, formData)
+    .pipe(
       catchError(this.manejarError)
     );
-  }
-
+}
+ 
   /**
    * Obtener foto del cliente
    */

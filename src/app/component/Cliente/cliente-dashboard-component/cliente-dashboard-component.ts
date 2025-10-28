@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -58,6 +58,10 @@ export class ClienteDashboardComponent implements OnInit, OnDestroy {
   // Estadísticas
   estadisticasActividades: any = {};
 
+  mostrarInputFotoFlag: boolean = false;
+  nuevaFotoUrl: string = '';
+  @ViewChild('fotoInput') fotoInput: any;
+
   // ===== NUEVAS PROPIEDADES PARA EL CALENDARIO Y CONTADOR =====
   private contadorActual = 0;
   private intervaloContador: any;
@@ -111,7 +115,448 @@ export class ClienteDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ===== MÉTODOS DE CARGA DE DATOS =====
+  // ===== MÉTODOS PARA CAMBIAR FOTO CON URL =====
+
+  mostrarInputFoto(): void {
+    this.mostrarInputFotoFlag = true;
+    this.nuevaFotoUrl = this.clienteData?.fotoUrl || '';
+    
+    // Enfocar el input después de que se renderice
+    setTimeout(() => {
+      if (this.fotoInput) {
+        this.fotoInput.nativeElement.focus();
+      }
+    }, 100);
+  }
+
+  aplicarNuevaFoto(): void {
+  if (!this.nuevaFotoUrl.trim()) {
+    this.mostrarError('Error', 'Por favor ingresa una URL válida');
+    return;
+  }
+
+  // Validar que sea una URL válida
+  try {
+    new URL(this.nuevaFotoUrl);
+  } catch (e) {
+    this.mostrarError('Error', 'La URL ingresada no es válida');
+    return;
+  }
+
+  this.isLoading = true;
+  const folioCliente = this.obtenerFolioCliente();
+  
+  if (!folioCliente) {
+    this.mostrarError('Error', 'No se pudo identificar tu perfil');
+    this.isLoading = false;
+    return;
+  }
+
+  const urlCompleta = this.nuevaFotoUrl.trim();
+
+  console.log('🔄 Guardando URL de foto en base de datos:', {
+    folioCliente,
+    urlCompleta,
+    longitud: urlCompleta.length
+  });
+
+  // Usar el endpoint CORRECTO que ya tienes en tu controller
+  this.clienteService.actualizarFotoUrl(folioCliente, urlCompleta)
+    .subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        if (response.success) {
+          // Actualizar los datos locales
+          this.clienteData = { 
+            ...this.clienteData, 
+            ...response.cliente,
+            nombreArchivoFoto: urlCompleta
+          };
+          this.mostrarInputFotoFlag = false;
+          this.nuevaFotoUrl = '';
+          this.mostrarExito('¡Foto actualizada!', 'Tu foto de perfil se ha actualizado correctamente');
+          console.log('✅ URL guardada en base de datos:', urlCompleta);
+          
+          // Recargar los datos para verificar
+          setTimeout(() => {
+            this.cargarPerfilCliente();
+          }, 1000);
+        } else {
+          this.mostrarError('Error', response.message || 'Error al actualizar la foto');
+        }
+      },
+      error: (error) => {
+        this.isLoading = false;
+        console.error('❌ Error al guardar URL:', error);
+        
+        let mensajeError = 'No se pudo guardar la URL de la foto';
+        if (error.message?.includes('longa') || error.message?.includes('longitud')) {
+          mensajeError = 'La URL es demasiado larga. Intenta con una URL más corta.';
+        } else if (error.message?.includes('formato')) {
+          mensajeError = 'La URL no tiene un formato válido. Debe comenzar con http:// o https://';
+        } else if (error.message) {
+          mensajeError = error.message;
+        }
+        
+        this.mostrarError('Error', mensajeError);
+      }
+    });
+}
+  cancelarCambioFoto(): void {
+    this.mostrarInputFotoFlag = false;
+    this.nuevaFotoUrl = '';
+  }
+
+  // Método auxiliar para obtener la URL de la foto
+  getFotoPerfil(): string {
+    console.log('📸 Obteniendo foto de perfil:', {
+      tieneNombreArchivoFoto: !!this.clienteData?.nombreArchivoFoto,
+      nombreArchivoFoto: this.clienteData?.nombreArchivoFoto,
+      clienteData: this.clienteData
+    });
+
+    // Si tenemos nombreArchivoFoto y es una URL válida, usarla
+    if (this.clienteData?.nombreArchivoFoto) {
+      const fotoUrl = this.clienteData.nombreArchivoFoto;
+      
+      // Verificar si es una URL válida
+      if (fotoUrl.startsWith('http://') || fotoUrl.startsWith('https://')) {
+        console.log('✅ Usando URL de foto:', fotoUrl);
+        return fotoUrl;
+      } else {
+        console.log('⚠ nombreArchivoFoto no es una URL completa:', fotoUrl);
+      }
+    }
+    
+    console.log('🔄 Usando foto por defecto');
+    return this.getFotoPorDefecto();
+  }
+
+  getFotoPorDefecto(): string {
+    return 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face';
+  }
+
+  manejarErrorImagen(event: any): void {
+    console.error('❌ Error al cargar la imagen:', event);
+    // Forzar el uso de la imagen por defecto
+    event.target.src = this.getFotoPorDefecto();
+  }
+
+
+  // ===== MÉTODO CERRAR SESIÓN =====
+cerrarSesion(): void {
+  this.isLoading = true;
+  
+  // Mostrar confirmación
+  const confirmar = confirm('¿Estás seguro de que quieres cerrar sesión?');
+  
+  if (!confirmar) {
+    this.isLoading = false;
+    return;
+  }
+
+  // Limpiar intervalos
+  if (this.intervaloContador) {
+    clearInterval(this.intervaloContador);
+  }
+      
+      // Redirigir al login después de un breve delay
+      setTimeout(() => {
+        this.router.navigate(['/login']);
+      }, 1000);
+
+      
+      // Redirigir al login
+      setTimeout(() => {
+        this.router.navigate(['/login']);
+      }, 1000);
+    }
+// ===== MÉTODO MEJORADO PARA CERRAR SESIÓN =====
+confirmarCerrarSesion(): void {
+  this.mostrarConfirmacionCerrarSesion();
+}
+
+private mostrarConfirmacionCerrarSesion(): void {
+  // Crear elemento de modal personalizado
+  const modal = document.createElement('div');
+  modal.className = 'logout-modal-overlay';
+  modal.innerHTML = `
+    <div class="logout-modal">
+      <div class="logout-modal-header">
+        <div class="logout-icon">
+          <i class="fas fa-sign-out-alt"></i>
+        </div>
+        <h3>¿Cerrar Sesión?</h3>
+      </div>
+      
+      <div class="logout-modal-body">
+        <p>¿Estás seguro de que quieres salir de tu cuenta?</p>
+        <div class="logout-user-info">
+          <img src="${this.getFotoPerfil()}" alt="Foto de perfil" class="logout-user-avatar">
+          <div class="logout-user-details">
+            <strong>${this.clienteData?.nombre || 'Usuario'}</strong>
+            <span>${this.clienteData?.email || this.currentUser?.email || ''}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="logout-modal-actions">
+        <button class="btn btn-cancel" id="cancelLogout">
+          <i class="fas fa-times"></i>
+          Cancelar
+        </button>
+        <button class="btn btn-confirm-logout" id="confirmLogout">
+          <i class="fas fa-sign-out-alt"></i>
+          Sí, Cerrar Sesión
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Agregar estilos si no existen
+  this.agregarEstilosModal();
+
+  // Agregar al DOM
+  document.body.appendChild(modal);
+
+  // Configurar event listeners
+  const confirmBtn = document.getElementById('confirmLogout');
+  const cancelBtn = document.getElementById('cancelLogout');
+
+  const cerrarModal = () => {
+    document.body.removeChild(modal);
+  };
+
+  confirmBtn?.addEventListener('click', () => {
+    cerrarModal();
+    this.ejecutarCerrarSesion();
+  });
+
+  cancelBtn?.addEventListener('click', cerrarModal);
+
+  // Cerrar al hacer clic fuera del modal
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) {
+      cerrarModal();
+    }
+  });
+
+  // Cerrar con ESC
+  const keyHandler = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      cerrarModal();
+      document.removeEventListener('keydown', keyHandler);
+    }
+  };
+  document.addEventListener('keydown', keyHandler);
+}
+
+private ejecutarCerrarSesion(): void {
+  this.isLoading = true;
+  
+  // Limpiar intervalos
+  if (this.intervaloContador) {
+    clearInterval(this.intervaloContador);
+  }
+
+  // Mostrar mensaje de despedida
+  this.mostrarMensajeDespedida();
+
+  // Cerrar sesión después de un breve delay
+  setTimeout(() => {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }, 1500);
+}
+
+private mostrarMensajeDespedida(): void {
+  this.snackBar.open('¡Hasta pronto! Cerrando sesión...', '', {
+    duration: 1500,
+    panelClass: ['snackbar-info'],
+    verticalPosition: 'top'
+  });
+}
+
+private agregarEstilosModal(): void {
+  if (document.getElementById('logout-modal-styles')) return;
+
+  const styles = `
+    .logout-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .logout-modal {
+      background: white;
+      border-radius: 16px;
+      padding: 0;
+      width: 90%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.3s ease;
+      overflow: hidden;
+    }
+
+    .logout-modal-header {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+      color: white;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+    }
+
+    .logout-icon {
+      width: 60px;
+      height: 60px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 24px;
+    }
+
+    .logout-modal-header h3 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .logout-modal-body {
+      padding: 24px;
+      text-align: center;
+    }
+
+    .logout-modal-body p {
+      margin: 0 0 20px 0;
+      color: #666;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .logout-user-info {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      margin-top: 16px;
+    }
+
+    .logout-user-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #e9ecef;
+    }
+
+    .logout-user-details {
+      text-align: left;
+    }
+
+    .logout-user-details strong {
+      display: block;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .logout-user-details span {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .logout-modal-actions {
+      padding: 20px 24px;
+      display: flex;
+      gap: 12px;
+      background: #f8f9fa;
+    }
+
+    .logout-modal-actions .btn {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-cancel {
+      background: white;
+      color: #666;
+      border: 2px solid #e0e0e0;
+    }
+
+    .btn-cancel:hover {
+      background: #f5f5f5;
+      border-color: #ccc;
+    }
+
+    .btn-confirm-logout {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+      color: white;
+    }
+
+    .btn-confirm-logout:hover {
+      background: linear-gradient(135deg, #ff5252, #e53935);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { 
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+      }
+      to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .logout-modal {
+        margin: 20px;
+        width: calc(100% - 40px);
+      }
+      
+      .logout-modal-actions {
+        flex-direction: column;
+      }
+    }
+  `;
+
+  const styleElement = document.createElement('style');
+  styleElement.id = 'logout-modal-styles';
+  styleElement.textContent = styles;
+  document.head.appendChild(styleElement);
+}
+// ===== MÉTODOS DE CARGA DE DATOS =====
 
   cargarDatosIniciales(): void {
     this.isLoading = true;
@@ -142,6 +587,10 @@ export class ClienteDashboardComponent implements OnInit, OnDestroy {
           next: (cliente) => {
             this.clienteData = cliente;
             this.cargarDatosEnFormulario();
+            console.log('📸 Datos del cliente cargados:', {
+              nombreArchivoFoto: cliente.nombreArchivoFoto,
+              clienteCompleto: cliente
+            });
             resolve();
           },
           error: (error) => {
