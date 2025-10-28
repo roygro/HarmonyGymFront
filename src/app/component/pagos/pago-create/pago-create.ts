@@ -5,29 +5,37 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PagoService, Pago } from '../../../services/pagos/pago';
 import { ProductoService, Producto } from '../../../services/productos/producto';
-import { ClienteService,Cliente } from '../../../services/cliente/ClienteService';
+import { ClienteService, Cliente } from '../../../services/cliente/ClienteService';
+import { RecepcionistaService, Recepcionista } from '../../../services/recepcionista/recepcionistaService';
+import { MembresiaService, Membresia } from '../../../services/membresia/membresia';
 import { HeaderRecepcionistaComponent } from '../../recepcionista/header-recepcionista/header-recepcionista';
 
 @Component({
   selector: 'app-pago-create',
   templateUrl: './pago-create.html',
   styleUrls: ['./pago-create.css'],
+  standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, HeaderRecepcionistaComponent]
 })
 export class PagoCreate implements OnInit {
   pagoForm: FormGroup;
   productos: Producto[] = [];
   clientes: Cliente[] = [];
+  recepcionistas: Recepcionista[] = [];
+  membresias: Membresia[] = []; // Nueva propiedad para membresías
   
   cargando: boolean = true;
   enviando: boolean = false;
   productoSeleccionado: Producto | null = null;
+  membresiaSeleccionada: Membresia | null = null;
 
   constructor(
     private fb: FormBuilder,
     private pagoService: PagoService,
     private productoService: ProductoService,
     private clienteService: ClienteService,
+    private recepcionistaService: RecepcionistaService,
+    private membresiaService: MembresiaService, // Inyectar servicio de membresías
     private router: Router
   ) {
     this.pagoForm = this.createForm();
@@ -42,10 +50,44 @@ export class PagoCreate implements OnInit {
 
     Promise.all([
       this.cargarProductos(),
-      this.cargarClientes()
+      this.cargarClientes(),
+      this.cargarRecepcionistas(),
+      this.cargarMembresias() // Cargar membresías
     ]).finally(() => {
       this.cargando = false;
       this.setupCalculos();
+    });
+  }
+
+  cargarMembresias(): Promise<void> {
+    return new Promise((resolve) => {
+      this.membresiaService.getMembresiasActivas().subscribe({
+        next: (membresias) => {
+          this.membresias = membresias;
+          resolve();
+        },
+        error: (error) => {
+          console.error('Error al cargar membresías:', error);
+          this.membresias = [];
+          resolve();
+        }
+      });
+    });
+  }
+
+  cargarRecepcionistas(): Promise<void> {
+    return new Promise((resolve) => {
+      this.recepcionistaService.obtenerRecepcionistas().subscribe({
+        next: (recepcionistas) => {
+          this.recepcionistas = recepcionistas;
+          resolve();
+        },
+        error: (error) => {
+          console.error('Error al cargar recepcionistas:', error);
+          this.recepcionistas = [];
+          resolve();
+        }
+      });
     });
   }
 
@@ -65,9 +107,8 @@ export class PagoCreate implements OnInit {
     });
   }
 
-cargarClientes(): Promise<void> {
+  cargarClientes(): Promise<void> {
     return new Promise((resolve) => {
-      // CAMBIÉ: obtenerClientes() → obtenerTodosLosClientes()
       this.clienteService.obtenerTodosLosClientes().subscribe({
         next: (clientes) => {
           this.clientes = clientes;
@@ -84,8 +125,10 @@ cargarClientes(): Promise<void> {
 
   createForm(): FormGroup {
     return this.fb.group({
-      idRecepcionista: ['REC001', [Validators.required]],
-      codigoProducto: ['', [Validators.required]],
+      tipoPago: ['', [Validators.required]], // Nuevo campo para tipo de pago
+      idRecepcionista: ['', [Validators.required]],
+      codigoProducto: [''], // Hacer opcional ya que no siempre se usará
+      idMembresia: [''], // Nuevo campo para membresía
       cantidad: [1, [Validators.required, Validators.min(1), Validators.max(100)]],
       precioUnitario: [0, [Validators.required, Validators.min(0)]],
       total: [0, [Validators.required, Validators.min(0)]],
@@ -93,11 +136,47 @@ cargarClientes(): Promise<void> {
     });
   }
 
+  onTipoPagoChange(): void {
+    const tipoPago = this.pagoForm.get('tipoPago')?.value;
+    
+    // Resetear campos según el tipo de pago
+    if (tipoPago === 'producto') {
+      this.pagoForm.patchValue({
+        idMembresia: '',
+        cantidad: 1
+      });
+      // Agregar validación requerida para producto
+      this.pagoForm.get('codigoProducto')?.setValidators([Validators.required]);
+      this.pagoForm.get('idMembresia')?.clearValidators();
+    } else if (tipoPago === 'membresia') {
+      this.pagoForm.patchValue({
+        codigoProducto: '',
+        cantidad: 1 // Membresías siempre son cantidad 1
+      });
+      // Agregar validación requerida para membresía
+      this.pagoForm.get('idMembresia')?.setValidators([Validators.required]);
+      this.pagoForm.get('codigoProducto')?.clearValidators();
+    }
+    
+    // Actualizar validaciones
+    this.pagoForm.get('codigoProducto')?.updateValueAndValidity();
+    this.pagoForm.get('idMembresia')?.updateValueAndValidity();
+    
+    this.calcularTotal();
+  }
+
   setupCalculos(): void {
     this.pagoForm.get('cantidad')?.valueChanges.subscribe(() => this.calcularTotal());
     this.pagoForm.get('precioUnitario')?.valueChanges.subscribe(() => this.calcularTotal());
+    
+    // Suscribirse a cambios en producto
     this.pagoForm.get('codigoProducto')?.valueChanges.subscribe(codigo => {
       this.actualizarPrecioProducto(codigo);
+    });
+    
+    // Suscribirse a cambios en membresía
+    this.pagoForm.get('idMembresia')?.valueChanges.subscribe(idMembresia => {
+      this.actualizarPrecioMembresia(idMembresia);
     });
   }
 
@@ -107,6 +186,18 @@ cargarClientes(): Promise<void> {
       this.productoSeleccionado = producto;
       this.pagoForm.patchValue({
         precioUnitario: producto.precio
+      });
+      this.calcularTotal();
+    }
+  }
+
+  actualizarPrecioMembresia(idMembresia: string): void {
+    const membresia = this.membresias.find(m => m.idMembresia === idMembresia);
+    if (membresia) {
+      this.membresiaSeleccionada = membresia;
+      this.pagoForm.patchValue({
+        precioUnitario: membresia.precio,
+        cantidad: 1 // Membresías siempre son cantidad 1
       });
       this.calcularTotal();
     }
@@ -133,19 +224,33 @@ cargarClientes(): Promise<void> {
     if (this.pagoForm.valid) {
       this.enviando = true;
       
-      const pagoData: Pago = {
+      const tipoPago = this.pagoForm.get('tipoPago')?.value;
+      
+      // Preparar datos según el tipo de pago
+      const pagoData: any = {
         idRecepcionista: this.pagoForm.get('idRecepcionista')?.value,
-        codigoProducto: this.pagoForm.get('codigoProducto')?.value,
         cantidad: this.pagoForm.get('cantidad')?.value,
         precioUnitario: this.pagoForm.get('precioUnitario')?.value,
         total: this.pagoForm.get('total')?.value,
-        folioCliente: this.pagoForm.get('folioCliente')?.value
+        folioCliente: this.pagoForm.get('folioCliente')?.value,
+        tipoPago: tipoPago // Agregar tipo de pago a los datos
       };
+
+      // Agregar campos específicos según el tipo
+      if (tipoPago === 'producto') {
+        pagoData.codigoProducto = this.pagoForm.get('codigoProducto')?.value;
+      } else if (tipoPago === 'membresia') {
+        pagoData.idMembresia = this.pagoForm.get('idMembresia')?.value;
+      }
 
       this.pagoService.crearPago(pagoData).subscribe({
         next: (pagoCreado) => {
           this.enviando = false;
-          alert(`¡Pago registrado exitosamente!\nID: ${pagoCreado.idVenta}\nTotal: $${pagoCreado.total}`);
+          const mensaje = tipoPago === 'membresia' 
+            ? `¡Pago de membresía registrado exitosamente!\nID: ${pagoCreado.idVenta}\nTotal: ${this.formatearMoneda(pagoCreado.total)}`
+            : `¡Pago de producto registrado exitosamente!\nID: ${pagoCreado.idVenta}\nTotal: ${this.formatearMoneda(pagoCreado.total)}`;
+          
+          alert(mensaje);
           this.router.navigate(['/pagos']);
         },
         error: (error) => {
@@ -184,6 +289,6 @@ cargarClientes(): Promise<void> {
   }
 
   volverALista(): void {
-  this.router.navigate(['/pagos']);
-}
+    this.router.navigate(['/pagos']);
+  }
 }

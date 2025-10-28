@@ -53,17 +53,6 @@
           </p>
         </div>
       </div>
-      <div class="stats-card">
-        <div class="stats-icon inactive">
-          <i class="fas fa-user-friends"></i>
-        </div>
-        <div class="stats-info">
-          <h4>CLIENTES ÚNICOS</h4>
-          <p class="stats-number">
-            {{ cargandoEstadisticas ? '...' : clientesUnicos }}
-          </p>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -190,7 +179,11 @@
         <div class="pago-header">
           <div class="pago-amount">
             <span class="amount">{{ formatearMoneda(pago.total) }}</span>
+            <span class="badge" [class]="getBadgeClass(pago)">
+              {{ obtenerTipoPago(pago) }}
+            </span>
           </div>
+
         </div>
         
         <div class="pago-content">
@@ -205,10 +198,10 @@
               </div>
               
               <div class="info-item">
-                <i class="fas fa-cube"></i>
+                <i class="fas" [class.fa-cube]="pago.tipoPago === 'producto'" [class.fa-id-card]="pago.tipoPago === 'membresia'"></i>
                 <div class="info-content">
-                  <span class="info-label">Producto</span>
-                  <span class="info-value">{{ obtenerNombreProducto(pago.codigoProducto) }}</span>
+                  <span class="info-label">{{ pago.tipoPago === 'membresia' ? 'Membresía' : 'Producto' }}</span>
+                  <span class="info-value">{{ obtenerNombreItem(pago) }}</span>
                 </div>
               </div>
               
@@ -224,7 +217,7 @@
                 <i class="fas fa-calendar-day"></i>
                 <div class="info-content">
                   <span class="info-label">Fecha</span>
-                  <span class="info-value">{{ formatearFecha(pago.fechaVenta!) }}</span>
+                  <span class="info-value">{{ pago.fechaVenta ? formatearFecha(pago.fechaVenta) : 'N/A' }}</span>
                 </div>
               </div>
               
@@ -233,6 +226,14 @@
                 <div class="info-content">
                   <span class="info-label">Recepcionista</span>
                   <span class="info-value">{{ obtenerNombreRecepcionista(pago.idRecepcionista) }}</span>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <i class="fas fa-tag"></i>
+                <div class="info-content">
+                  <span class="info-label">Precio Unitario</span>
+                  <span class="info-value">{{ formatearMoneda(pago.precioUnitario) }}</span>
                 </div>
               </div>
             </div>
