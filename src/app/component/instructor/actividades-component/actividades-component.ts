@@ -12,35 +12,177 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { HeaderInstructorComponent } from "../header-instructor/header-instructor";
 
-// Componente de diálogo para confirmaciones
+// Definir tipos para los iconos
+type IconType = 'warning' | 'error' | 'success' | 'info' | 'question';
+
+// Componente de diálogo para confirmaciones - MEJORADO
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
   template: `
-    <div class="p-4">
-      <h2 class="text-xl font-bold mb-4">{{ data.title }}</h2>
-      <p class="mb-6">{{ data.message }}</p>
-      <div class="flex justify-end gap-2">
-        <button mat-button (click)="onCancel()">
+    <div class="custom-dialog">
+      <div class="dialog-header" [class]="getHeaderClass()">
+        <mat-icon class="dialog-icon">{{ getIcon() }}</mat-icon>
+        <h2 class="dialog-title">{{ data.title }}</h2>
+      </div>
+      <div class="dialog-content">
+        <p class="dialog-message">{{ data.message }}</p>
+      </div>
+      <div class="dialog-actions">
+        <button 
+          class="btn btn-secondary" 
+          (click)="onCancel()"
+          [class]="getCancelButtonClass()"
+        >
+          <mat-icon>close</mat-icon>
           {{ data.cancelText || 'Cancelar' }}
         </button>
         <button 
-          mat-raised-button 
-          [color]="data.confirmColor || 'primary'" 
+          class="btn btn-primary" 
           (click)="onConfirm()"
+          [class]="getConfirmButtonClass()"
         >
+          <mat-icon>{{ getConfirmIcon() }}</mat-icon>
           {{ data.confirmText || 'Confirmar' }}
         </button>
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    .custom-dialog {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      max-width: 450px;
+      background: white;
+    }
+    .dialog-header {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: white;
+    }
+    .dialog-header.warning { background: linear-gradient(135deg, #ff9800, #f57c00); }
+    .dialog-header.error { background: linear-gradient(135deg, #f44336, #d32f2f); }
+    .dialog-header.success { background: linear-gradient(135deg, #4caf50, #388e3c); }
+    .dialog-header.info { background: linear-gradient(135deg, #2196f3, #1976d2); }
+    .dialog-header.question { background: linear-gradient(135deg, #9c27b0, #7b1fa2); }
+    
+    .dialog-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+    .dialog-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .dialog-content {
+      padding: 24px;
+    }
+    .dialog-message {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #666;
+    }
+    .dialog-actions {
+      padding: 16px 24px;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+    .btn-warning {
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+      color: white;
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #f44336, #d32f2f);
+      color: white;
+    }
+  `]
 })
 export class ConfirmDialogComponent {
   constructor(
     public dialogRef: MatDialogRef<ConfirmDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any
   ) {}
+
+  getHeaderClass(): string {
+    return this.data.iconType || 'question';
+  }
+
+  getIcon(): string {
+    const icons: Record<IconType, string> = {
+      warning: 'warning',
+      error: 'error',
+      success: 'check_circle',
+      info: 'info',
+      question: 'help'
+    };
+    const iconType: IconType = this.data.iconType || 'question';
+    return icons[iconType];
+  }
+
+  getConfirmIcon(): string {
+    const icons: Record<IconType, string> = {
+      warning: 'warning',
+      error: 'error',
+      success: 'check_circle',
+      info: 'check_circle',
+      question: 'check_circle'
+    };
+    const iconType: IconType = this.data.iconType || 'question';
+    return icons[iconType];
+  }
+
+  getConfirmButtonClass(): string {
+    const classes: Record<IconType, string> = {
+      warning: 'btn-warning',
+      error: 'btn-danger',
+      success: 'btn-primary',
+      info: 'btn-primary',
+      question: 'btn-primary'
+    };
+    const iconType: IconType = this.data.iconType || 'question';
+    return classes[iconType];
+  }
+
+  getCancelButtonClass(): string {
+    return 'btn-secondary';
+  }
 
   onConfirm(): void {
     this.dialogRef.close(true);
@@ -51,35 +193,134 @@ export class ConfirmDialogComponent {
   }
 }
 
-// Componente de diálogo para alertas simples
+// Componente de diálogo para alertas simples - MEJORADO
 @Component({
   selector: 'app-alert-dialog',
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
   template: `
-    <div class="p-4">
-      <div class="flex items-center mb-4">
-        <mat-icon [color]="data.iconColor" class="mr-2">{{ data.icon }}</mat-icon>
-        <h2 class="text-xl font-bold">{{ data.title }}</h2>
+    <div class="custom-alert">
+      <div class="alert-header" [class]="getHeaderClass()">
+        <mat-icon class="alert-icon">{{ data.icon }}</mat-icon>
+        <h2 class="alert-title">{{ data.title }}</h2>
       </div>
-      <p class="mb-6">{{ data.message }}</p>
-      <div class="flex justify-end">
+      <div class="alert-content">
+        <p class="alert-message">{{ data.message }}</p>
+      </div>
+      <div class="alert-actions">
         <button 
-          mat-raised-button 
-          [color]="data.buttonColor || 'primary'" 
+          class="btn btn-primary" 
           (click)="onClose()"
+          [class]="getButtonClass()"
         >
+          <mat-icon>check</mat-icon>
           {{ data.buttonText || 'Aceptar' }}
         </button>
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    .custom-alert {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      max-width: 400px;
+      background: white;
+    }
+    .alert-header {
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: white;
+      text-align: center;
+      justify-content: center;
+    }
+    .alert-header.success { background: linear-gradient(135deg, #4caf50, #388e3c); }
+    .alert-header.error { background: linear-gradient(135deg, #f44336, #d32f2f); }
+    .alert-header.warning { background: linear-gradient(135deg, #ff9800, #f57c00); }
+    .alert-header.info { background: linear-gradient(135deg, #2196f3, #1976d2); }
+    
+    .alert-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+    }
+    .alert-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .alert-content {
+      padding: 24px;
+      text-align: center;
+    }
+    .alert-message {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #666;
+    }
+    .alert-actions {
+      padding: 16px 24px;
+      display: flex;
+      justify-content: center;
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 120px;
+      justify-content: center;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .btn-warning {
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+      color: white;
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #f44336, #d32f2f);
+      color: white;
+    }
+  `]
 })
 export class AlertDialogComponent {
   constructor(
     public dialogRef: MatDialogRef<AlertDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any
   ) {}
+
+  getHeaderClass(): string {
+    return this.data.iconType || 'info';
+  }
+
+  getButtonClass(): string {
+    const classes: Record<IconType, string> = {
+      success: 'btn-primary',
+      error: 'btn-danger',
+      warning: 'btn-warning',
+      info: 'btn-primary',
+      question: 'btn-primary'
+    };
+    const iconType: IconType = this.data.iconType || 'info';
+    return classes[iconType];
+  }
 
   onClose(): void {
     this.dialogRef.close();
@@ -484,7 +725,12 @@ export class ActividadesComponent implements OnInit {
   }
 
   getFechaActual(): string {
-    return new Date().toISOString().split('T')[0];
+    // CORRECCIÓN: Usar la fecha local en lugar de UTC
+    const hoy = new Date();
+    const year = hoy.getFullYear();
+    const month = (hoy.getMonth() + 1).toString().padStart(2, '0');
+    const day = hoy.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   getRandomDefaultImage(): string {
@@ -797,6 +1043,7 @@ export class ActividadesComponent implements OnInit {
     return hora.substring(0, 5);
   }
 
+  // MÉTODO CORREGIDO: Ahora permite crear actividades para el día de hoy
   async guardarActividad(): Promise<void> {
     if (!this.horarioSeleccionado) {
       this.mostrarAdvertencia('Horario Requerido', 'Por favor selecciona un horario del calendario');
@@ -806,12 +1053,24 @@ export class ActividadesComponent implements OnInit {
     if (this.actividadForm.valid) {
       const actividadData: Actividad = this.actividadForm.value;
 
-      const fechaActividad = new Date(actividadData.fechaActividad);
+      // CORRECCIÓN: Manejar correctamente las fechas para evitar problemas de zona horaria
+      const fechaActividad = new Date(actividadData.fechaActividad + 'T00:00:00');
       const hoy = new Date();
-      hoy.setHours(0, 0, 0, 0);
       
-      if (fechaActividad < hoy) {
-        this.mostrarError('Fecha Inválida', 'La fecha de la actividad no puede ser en el pasado');
+      // Usar solo la parte de fecha (sin horas) para la comparación
+      const fechaActividadSinHora = new Date(fechaActividad.getFullYear(), fechaActividad.getMonth(), fechaActividad.getDate());
+      const hoySinHora = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+      
+      console.log('📅 Validando fecha:', {
+        fechaActividad: fechaActividad,
+        fechaActividadSinHora: fechaActividadSinHora,
+        hoy: hoy,
+        hoySinHora: hoySinHora,
+        comparacion: fechaActividadSinHora < hoySinHora
+      });
+      
+      if (fechaActividadSinHora < hoySinHora) {
+        this.mostrarError('Fecha Inválida', 'No puedes crear actividades para fechas pasadas. Selecciona hoy o una fecha futura.');
         return;
       }
 
@@ -934,7 +1193,7 @@ export class ActividadesComponent implements OnInit {
     this.mostrarConfirmacion(
       '¿Desactivar Actividad?',
       'La actividad ya no estará disponible para los clientes. ¿Está seguro de que desea desactivar esta actividad?',
-      'question',
+      'warning',
       'Sí, desactivar',
       'Cancelar'
     ).then((result) => {
@@ -1114,55 +1373,55 @@ export class ActividadesComponent implements OnInit {
     return this.actividadesFiltradasParaMostrar.length;
   }
 
-  // MÉTODOS ANGULAR MATERIAL - REEMPLAZO DE SWEETALERT2
+  // MÉTODOS ANGULAR MATERIAL - REEMPLAZO DE SWEETALERT2 (MEJORADOS)
   private mostrarExito(titulo: string, mensaje: string): void {
     this.dialog.open(AlertDialogComponent, {
-      width: '400px',
+      width: '420px',
       data: {
         title: titulo,
         message: mensaje,
         icon: 'check_circle',
-        iconColor: 'primary',
-        buttonColor: 'primary'
+        iconType: 'success',
+        buttonText: 'Aceptar'
       }
     });
   }
 
   private mostrarError(titulo: string, mensaje: string): void {
     this.dialog.open(AlertDialogComponent, {
-      width: '400px',
+      width: '420px',
       data: {
         title: titulo,
         message: mensaje,
         icon: 'error',
-        iconColor: 'warn',
-        buttonColor: 'warn'
+        iconType: 'error',
+        buttonText: 'Entendido'
       }
     });
   }
 
   private mostrarAdvertencia(titulo: string, mensaje: string): void {
     this.dialog.open(AlertDialogComponent, {
-      width: '400px',
+      width: '420px',
       data: {
         title: titulo,
         message: mensaje,
         icon: 'warning',
-        iconColor: 'accent',
-        buttonColor: 'accent'
+        iconType: 'warning',
+        buttonText: 'Entendido'
       }
     });
   }
 
   private mostrarInfo(titulo: string, mensaje: string): void {
     this.dialog.open(AlertDialogComponent, {
-      width: '400px',
+      width: '420px',
       data: {
         title: titulo,
         message: mensaje,
         icon: 'info',
-        iconColor: 'primary',
-        buttonColor: 'primary'
+        iconType: 'info',
+        buttonText: 'Aceptar'
       }
     });
   }
@@ -1179,33 +1438,21 @@ export class ActividadesComponent implements OnInit {
   private mostrarConfirmacion(
     titulo: string, 
     mensaje: string, 
-    icon: 'warning' | 'question' | 'info' | 'success' | 'error' = 'question',
+    iconType: IconType = 'question',
     confirmButtonText: string = 'Confirmar',
     cancelButtonText: string = 'Cancelar'
   ): Promise<boolean> {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
+      width: '450px',
       data: {
         title: titulo,
         message: mensaje,
         confirmText: confirmButtonText,
         cancelText: cancelButtonText,
-        confirmColor: this.getConfirmColor(icon)
+        iconType: iconType
       }
     });
 
     return dialogRef.afterClosed().toPromise() || Promise.resolve(false);
-  }
-
-  private getConfirmColor(icon: string): string {
-    switch (icon) {
-      case 'warning':
-      case 'error':
-        return 'warn';
-      case 'success':
-        return 'primary';
-      default:
-        return 'primary';
-    }
   }
 }
