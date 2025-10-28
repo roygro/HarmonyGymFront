@@ -129,7 +129,24 @@
                           <span class="product-badge" [ngClass]="getBadgeClass(pago.codigoProducto)">
                             {{ getTipoProducto(pago.codigoProducto) }}
                           </span>
-                          <span class="product-code">{{ obtenerNombreProducto(pago.codigoProducto) }}</span>
+                          <span class="product-name">{{ obtenerNombreProductoMembresia() }}</span>
+                          <small class="product-description d-block mt-1">
+                            {{ obtenerDescripcionProducto(pago.codigoProducto) }}
+                          </small>
+                          <!-- Información adicional para membresías -->
+                          <div *ngIf="esMembresia" class="membresia-info mt-2">
+                            <div class="membresia-details">
+                              <small class="text-muted">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                Duración: {{ obtenerDuracionMembresia(pago.codigoProducto) }}
+                              </small>
+                              <br>
+                              <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>
+                                Vence: {{ fechaVencimiento }}
+                              </small>
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td class="text-center">{{ pago.cantidad }}</td>
@@ -157,6 +174,11 @@
                 <i class="fas fa-info-circle me-2"></i>
                 Este comprobante es generado automáticamente por el sistema Harmony Gym.
                 Para aclaraciones, presentar este documento en recepción.
+              </div>
+              <div *ngIf="esMembresia" class="membresia-note mt-3">
+                <i class="fas fa-id-card me-2"></i>
+                <strong>Nota para membresías:</strong> Presentar este comprobante para activar su membresía. 
+                El acceso al gimnasio estará disponible hasta la fecha de vencimiento indicada.
               </div>
             </div>
           </div>
@@ -216,6 +238,23 @@
               </div>
             </div>
 
+            <div class="summary-item" *ngIf="esMembresia">
+              <span class="summary-label">Duración</span>
+              <div class="summary-value">
+                <span class="duracion-badge">
+                  <i class="fas fa-calendar me-1"></i>
+                  {{ obtenerDuracionMembresia(pago.codigoProducto) }}
+                </span>
+              </div>
+            </div>
+
+            <div class="summary-item" *ngIf="esMembresia">
+              <span class="summary-label">Vencimiento</span>
+              <div class="summary-value date-value">
+                {{ fechaVencimiento }}
+              </div>
+            </div>
+
             <div class="summary-item">
               <span class="summary-label">Fecha de Registro</span>
               <div class="summary-value date-value">
@@ -226,8 +265,35 @@
             <div class="summary-item">
               <span class="summary-label">Registrado por</span>
               <div class="summary-value">
-                <span class="receptionist-badge">{{ pago.idRecepcionista }}</span>
+                <span class="receptionist-badge">{{ obtenerNombreRecepcionista(pago.idRecepcionista) }}</span>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información de membresía (solo si es membresía) -->
+        <div *ngIf="esMembresia" class="card membership-card">
+          <div class="card-header">
+            <h6 class="mb-0">
+              <i class="fas fa-id-card me-2"></i>
+              Información de Membresía
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="membership-benefits">
+              <h6>Beneficios incluidos:</h6>
+              <ul class="benefits-list">
+                <li><i class="fas fa-check text-success me-2"></i>Acceso ilimitado al gimnasio</li>
+                <li><i class="fas fa-check text-success me-2"></i>Uso de equipos y áreas</li>
+                <li><i class="fas fa-check text-success me-2"></i>Asesoría básica</li>
+                <li><i class="fas fa-check text-success me-2"></i>Vestidores y regaderas</li>
+              </ul>
+            </div>
+            <div class="membership-notes">
+              <small class="text-muted">
+                <i class="fas fa-exclamation-circle me-1"></i>
+                Presentar identificación al ingresar
+              </small>
             </div>
           </div>
         </div>
