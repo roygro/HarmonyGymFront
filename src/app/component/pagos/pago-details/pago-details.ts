@@ -20,6 +20,7 @@ export class PagoDetails implements OnInit {
   clientes: any[] = [];
   recepcionistas: any[] = [];
   productos: any[] = [];
+  membresias: any[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -29,7 +30,7 @@ export class PagoDetails implements OnInit {
 
   ngOnInit(): void {
     this.cargarPago();
-    this.cargarNombres(); // <- Agregar esta línea
+    this.cargarNombres();
   }
 
   cargarPago(): void {
@@ -85,6 +86,15 @@ export class PagoDetails implements OnInit {
         console.error('Error al cargar productos:', error);
       }
     });
+
+    this.pagoService.obtenerTiposMembresia().subscribe({
+      next: (membresias: any) => {
+        this.membresias = membresias;
+      },
+      error: (error: any) => {
+        console.error('Error al cargar membresías:', error);
+      }
+    });
   }
 
   // Métodos para obtener nombres
@@ -98,9 +108,68 @@ export class PagoDetails implements OnInit {
     return recepcionista ? recepcionista.nombre : id;
   }
 
-  obtenerNombreProducto(codigo: string): string {
+  obtenerNombreProducto(codigo: string | undefined): string {
+    if (!codigo) {
+      return 'Producto no especificado';
+    }
+    
+    // Buscar en productos
     const producto = this.productos.find((p: any) => p.codigo === codigo);
-    return producto ? producto.nombre : codigo;
+    if (producto) return producto.nombre;
+    
+    // Buscar en membresías
+    const membresia = this.membresias.find((m: any) => m.codigo === codigo);
+    if (membresia) return membresia.nombre;
+    
+    return codigo;
+  }
+
+  // NUEVO MÉTODO PARA OBTENER EL NOMBRE CORRECTO SEGÚN EL TIPO DE PAGO
+  obtenerNombreProductoMembresia(): string {
+    if (!this.pago) return 'Producto no especificado';
+    
+    // Si es membresía, usar idMembresia
+    if (this.pago.tipoPago === 'membresia' && this.pago.idMembresia) {
+      const membresia = this.membresias.find((m: any) => m.codigo === this.pago!.idMembresia);
+      return membresia ? membresia.nombre : this.pago.idMembresia;
+    }
+    
+    // Si es producto, usar codigoProducto
+    if (this.pago.tipoPago === 'producto' && this.pago.codigoProducto) {
+      const producto = this.productos.find((p: any) => p.codigo === this.pago!.codigoProducto);
+      return producto ? producto.nombre : this.pago.codigoProducto;
+    }
+    
+    return 'Producto no especificado';
+  }
+
+  obtenerDescripcionProducto(codigo: string | undefined): string {
+    if (!codigo) {
+      return 'Descripción no disponible';
+    }
+    
+    // Buscar en productos
+    const producto = this.productos.find((p: any) => p.codigo === codigo);
+    if (producto) return producto.descripcion || 'Producto general';
+    
+    // Buscar en membresías
+    const membresia = this.membresias.find((m: any) => m.codigo === codigo);
+    if (membresia) return membresia.descripcion || 'Membresía del gimnasio';
+    
+    return 'Servicio general';
+  }
+
+  obtenerDuracionMembresia(codigo: string | undefined): string {
+    if (!codigo) {
+      return 'Duración no especificada';
+    }
+    
+    const membresia = this.membresias.find((m: any) => m.codigo === codigo);
+    if (membresia) {
+      return membresia.duracion || '30 días';
+    }
+    
+    return 'No aplica';
   }
 
   // Navegar de regreso a la lista
@@ -125,6 +194,14 @@ export class PagoDetails implements OnInit {
     });
   }
 
+  formatearFechaCorta(fecha: string): string {
+    return new Date(fecha).toLocaleDateString('es-MX', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
   formatearMoneda(monto: number): string {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
@@ -133,23 +210,77 @@ export class PagoDetails implements OnInit {
   }
 
   // Determinar tipo de producto
-  getTipoProducto(codigo: string): string {
-    if (codigo.startsWith('MEM_')) {
-      return 'Membresía';
-    } else if (codigo.startsWith('PROD')) {
-      return 'Producto';
+  getTipoProducto(codigo: string | undefined): string {
+    if (!codigo) {
+      return 'Sin especificar';
     }
+    
+    // Verificar si es membresía
+    const membresia = this.membresias.find((m: any) => m.codigo === codigo);
+    if (membresia) return 'Membresía';
+    
+    // Verificar si es producto
+    const producto = this.productos.find((p: any) => p.codigo === codigo);
+    if (producto) return 'Producto';
+    
+    // Por código
+    if (codigo.startsWith('MEM') || codigo.includes('MEMBRESIA')) {
+      return 'Membresía';
+    } else if (codigo.startsWith('PROD') || codigo.includes('PRODUCTO')) {
+      return 'Producto';
+    } else if (codigo.startsWith('SERV') || codigo.includes('SERVICIO')) {
+      return 'Servicio';
+    }
+    
     return 'Servicio';
   }
 
   // Obtener clase del badge según tipo
-  getBadgeClass(codigoProducto: string): string {
-    if (codigoProducto.startsWith('MEM_')) {
-      return 'bg-primary';
-    } else if (codigoProducto.startsWith('PROD')) {
-      return 'bg-success';
+  getBadgeClass(codigoProducto: string | undefined): string {
+    if (!codigoProducto) {
+      return 'bg-secondary';
     }
-    return 'bg-secondary';
+    
+    const tipo = this.getTipoProducto(codigoProducto);
+    
+    switch(tipo) {
+      case 'Membresía':
+        return 'bg-primary';
+      case 'Producto':
+        return 'bg-success';
+      case 'Servicio':
+        return 'bg-warning';
+      default:
+        return 'bg-secondary';
+    }
+  }
+
+  // Calcular fecha de vencimiento
+  get fechaVencimiento(): string {
+    if (!this.pago?.fechaVenta) return 'No disponible';
+    
+    const fechaVenta = new Date(this.pago.fechaVenta);
+    const duracion = this.obtenerDuracionMembresia(this.pago.codigoProducto);
+    
+    if (duracion.includes('30') || duracion.includes('1 mes')) {
+      fechaVenta.setMonth(fechaVenta.getMonth() + 1);
+    } else if (duracion.includes('90') || duracion.includes('3 meses')) {
+      fechaVenta.setMonth(fechaVenta.getMonth() + 3);
+    } else if (duracion.includes('180') || duracion.includes('6 meses')) {
+      fechaVenta.setMonth(fechaVenta.getMonth() + 6);
+    } else if (duracion.includes('365') || duracion.includes('1 año')) {
+      fechaVenta.setFullYear(fechaVenta.getFullYear() + 1);
+    } else {
+      // Por defecto 30 días
+      fechaVenta.setDate(fechaVenta.getDate() + 30);
+    }
+    
+    return this.formatearFechaCorta(fechaVenta.toISOString());
+  }
+
+  // Verificar si es membresía
+  get esMembresia(): boolean {
+    return this.getTipoProducto(this.pago?.codigoProducto) === 'Membresía';
   }
 
   // Calcular subtotal (sin IVA)
