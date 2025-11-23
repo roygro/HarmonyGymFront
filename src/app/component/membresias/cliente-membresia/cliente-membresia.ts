@@ -2,9 +2,9 @@ import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { ClienteMembresiaService, ClienteMembresia } from '../../../services/membresia/cliente-membresia';
 import { HeaderRecepcionistaComponent } from '../../recepcionista/header-recepcionista/header-recepcionista';
 import { Chart, registerables } from 'chart.js';
+import { PlanPago, ClienteMembresia, ClienteMembresiaService } from '../../../services/membresia/cliente-membresia';
 
 // Registrar todos los componentes de Chart.js
 Chart.register(...registerables);
@@ -32,6 +32,7 @@ export interface ClienteMembresiaBackend {
   estatus: string;
   vigente: boolean;
   expirada: boolean;  
+  planPago?: PlanPago; // ✅ NUEVO: Incluir plan de pago
 }
 
 @Component({
@@ -47,14 +48,21 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
   loading: boolean = false;
   showAsignarDialog: boolean = false;
   
+  // ✅ MODIFICADO: Actualizar asignarFormData para incluir plan de pago
   asignarFormData = {
     folioCliente: '',
     idMembresia: '',
+    idPlanPago: null as number | null, // ✅ NUEVO: Campo para plan de pago
     fechaInicio: new Date().toISOString().split('T')[0]
   };
 
   // Lista inicial vacía - se llenará con datos reales
   tipoMembresias: any[] = [];
+
+  // ✅ NUEVO: Propiedades para planes de pago
+  planesPago: PlanPago[] = [];
+  planesConDescuento: PlanPago[] = [];
+  loadingPlanes: boolean = false;
 
   // Snackbar
   snackbar = {
@@ -78,6 +86,7 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
   private distribucionChart: Chart | null = null;
   private estadoChart: Chart | null = null;
   tiposMembresiaDisponibles: string[] = ['Básica', 'Premium', 'VIP'];
+Math: any;
 
   constructor(
     private clienteMembresiaService: ClienteMembresiaService,
@@ -86,6 +95,7 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
 
   ngOnInit(): void {
     this.verificarMembresiasDisponibles();
+    this.cargarPlanesPagoDisponibles(); // ✅ NUEVO: Cargar planes de pago
     this.cargarTodasLasMembresias();
     this.cargarNombres();
   }
@@ -102,6 +112,138 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
     if (this.estadoChart) {
       this.estadoChart.destroy();
     }
+  }
+
+  // ✅ NUEVO: Método para cargar planes de pago
+  cargarPlanesPagoDisponibles(): void {
+    this.loadingPlanes = true;
+    this.clienteMembresiaService.obtenerPlanesPagoDisponibles().subscribe({
+      next: (planes: PlanPago[]) => {
+        this.planesPago = planes;
+        
+        // Establecer el primer plan como valor por defecto si existe
+        if (this.planesPago.length > 0) {
+          this.asignarFormData.idPlanPago = this.planesPago[0].id;
+        }
+        
+        this.loadingPlanes = false;
+      },
+      error: (error: any) => {
+        this.mostrarSnackbar('Error al cargar planes de pago disponibles', 'error');
+        this.loadingPlanes = false;
+      }
+    });
+  }
+
+// ✅ NUEVO: Método para obtener el factor de descuento
+obtenerFactorDescuento(planId: number | null): number {
+  if (!planId) return 1;
+  
+  const plan = this.planesPago.find(p => p.id === planId);
+  return plan ? plan.factorDescuento : 1;
+}
+
+calcularPorcentajeDescuentoMembresia(planPago: PlanPago): number {
+  if (!planPago || !planPago.factorDescuento) return 0;
+  return Math.round((1 - planPago.factorDescuento) * 100);
+}
+
+  // ✅ NUEVO: Método para formatear la información del plan
+  formatearInfoPlan(plan: PlanPago): string {
+    const descuento = Math.round((1 - plan.factorDescuento) * 100);
+    const duracion = plan.duracionDias;
+    
+    if (descuento === 0) {
+      return `${plan.nombre} - ${duracion} días (Sin descuento)`;
+    } else {
+      return `${plan.nombre} - ${duracion} días (${descuento}% descuento)`;
+    }
+  }
+
+  // NUEVO: Precio con descuento
+ calcularPrecioConDescuento(precioBase: number, planPagoId: number | null): number {
+ 
+  
+  if (!planPagoId) {
+    return precioBase;
+  }
+  
+  const plan = this.obtenerPlanPagoPorId(planPagoId);
+  
+  if (!plan) {
+    return precioBase;
+  }
+  
+
+  // Validar que factorDescuento es un número válido
+  if (typeof plan.factorDescuento !== 'number' || isNaN(plan.factorDescuento)) {
+    return precioBase;
+  }
+  
+  // Calcular precio mensual con descuento
+  const precioMensualConDescuento = precioBase * plan.factorDescuento;
+  
+  // Calcular duración en meses (aproximadamente)
+  const duracionMeses = Math.ceil(plan.duracionDias / 30);
+  
+  // Calcular precio TOTAL del plan
+  const precioTotal = precioMensualConDescuento * duracionMeses;
+  
+ 
+  
+  return precioTotal;
+}
+
+
+// ✅ NUEVO: Método para obtener duración en meses
+obtenerDuracionMeses(planPagoId: number | null): number {
+  if (!planPagoId) return 1;
+  
+  const plan = this.obtenerPlanPagoPorId(planPagoId);
+  if (!plan || !plan.duracionDias) return 1;
+  
+  return Math.ceil(plan.duracionDias / 30);
+}
+
+// ✅ NUEVO: Método para obtener duración formateada
+obtenerDuracionFormateada(planPagoId: number | null): string {
+  const meses = this.obtenerDuracionMeses(planPagoId);
+  
+  if (meses === 1) {
+    return '1 mes';
+  } else if (meses === 12) {
+    return '1 año';
+  } else {
+    return `${meses} meses`;
+  }
+}
+
+
+  // ✅ NUEVO: Método para obtener precio base de membresía
+  obtenerPrecioBaseMembresia(idMembresia: string): number {
+    const membresia = this.tipoMembresias.find(m => m.value === idMembresia);
+    return membresia?.precio || 0;
+  }
+
+  // ✅ NUEVO: Método cuando cambia la membresía seleccionada
+  onMembresiaChange(): void {
+    
+  }
+
+  // ✅ NUEVO: Método cuando cambia el plan de pago
+  onPlanPagoChange(): void {
+   
+    
+    const planSeleccionado = this.planesPago.find(p => p.id === this.asignarFormData.idPlanPago);
+    if (planSeleccionado) {
+   
+    }
+  }
+
+  // ✅ NUEVO: Método para obtener información del plan seleccionado
+  getPlanSeleccionado(): PlanPago | null {
+    if (!this.asignarFormData.idPlanPago) return null;
+    return this.planesPago.find(p => p.id === this.asignarFormData.idPlanPago) || null;
   }
 
   // Método para cargar los nombres
@@ -152,20 +294,19 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
 
   // NUEVO MÉTODO: Verificar membresías disponibles en el backend
   verificarMembresiasDisponibles(): void {
-    console.log('Verificando membresías disponibles...');
     
     this.http.get('http://localhost:8081/api/membresias').subscribe({
       next: (membresias: any) => {
-        console.log('Membresías disponibles en la base de datos:', membresias);
-        
+
+      
         if (membresias && Array.isArray(membresias) && membresias.length > 0) {
-          // Mapear las membresías reales del backend
+          // Mapear las membresías reales del backend incluyendo precio
           this.tipoMembresias = membresias.map((memb: any) => ({
             value: memb.id_membresia || memb.idMembresia,
-            label: memb.tipo || memb.descripcion || memb.id_membresia
+            label: memb.tipo || memb.descripcion || memb.id_membresia,
+            precio: memb.precio || 0 // ✅ NUEVO: Incluir precio
           }));
           
-          console.log('Tipos de membresía actualizados:', this.tipoMembresias);
           
           // Establecer el primer tipo como valor por defecto
           if (this.tipoMembresias.length > 0) {
@@ -174,13 +315,11 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
           
           this.mostrarSnackbar(`${this.tipoMembresias.length} tipos de membresía cargados`, 'success');
         } else {
-          console.warn('No hay tipos de membresía configurados en el sistema');
           this.tipoMembresias = [];
           this.mostrarSnackbar('No hay tipos de membresía configurados en el sistema', 'warning');
         }
       },
       error: (error) => {
-        console.error('Error al obtener membresías:', error);
         this.tipoMembresias = [];
         this.mostrarSnackbar('Error al cargar tipos de membresía disponibles', 'error');
       }
@@ -189,7 +328,6 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
 
   // NUEVO MÉTODO: Crear membresías de prueba si no existen
   crearMembresiasDePrueba(): void {
-    console.log('Creando membresías de prueba...');
     
     const membresiasPrueba = [
       {
@@ -225,7 +363,6 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
     membresiasPrueba.forEach(membresia => {
       this.http.post('http://localhost:8081/api/membresias', membresia).subscribe({
         next: (response) => {
-          console.log(`Membresía ${membresia.tipo} creada:`, response);
           creadas++;
           
           if (creadas === total) {
@@ -254,7 +391,6 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
   
   this.clienteMembresiaService.obtenerTodasMembresias().subscribe({
     next: (data: any) => {
-      console.log('Todas las membresías recibidas:', data);
       
       if (data && Array.isArray(data)) {
         // Si viene directamente como array
@@ -267,7 +403,6 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
         this.membresias = [];
       }
       
-      console.log('Todas las membresías cargadas:', this.membresias);
       this.membresiasFiltradas = [...this.membresias];
       this.loading = false;
       
@@ -291,7 +426,6 @@ export class ClienteMembresiaComponent implements OnInit, AfterViewInit, OnDestr
 cargarMembresiasActivasComoRespaldo(): void {
   this.clienteMembresiaService.obtenerMembresiasActivas().subscribe({
     next: (data: any) => {
-      console.log('Membresías activas (respaldo):', data);
       
       if (data && Array.isArray(data)) {
         this.membresias = data.map((item: any) => this.mapearMembresiaBackend(item));
@@ -320,7 +454,6 @@ cargarMembresiasActivasComoRespaldo(): void {
 }
 
   private mapearMembresiaBackend(backendData: any): ClienteMembresia {
-    console.log('Mapeando datos del backend:', backendData);
     
     return {
       id_membresia_cliente: backendData.idMembresiaCliente || backendData.id_membresia_cliente,
@@ -330,7 +463,8 @@ cargarMembresiasActivasComoRespaldo(): void {
       fecha_fin: backendData.fechaFin || backendData.fecha_fin || '',
       estatus: backendData.estatus || 'Desconocido',
       fecha_registro: backendData.fechaRegistro || backendData.fecha_registro || '',
-      fecha_actualizacion: backendData.fechaActualizacion || backendData.fecha_actualizacion || ''
+      fecha_actualizacion: backendData.fechaActualizacion || backendData.fecha_actualizacion || '',
+      planPago: backendData.planPago // ✅ NUEVO: Incluir plan de pago
     };
   }
 
@@ -378,24 +512,26 @@ cargarMembresiasActivasComoRespaldo(): void {
     this.asignarFormData = {
       folioCliente: '',
       idMembresia: this.tipoMembresias.length > 0 ? this.tipoMembresias[0].value : '',
+      idPlanPago: this.planesPago.length > 0 ? this.planesPago[0].id : null, // ✅ NUEVO: Incluir plan por defecto
       fechaInicio: new Date().toISOString().split('T')[0]
     };
     this.showAsignarDialog = true;
   }
 
+  // ✅ MODIFICADO: Método asignarMembresia para incluir plan de pago
   asignarMembresia(): void {
     // Validación adicional
-    if (!this.asignarFormData.folioCliente || !this.asignarFormData.idMembresia) {
+    if (!this.asignarFormData.folioCliente || !this.asignarFormData.idMembresia || !this.asignarFormData.idPlanPago) {
       this.mostrarSnackbar('Por favor complete todos los campos requeridos', 'error');
       return;
     }
 
     this.loading = true;
-    console.log('Asignando membresía con datos:', this.asignarFormData);
 
     this.clienteMembresiaService.asignarMembresia(
       this.asignarFormData.folioCliente,
       this.asignarFormData.idMembresia,
+      this.asignarFormData.idPlanPago!, // ✅ NUEVO: Incluir plan de pago
       this.asignarFormData.fechaInicio
     ).subscribe({
       next: (membresia: ClienteMembresia) => {
@@ -413,7 +549,7 @@ cargarMembresiasActivasComoRespaldo(): void {
         } else if (error.status === 400) {
           mensajeError += ': Datos inválidos enviados al servidor';
         } else if (error.status === 404) {
-          mensajeError += ': Cliente o tipo de membresía no encontrado';
+          mensajeError += ': Cliente, membresía o plan de pago no encontrado';
         }
         
         this.mostrarSnackbar(mensajeError, 'error');
@@ -449,8 +585,6 @@ private obtenerMensajeRenovacion(estatus: string): string {
   
   return mensajes[estatus] || `Esta membresía tiene estatus: ${estatus}. ¿Desea renovarla?`;
 }
-
-// En ClienteMembresiaComponent, modifica el método procesarRenovacion:
 
 private procesarRenovacion(membresia: ClienteMembresia): void {
   this.clienteMembresiaService.renovarMembresia(membresia.id_membresia_cliente).subscribe({
@@ -559,7 +693,6 @@ private obtenerMensajeCancelacion(estatus: string): string {
   verificarAcceso(membresia: ClienteMembresia): void {
     this.clienteMembresiaService.verificarAcceso(membresia.folio_cliente).subscribe({
       next: (response: any) => {
-        console.log('Respuesta verificar acceso:', response);
         
         if (response.success) {
           if (response.tieneAcceso) {
@@ -589,7 +722,6 @@ private obtenerMensajeCancelacion(estatus: string): string {
   }
 
   registrarEntradaCliente(folioCliente: string): void {
-    console.log(`📝 Entrada registrada: ${folioCliente} - ${new Date().toLocaleString()}`);
   }
 
   sugerirRenovacion(membresia: ClienteMembresia): void {
@@ -653,6 +785,40 @@ private obtenerMensajeCancelacion(estatus: string): string {
       }
     });
   }
+
+obtenerPlanPagoPorId(idPlanPago: number): PlanPago | undefined {
+
+  
+  // Asegurarse de que idPlanPago es un número
+  const idBuscado = Number(idPlanPago);
+  
+  const plan = this.planesPago.find(p => p.id === idBuscado);
+  
+  if (plan) {
+    
+  } else {
+  
+    this.planesPago.forEach(p => {
+    });
+  }
+  
+  return plan;
+}
+  
+calcularPorcentajeDescuento(planPago: PlanPago | number): number {
+  let plan: PlanPago | undefined;
+  
+  if (typeof planPago === 'number') {
+    // Si es un número (ID), buscar el plan correspondiente
+    plan = this.obtenerPlanPagoPorId(planPago);
+  } else {
+    // Si es un objeto PlanPago
+    plan = planPago;
+  }
+  
+  return plan ? Math.round((1 - plan.factorDescuento) * 100) : 0;
+}
+
 
   verEstadisticas(): void {
     this.clienteMembresiaService.getEstadisticas().subscribe({
@@ -1067,7 +1233,6 @@ private obtenerMensajeCancelacion(estatus: string): string {
     }
     return this.historialData.filter(item => item.estatus !== 'Activa').length;
   }
-
 
 // Agrega este método en la sección de métodos auxiliares para la UI, después de obtenerEtiquetaMembresia
 contarMembresiasPorTipo(tipo: string): number {

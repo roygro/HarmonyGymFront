@@ -12,6 +12,14 @@ export interface ClienteMembresia {
   estatus: string;
   fecha_registro: string;
   fecha_actualizacion: string;
+  planPago?: PlanPago; // ✅ NUEVO: Incluir plan de pago
+   membresia?: {
+    idMembresia: string;
+    tipo: string;
+    precio: number;
+    duracion: number;
+    descripcion: string;
+  };
 }
 
 export interface VerificarAccesoResponse {
@@ -26,6 +34,17 @@ export interface EstadisticasResponse {
   expiradas: number;
   canceladas: number;
   porExpirar: number;
+}
+
+// ✅ NUEVO: Interface para PlanPago
+export interface PlanPago {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  duracionDias: number;
+  factorDescuento: number;
+  estatus: string;
+   tipoPlan?: string;
 }
 
 @Injectable({
@@ -52,12 +71,13 @@ export class ClienteMembresiaService {
   }
 
   /**
-   * Asignar una membresía a un cliente
+   * Asignar una membresía a un cliente - ✅ MODIFICADO: Incluir idPlanPago
    */
-  asignarMembresia(folioCliente: string, idMembresia: string, fechaInicio: string): Observable<ClienteMembresia> {
+  asignarMembresia(folioCliente: string, idMembresia: string, idPlanPago: number, fechaInicio: string): Observable<ClienteMembresia> {
     const params = new HttpParams()
       .set('folioCliente', folioCliente)
       .set('idMembresia', idMembresia)
+      .set('idPlanPago', idPlanPago.toString()) // ✅ NUEVO: Incluir plan de pago
       .set('fechaInicio', fechaInicio);
 
     return this.http.post<ClienteMembresia>(this.apiUrl, {}, { 
@@ -67,25 +87,22 @@ export class ClienteMembresiaService {
   }
 
   /**
-// En ClienteMembresiaService, modifica el método renovarMembresia:
-
-/**
- * Renovar una membresía existente
- */
-renovarMembresia(id: number): Observable<ClienteMembresia> {
-  return this.http.post<{success: boolean, message: string, membresia: ClienteMembresia}>(
-    `${this.apiUrl}/${id}/renovar`, 
-    {}
-  ).pipe(
-    map(response => {
-      if (response.success) {
-        return response.membresia;
-      } else {
-        throw new Error(response.message);
-      }
-    })
-  );
-}
+   * Renovar una membresía existente
+   */
+  renovarMembresia(id: number): Observable<ClienteMembresia> {
+    return this.http.post<{success: boolean, message: string, membresia: ClienteMembresia}>(
+      `${this.apiUrl}/${id}/renovar`, 
+      {}
+    ).pipe(
+      map(response => {
+        if (response.success) {
+          return response.membresia;
+        } else {
+          throw new Error(response.message);
+        }
+      })
+    );
+  }
 
   /**
    * Cancelar una membresía
@@ -173,18 +190,36 @@ renovarMembresia(id: number): Observable<ClienteMembresia> {
     return this.http.get<ClienteMembresia[]>(`${this.apiUrl}/estatus`, { params });
   }
 
+  // ✅ NUEVO: MÉTODOS PARA PLANES DE PAGO
+
   /**
-   * Verificar si un cliente tiene membresía activa
+   * Obtener planes de pago disponibles
    */
-  verificarMembresiaActiva(folioCliente: string): Observable<{ tieneMembresiaActiva: boolean }> {
-    return this.http.get<{ tieneMembresiaActiva: boolean }>(`${this.apiUrl}/cliente/${folioCliente}/tiene-activa`);
+  obtenerPlanesPagoDisponibles(): Observable<PlanPago[]> {
+    return this.http.get<{success: boolean, planes: PlanPago[]}>(
+      `${this.apiUrl}/planes-pago`
+    ).pipe(
+      map(response => response.planes || [])
+    );
   }
 
   /**
-   * Obtener fecha de expiración de membresía
+   * Obtener planes con descuento
    */
-  obtenerFechaExpiracion(folioCliente: string): Observable<{ fechaExpiracion: string }> {
-    return this.http.get<{ fechaExpiracion: string }>(`${this.apiUrl}/cliente/${folioCliente}/expiracion`);
+  obtenerPlanesConDescuento(): Observable<PlanPago[]> {
+    return this.http.get<{success: boolean, planes: PlanPago[]}>(
+      `${this.apiUrl}/planes-pago/descuentos`
+    ).pipe(
+      map(response => response.planes || [])
+    );
+  }
+
+  /**
+   * Cambiar plan de pago de una membresía
+   */
+  cambiarPlanPago(idMembresiaCliente: number, idPlanPago: number): Observable<ClienteMembresia> {
+    const params = new HttpParams().set('idPlanPago', idPlanPago.toString());
+    return this.http.put<ClienteMembresia>(`${this.apiUrl}/${idMembresiaCliente}/cambiar-plan`, {}, { params });
   }
 
   // ==================== MÉTODOS DE GESTIÓN ====================
@@ -210,42 +245,5 @@ renovarMembresia(id: number): Observable<ClienteMembresia> {
   extenderMembresia(id: number, diasExtendidos: number): Observable<ClienteMembresia> {
     const body = { diasExtendidos: diasExtendidos };
     return this.http.put<ClienteMembresia>(`${this.apiUrl}/${id}/extender`, body);
-  }
-
-  // ==================== MÉTODOS DE REPORTES ====================
-
-  /**
-   * Generar reporte de membresías por periodo
-   */
-  generarReporteMembresias(fechaInicio: string, fechaFin: string): Observable<any> {
-    const params = new HttpParams()
-      .set('fechaInicio', fechaInicio)
-      .set('fechaFin', fechaFin);
-    
-    return this.http.get<any>(`${this.apiUrl}/reportes/membresias`, { params });
-  }
-
-  /**
-   * Obtener ingresos por membresías
-   */
-  obtenerIngresosMembresias(periodo: string): Observable<{ periodo: string, ingresos: number }> {
-    const params = new HttpParams().set('periodo', periodo);
-    return this.http.get<{ periodo: string, ingresos: number }>(`${this.apiUrl}/reportes/ingresos`, { params });
-  }
-
-  // ==================== MÉTODOS DE NOTIFICACIONES ====================
-
-  /**
-   * Enviar recordatorio de expiración
-   */
-  enviarRecordatorioExpiracion(id: number): Observable<{ enviado: boolean }> {
-    return this.http.post<{ enviado: boolean }>(`${this.apiUrl}/${id}/recordatorio`, {});
-  }
-
-  /**
-   * Notificar renovación exitosa
-   */
-  notificarRenovacion(id: number): Observable<{ notificado: boolean }> {
-    return this.http.post<{ notificado: boolean }>(`${this.apiUrl}/${id}/notificar-renovacion`, {});
   }
 }
