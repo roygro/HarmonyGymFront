@@ -1,11 +1,43 @@
 <div><app-header-recepcionista></app-header-recepcionista></div>
 
 <div class="membresias-container">
+  <!-- Componente de Notificación -->
+  <div *ngIf="mostrarNotificacion" class="alert-notification" [class]="'alert-' + tipoNotificacion">
+    <div class="alert-content">
+      <div class="alert-icon">
+        <i class="fas" [class]="{
+          'fa-check-circle': tipoNotificacion === 'success',
+          'fa-exclamation-circle': tipoNotificacion === 'error',
+          'fa-exclamation-triangle': tipoNotificacion === 'warning',
+          'fa-info-circle': tipoNotificacion === 'info'
+        }"></i>
+      </div>
+      <div class="alert-message">
+        {{ mensajeNotificacion }}
+      </div>
+      <button class="alert-close" (click)="cerrarNotificacion()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="alert-progress" [class]="'progress-' + tipoNotificacion">
+      <div class="progress-bar"></div>
+    </div>
+  </div>
+
   <!-- Header Mejorado -->
   <div class="header">
     <div class="header-content">
-      <h1><i class="fas fa-cash-register"></i> Registrar Nuevo Pago</h1>
-      <p class="header-subtitle">Complete los datos para registrar una nueva venta (Productos o Membresías)</p>
+      <div class="header-main">
+        <h1><i class="fas fa-cash-register"></i> Registrar Nuevo Pago</h1>
+        <p class="header-subtitle">Complete los datos para registrar una nueva venta</p>
+      </div>
+      <div class="user-info">
+        <div class="user-badge">
+          <i class="fas fa-user-tie"></i>
+          <span>{{ getNombreRecepcionista() }}</span>
+          <small class="user-role">{{ getRolRecepcionista() }}</small>
+        </div>
+      </div>
     </div>
     <div class="header-actions">
       <button class="btn btn-secondary" (click)="volverALista()">
@@ -23,210 +55,572 @@
       <span></span>
       <span></span>
     </div>
+    <div class="loading-progress">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Formulario Mejorado -->
   <div *ngIf="!cargando" class="form-container">
-    <div class="form-card">
+    <div class="form-card" [class.seccion-activa-membresia]="seccionActiva === 'membresia'" 
+                          [class.seccion-activa-producto]="seccionActiva === 'producto'">
+      
+      <!-- Selector de Sección Mejorado con Efecto Visual -->
+      <div class="seccion-selector" [class.seccion-membresia]="seccionActiva === 'membresia'"
+                                   [class.seccion-producto]="seccionActiva === 'producto'">
+        <div class="selector-background" 
+             [style.left]="efectoPestana.left"
+             [style.width]="efectoPestana.width"></div>
+        <button 
+          class="seccion-btn" 
+          [class.active]="seccionActiva === 'membresia'"
+          (click)="cambiarSeccion('membresia')"
+        >
+          <i class="fas fa-id-card"></i>
+          Pago de Membresía
+        </button>
+        <button 
+          class="seccion-btn" 
+          [class.active]="seccionActiva === 'producto'"
+          (click)="cambiarSeccion('producto')"
+        >
+          <i class="fas fa-box"></i>
+          Pago de Producto
+        </button>
+      </div>
+
       <div class="form-header">
-        <h3><i class="fas fa-edit"></i> Información del Pago</h3>
+        <h3>
+          <i class="fas" [class.fa-id-card]="seccionActiva === 'membresia'" [class.fa-box]="seccionActiva === 'producto'"></i>
+          {{ seccionActiva === 'membresia' ? 'Información de Membresía' : 'Información de Producto' }}
+        </h3>
       </div>
       
-      <form [formGroup]="pagoForm" (ngSubmit)="onSubmit()" #pagoFormElement="ngForm">
+      <form [formGroup]="pagoForm" (ngSubmit)="onSubmit()">
         
-        <!-- Tipo de Pago -->
-        <div class="form-group full-width">
-          <label>
-            <i class="fas fa-cube"></i> Tipo de Pago *
-          </label>
-          <select 
-            class="form-control" 
-            formControlName="tipoPago"
-            (change)="onTipoPagoChange()"
-            [class.error]="f['tipoPago'].invalid && f['tipoPago'].touched"
-          >
-            <option value="" disabled selected>-- Seleccione el tipo de pago --</option>
-            <option value="producto">Pago de Producto</option>
-            <option value="membresia">Pago de Membresía</option>
-          </select>
-          <small *ngIf="f['tipoPago'].invalid && f['tipoPago'].touched" class="error-text">
-            Seleccione el tipo de pago
-          </small>
-        </div>
+        <!-- Campo oculto para tipo de pago -->
+        <input type="hidden" formControlName="tipoPago">
 
-        <!-- Recepcionista -->
-        <div class="form-group full-width">
-          <label>
-            <i class="fas fa-user-tie"></i> Recepcionista *
-          </label>
-          <select 
-            class="form-control" 
-            formControlName="idRecepcionista"
-            [class.error]="f['idRecepcionista'].invalid && f['idRecepcionista'].touched"
-          >
-            <option value="" disabled selected>-- Seleccione un recepcionista --</option>
-            <option *ngFor="let recepcionista of recepcionistas" [value]="recepcionista.idRecepcionista">
-              {{ recepcionista.nombre }} - {{ recepcionista.idRecepcionista }}
-            </option>
-          </select>
-          <small *ngIf="f['idRecepcionista'].invalid && f['idRecepcionista'].touched" class="error-text">
-            Seleccione un recepcionista
-          </small>
-          <small *ngIf="f['idRecepcionista'].valid && f['idRecepcionista'].touched" class="success-text">
-            Recepcionista seleccionado
-          </small>
-        </div>
-
-        <!-- Cliente -->
+        <!-- Cliente con Filtro Mejorado -->
         <div class="form-group full-width">
           <label>
             <i class="fas fa-users"></i> Cliente *
           </label>
-          <select 
-            class="form-control"
-            formControlName="folioCliente"
-            [class.error]="f['folioCliente'].invalid && f['folioCliente'].touched"
-          >
-            <option value="" disabled selected>-- Seleccione un cliente --</option>
-            <option *ngFor="let cliente of clientes" [value]="cliente.folioCliente">
-              {{ cliente.nombre }} - {{ cliente.folioCliente }}
-            </option>
-          </select>
-          <small *ngIf="f['folioCliente'].invalid && f['folioCliente'].touched" class="error-text">
-            Seleccione un cliente
-          </small>
-          <small *ngIf="f['folioCliente'].valid && f['folioCliente'].touched" class="success-text">
-            Cliente seleccionado
-          </small>
-        </div>
-
-        <!-- Producto (se muestra solo para tipo producto) -->
-        <div class="form-group full-width" *ngIf="pagoForm.get('tipoPago')?.value === 'producto'">
-          <label>
-            <i class="fas fa-box"></i> Producto *
-          </label>
-          <select 
-            class="form-control"
-            formControlName="codigoProducto"
-            [class.error]="f['codigoProducto'].invalid && f['codigoProducto'].touched"
-          >
-            <option value="" disabled selected>-- Seleccione un producto --</option>
-            <option *ngFor="let producto of productos" [value]="producto.codigo">
-              {{ producto.nombre }} - {{ formatearMoneda(producto.precio) }}
-            </option>
-          </select>
-          <small *ngIf="f['codigoProducto'].invalid && f['codigoProducto'].touched" class="error-text">
-            Seleccione un producto
-          </small>
-          <small *ngIf="f['codigoProducto'].valid && f['codigoProducto'].touched" class="success-text">
-            Producto seleccionado
-          </small>
-        </div>
-
-        <!-- Membresía (se muestra solo para tipo membresía) -->
-        <div class="form-group full-width" *ngIf="pagoForm.get('tipoPago')?.value === 'membresia'">
-          <label>
-            <i class="fas fa-id-card"></i> Membresía *
-          </label>
-          <select 
-            class="form-control"
-            formControlName="idMembresia"
-            [class.error]="f['idMembresia'].invalid && f['idMembresia'].touched"
-          >
-            <option value="" disabled selected>-- Seleccione una membresía --</option>
-            <option *ngFor="let membresia of membresias" [value]="membresia.idMembresia">
-              {{ membresia.tipo }} - {{ formatearMoneda(membresia.precio) }} - {{ membresia.duracion }} días
-            </option>
-          </select>
-          <small *ngIf="f['idMembresia'].invalid && f['idMembresia'].touched" class="error-text">
-            Seleccione una membresía
-          </small>
-          <small *ngIf="f['idMembresia'].valid && f['idMembresia'].touched" class="success-text">
-            Membresía seleccionada
-          </small>
-        </div>
-
-        <div class="form-row" *ngIf="pagoForm.get('tipoPago')?.value === 'producto'">
-          <!-- Cantidad (solo para productos) -->
-          <div class="form-group">
-            <label>
-              <i class="fas fa-hashtag"></i> Cantidad *
-            </label>
-            <input 
-              type="number" 
-              class="form-control"
-              formControlName="cantidad" 
-              min="1" 
-              max="100"
-              [class.error]="f['cantidad'].invalid && f['cantidad'].touched"
-            >
-            <small *ngIf="f['cantidad'].errors?.['required'] && f['cantidad'].touched" class="error-text">
-              La cantidad es requerida
-            </small>
-            <small *ngIf="f['cantidad'].errors?.['min'] && f['cantidad'].touched" class="error-text">
-              La cantidad mínima es 1
-            </small>
-            <small *ngIf="f['cantidad'].valid && f['cantidad'].touched" class="success-text">
-              Cantidad válida
-            </small>
-          </div>
           
-          <!-- Precio Unitario -->
-          <div class="form-group">
-            <label>
-              <i class="fas fa-tag"></i> Precio Unitario *
-            </label>
-            <input 
-              type="number" 
-              class="form-control"
-              formControlName="precioUnitario" 
-              step="0.01" 
-              min="0"
-              (change)="onPrecioManualChange()"
-              [class.error]="f['precioUnitario'].invalid && f['precioUnitario'].touched"
-            >
-            <small *ngIf="f['precioUnitario'].invalid && f['precioUnitario'].touched" class="error-text">
-              El precio unitario es requerido
+          <!-- Filtro de búsqueda mejorado -->
+          <div class="filtro-mejorado">
+            <div class="filtro-header" [class.focused]="campoFocused['folioCliente']">
+              <i class="fas fa-search"></i>
+              <input
+                type="text"
+                class="filtro-input"
+                placeholder="Buscar cliente por nombre o folio..."
+                [(ngModel)]="filtroCliente"
+                [ngModelOptions]="{standalone: true}"
+                (input)="onFiltroClienteChange()"
+                (focus)="onFocus('folioCliente')"
+                (blur)="onBlur('folioCliente')"
+              >
+              <div class="filtro-actions">
+                <button 
+                  type="button" 
+                  class="btn-clear" 
+                  (click)="limpiarSeleccionCliente()"
+                  *ngIf="pagoForm.get('folioCliente')?.value"
+                >
+                  <i class="fas fa-times"></i>
+                </button>
+                <div class="filtro-stats">
+                  <span class="resultados">{{ clientesFiltrados.length }} / {{ clientesConMembresiaActiva.length }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Lista de clientes filtrados -->
+            <div class="clientes-lista" *ngIf="filtroCliente && clientesFiltrados.length > 0">
+              <div 
+                *ngFor="let cliente of clientesFiltrados" 
+                class="cliente-item"
+                (click)="seleccionarCliente(cliente)"
+                [class.selected]="pagoForm.get('folioCliente')?.value === cliente.folioCliente"
+              >
+                <div class="cliente-avatar">
+                  <i class="fas fa-user"></i>
+                </div>
+                <div class="cliente-info">
+                  <strong>{{ cliente.nombre }}</strong>
+                  <span>Folio: {{ cliente.folioCliente }}</span>
+                </div>
+                <i class="fas fa-check seleccion-icon" *ngIf="pagoForm.get('folioCliente')?.value === cliente.folioCliente"></i>
+              </div>
+            </div>
+
+            <!-- Mensaje cuando no hay resultados -->
+            <div class="sin-resultados" *ngIf="filtroCliente && clientesFiltrados.length === 0">
+              <i class="fas fa-search"></i>
+              <p>No se encontraron clientes que coincidan con "{{ filtroCliente }}"</p>
+            </div>
+          </div>
+
+          <!-- Select tradicional (como fallback) -->
+          <select 
+            class="form-control cliente-select"
+            formControlName="folioCliente"
+            (change)="onClienteChange()"
+            [class]="'form-control ' + getClaseCampo('folioCliente')"
+            (focus)="onFocus('folioCliente')"
+            (blur)="onBlur('folioCliente')"
+          >
+            <option value="" disabled selected>-- Seleccione un cliente con membresía activa --</option>
+            <option *ngFor="let cliente of clientesConMembresiaActiva" [value]="cliente.folioCliente">
+              {{ cliente.nombre }} 
+            </option>
+          </select>
+          
+          <div class="validation-messages">
+            <small *ngIf="f['folioCliente'].invalid && f['folioCliente'].touched" class="error-text">
+              <i class="fas fa-exclamation-circle"></i> Seleccione un cliente con membresía activa
             </small>
-            <small *ngIf="f['precioUnitario'].valid && f['precioUnitario'].touched" class="success-text">
-              Precio válido
+            <small *ngIf="f['folioCliente'].valid && f['folioCliente'].touched" class="success-text">
+              <i class="fas fa-check-circle"></i> Cliente seleccionado correctamente
             </small>
           </div>
         </div>
 
-        <!-- Para membresías, cantidad fija en 1 -->
-        <div *ngIf="pagoForm.get('tipoPago')?.value === 'membresia'" class="form-group full-width">
-          <small class="info-text">
-            <i class="fas fa-info-circle"></i> Las membresías se venden por unidad (cantidad: 1)
-          </small>
+        <!-- SECCIÓN PRODUCTOS MEJORADA -->
+        <div *ngIf="seccionActiva === 'producto'" class="seccion-contenido">
+          <div class="form-group full-width">
+            <label>
+              <i class="fas fa-box"></i> Producto *
+            </label>
+            
+            <!-- Buscador de Productos Mejorado -->
+            <div class="filtro-mejorado">
+              <div class="filtro-header" [class.focused]="campoFocused['codigoProducto']">
+                <i class="fas fa-search"></i>
+                <input
+                  type="text"
+                  class="filtro-input"
+                  placeholder="Buscar producto por nombre o código..."
+                  [(ngModel)]="filtroProducto"
+                  [ngModelOptions]="{standalone: true}"
+                  (input)="onFiltroProductoChange()"
+                  (focus)="onFocus('codigoProducto')"
+                  (blur)="onBlur('codigoProducto')"
+                >
+                <div class="filtro-actions">
+                  <button 
+                    type="button" 
+                    class="btn-clear" 
+                    (click)="limpiarSeleccionProducto()"
+                    *ngIf="pagoForm.get('codigoProducto')?.value"
+                  >
+                    <i class="fas fa-times"></i>
+                  </button>
+                  <div class="filtro-stats">
+                    <span class="resultados">{{ productosFiltrados.length }} / {{ productos.length }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Lista de productos filtrados -->
+              <div class="productos-lista" *ngIf="filtroProducto && productosFiltrados.length > 0">
+                <div 
+                  *ngFor="let producto of productosFiltrados" 
+                  class="producto-item"
+                  (click)="seleccionarProducto(producto)"
+                  [class.selected]="pagoForm.get('codigoProducto')?.value === producto.codigo"
+                >
+                  <div class="producto-avatar">
+                    <i class="fas fa-cube"></i>
+                  </div>
+                  <div class="producto-info">
+                    <strong>{{ producto.nombre }}</strong>
+                    <span>Código: {{ producto.codigo }} - {{ formatearMoneda(producto.precio) }}</span>
+                    <small class="producto-stock" [class]="getStockStatus(producto.stock)">
+                      Stock: {{ producto.stock }} unidades
+                    </small>
+                  </div>
+                  <i class="fas fa-check seleccion-icon" *ngIf="pagoForm.get('codigoProducto')?.value === producto.codigo"></i>
+                </div>
+              </div>
+
+              <!-- Mensaje cuando no hay resultados -->
+              <div class="sin-resultados" *ngIf="filtroProducto && productosFiltrados.length === 0">
+                <i class="fas fa-search"></i>
+                <p>No se encontraron productos que coincidan con "{{ filtroProducto }}"</p>
+              </div>
+            </div>
+
+            <!-- Select tradicional (como fallback) -->
+            <select 
+              class="form-control"
+              formControlName="codigoProducto"
+              [class]="'form-control ' + getClaseCampo('codigoProducto')"
+              (focus)="onFocus('codigoProducto')"
+              (blur)="onBlur('codigoProducto')"
+            >
+              <option value="" disabled selected>-- Seleccione un producto --</option>
+              <option *ngFor="let producto of productos" [value]="producto.codigo">
+                {{ producto.nombre }} - {{ formatearMoneda(producto.precio) }}
+              </option>
+            </select>
+            <div class="validation-messages">
+              <small *ngIf="f['codigoProducto'].invalid && f['codigoProducto'].touched" class="error-text">
+                <i class="fas fa-exclamation-circle"></i> Seleccione un producto
+              </small>
+              <small *ngIf="f['codigoProducto'].valid && f['codigoProducto'].touched" class="success-text">
+                <i class="fas fa-check-circle"></i> Producto seleccionado
+              </small>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>
+                <i class="fas fa-hashtag"></i> Cantidad *
+              </label>
+              <div class="cantidad-control">
+                <button type="button" class="btn-cantidad" (click)="decrementarCantidad()" [disabled]="f['cantidad'].value <= 1">
+                  <i class="fas fa-minus"></i>
+                </button>
+                <input 
+                  type="number" 
+                  class="form-control cantidad-input"
+                  formControlName="cantidad" 
+                  min="1" 
+                  max="100"
+                  [class]="'form-control cantidad-input ' + getClaseCampo('cantidad')"
+                  (focus)="onFocus('cantidad')"
+                  (blur)="onBlur('cantidad')"
+                >
+                <button type="button" class="btn-cantidad" (click)="incrementarCantidad()" [disabled]="f['cantidad'].value >= 100">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+              <div class="validation-messages">
+                <small *ngIf="f['cantidad'].errors?.['required'] && f['cantidad'].touched" class="error-text">
+                  <i class="fas fa-exclamation-circle"></i> La cantidad es requerida
+                </small>
+                <small *ngIf="f['cantidad'].errors?.['min'] && f['cantidad'].touched" class="error-text">
+                  <i class="fas fa-exclamation-circle"></i> La cantidad mínima es 1
+                </small>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>
+                <i class="fas fa-tag"></i> Precio Unitario *
+              </label>
+              <input 
+                type="number" 
+                class="form-control"
+                formControlName="precioUnitario" 
+                step="0.01" 
+                min="0"
+                (change)="onPrecioManualChange()"
+                [class]="'form-control ' + getClaseCampo('precioUnitario')"
+                (focus)="onFocus('precioUnitario')"
+                (blur)="onBlur('precioUnitario')"
+              >
+              <div class="validation-messages">
+                <small *ngIf="f['precioUnitario'].invalid && f['precioUnitario'].touched" class="error-text">
+                  <i class="fas fa-exclamation-circle"></i> El precio unitario es requerido
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información del Producto Seleccionado -->
+          <div class="producto-info" *ngIf="productoSeleccionado">
+            <div class="info-card">
+              <h4><i class="fas fa-info-circle"></i> Información del Producto</h4>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong><i class="fas fa-tag"></i> Nombre:</strong> {{ productoSeleccionado.nombre }}
+                </div>
+                <div class="info-item">
+                  <strong><i class="fas fa-barcode"></i> Código:</strong> {{ productoSeleccionado.codigo }}
+                </div>
+                <div class="info-item">
+                  <strong><i class="fas fa-money-bill-wave"></i> Precio unitario:</strong> {{ formatearMoneda(productoSeleccionado.precio) }}
+                </div>
+                <div class="info-item">
+                  <strong><i class="fas fa-boxes"></i> Stock disponible:</strong> 
+                  <span class="stock-indicator" [class]="getStockStatus(productoSeleccionado.stock)">
+                    {{ productoSeleccionado.stock }} unidades
+                  </span>
+                </div>
+                <div class="info-item" *ngIf="productoSeleccionado.descripcion">
+                  <strong><i class="fas fa-file-alt"></i> Descripción:</strong> {{ productoSeleccionado.descripcion }}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Total a Pagar -->
-        <div class="form-group full-width">
-          <label>
-            <i class="fas fa-calculator"></i> Total a Pagar
-          </label>
-          <input 
-            type="text" 
-            class="form-control total-field"
-            formControlName="total" 
-            [disabled]="true"
-            [value]="formatearMoneda(f['total'].value)"
-          >
-          <small class="help-text">Total calculado automáticamente</small>
+        <!-- SECCIÓN MEMBRESÍAS MEJORADA -->
+        <div *ngIf="seccionActiva === 'membresia'" class="seccion-contenido">
+          <div class="form-group full-width">
+            <label>
+              <i class="fas fa-id-card"></i> Membresía del Cliente
+            </label>
+            <select 
+              class="form-control"
+              formControlName="idMembresia"
+              [class]="'form-control ' + getClaseCampo('idMembresia')"
+              (focus)="onFocus('idMembresia')"
+              (blur)="onBlur('idMembresia')"
+            >
+              <option value="" disabled selected>
+                {{ buscandoMembresia ? '🔄 Buscando membresía...' : 'La membresía se cargará automáticamente' }}
+              </option>
+              <option *ngIf="membresiaSeleccionada" [value]="membresiaSeleccionada.idMembresia">
+                {{ membresiaSeleccionada.tipo }} - {{ formatearMoneda(totalPlanCompleto) }} - {{ duracionTotalPlan }} días
+              </option>
+            </select>
+            <div class="validation-messages">
+              <small *ngIf="f['idMembresia'].invalid && f['idMembresia'].touched" class="error-text">
+                <i class="fas fa-exclamation-circle"></i> No se encontró una membresía activa para este cliente
+              </small>
+              <small *ngIf="f['idMembresia'].valid && f['idMembresia'].touched && membresiaSeleccionada" class="success-text">
+                <i class="fas fa-check-circle"></i> Membresía activa encontrada
+              </small>
+            </div>
+          </div>
+
+          <!-- Información de membresía MEJORADA -->
+          <div class="membresia-info">
+            <div class="info-card" *ngIf="clienteMembresiaActiva && membresiaSeleccionada">
+              <h4><i class="fas fa-info-circle"></i> Detalles de la Membresía</h4>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong><i class="fas fa-tag"></i> Tipo:</strong> {{ membresiaSeleccionada.tipo }}
+                </div>
+                <div class="info-item">
+                  <strong><i class="fas fa-calendar-alt"></i> Duración mensual:</strong> {{ membresiaSeleccionada.duracion }} días
+                </div>
+                <div class="info-item">
+                  <strong><i class="fas fa-star"></i> Plan:</strong> {{ getNombrePlanCompleto() }}
+                </div>
+                <div class="info-item">
+                  <strong><i class="fas fa-percentage"></i> Descuento:</strong> {{ getDescuentoAplicado() }}
+                </div>
+                <div class="info-item">
+                  <strong><i class="fas fa-money-bill"></i> Precio base mensual:</strong> {{ formatearMoneda(precioBaseMensual) }}
+                </div>
+                <div class="info-item">
+                  <strong><i class="fas fa-money-bill-wave"></i> Precio mensual con descuento:</strong> {{ formatearMoneda(precioMensualConDescuento) }}
+                </div>
+                
+                <!-- Información para planes multi-mes -->
+                <div class="info-item highlight" *ngIf="esPlanMultiMes()">
+                  <strong><i class="fas fa-calendar-check"></i> Meses cubiertos:</strong> {{ mesesCubiertosPlan }} meses
+                </div>
+                <div class="info-item highlight" *ngIf="esPlanMultiMes()">
+                  <strong><i class="fas fa-clock"></i> Duración total:</strong> {{ duracionTotalPlan }} días
+                </div>
+                <div class="info-item highlight" *ngIf="esPlanMultiMes()">
+                  <strong><i class="fas fa-receipt"></i> Total sin descuento:</strong> {{ formatearMoneda(precioBaseMensual * mesesCubiertosPlan) }}
+                </div>
+                <div class="info-item highlight" *ngIf="esPlanMultiMes()">
+                  <strong><i class="fas fa-file-invoice-dollar"></i> Total con descuento:</strong> 
+                  <span class="total-plan">{{ formatearMoneda(totalPlanCompleto) }}</span>
+                </div>
+                
+                <!-- Información para plan mensual -->
+                <div class="info-item" *ngIf="!esPlanMultiMes()">
+                  <strong><i class="fas fa-credit-card"></i> Pago mensual:</strong> {{ formatearMoneda(precioMensualConDescuento) }}
+                </div>
+                
+                <!-- FECHAS -->
+                <div class="info-item">
+                  <strong><i class="fas fa-play-circle"></i> Inicio de membresía:</strong> {{ getFechasMembresia().inicio }}
+                </div>
+                <div class="info-item">
+                  <strong><i class="fas fa-stop-circle"></i> Vigencia de membresía:</strong> {{ getFechasMembresia().fin }}
+                </div>
+                <div class="info-item">
+                  <strong><i class="fas fa-check-circle"></i> Estatus:</strong> 
+                  <span class="estatus-activo">{{ clienteMembresiaActiva.estatus }}</span>
+                </div>
+              </div>
+              
+              <!-- Nota informativa para planes multi-mes -->
+              <div class="nota-plan" *ngIf="esPlanMultiMes()">
+                <i class="fas fa-info-circle"></i>
+                <strong>Nota:</strong> Este es un pago único de {{ formatearMoneda(totalPlanCompleto) }} que cubre 
+                {{ mesesCubiertosPlan }} meses ({{ duracionTotalPlan }} días) con un descuento del {{ getDescuentoAplicado() }} aplicado.
+              </div>
+            </div>
+            
+            <div *ngIf="buscandoMembresia" class="loading-info">
+              <i class="fas fa-spinner fa-spin"></i> Buscando membresía activa del cliente...
+            </div>
+
+            <div *ngIf="!buscandoMembresia && !clienteMembresiaActiva && pagoForm.get('folioCliente')?.value" class="warning-info">
+              <i class="fas fa-exclamation-triangle"></i> El cliente seleccionado no tiene una membresía activa.
+            </div>
+          </div>
         </div>
 
-        <!-- Acciones del Formulario -->
+        <!-- Resumen del Pago Mejorado -->
+        <div class="resumen-pago">
+          <div class="resumen-header">
+            <h4><i class="fas fa-receipt"></i> Resumen del Pago</h4>
+          </div>
+          <div class="resumen-content">
+            <div class="resumen-item">
+              <span>Subtotal:</span>
+              <span>{{ formatearMoneda(calcularSubtotal()) }}</span>
+            </div>
+            <div class="resumen-item" *ngIf="seccionActiva === 'membresia' && esPlanMultiMes()">
+              <span>Descuento aplicado:</span>
+              <span class="descuento">-{{ getDescuentoAplicado() }}</span>
+            </div>
+            <div class="resumen-total">
+              <strong>Total a Pagar:</strong>
+              <strong class="total-amount">{{ formatearMoneda(f['total'].value) }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones del Formulario Mejoradas -->
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" (click)="onCancel()" [disabled]="enviando">
             <i class="fas fa-times"></i> Cancelar
           </button>
           <button type="submit" class="btn btn-primary" [disabled]="enviando || pagoForm.invalid">
-            <i class="fas" [class.fa-save]="!enviando" [class.fa-spinner]="enviando" [class.fa-spin]="enviando"></i>
-            {{ enviando ? 'Registrando...' : 'Registrar Pago' }}
+            <i class="fas" [class.fa-credit-card]="!enviando" [class.fa-spinner]="enviando" [class.fa-spin]="enviando"></i>
+            {{ enviando ? 'Procesando...' : 'Continuar al Pago' }}
           </button>
         </div>
       </form>
+
+      <!-- Sección de Pago -->
+      <div class="seccion-pago" *ngIf="mostrarCamposPago">
+        <div class="pago-card">
+          <div class="pago-header">
+            <h4><i class="fas fa-cash-register"></i> Información de Pago</h4>
+            <button type="button" class="btn btn-link btn-sm" (click)="regresarAlFormulario()">
+              <i class="fas fa-arrow-left"></i> Regresar
+            </button>
+          </div>
+
+          <div class="pago-content">
+            <!-- Método de Pago -->
+            <div class="form-group full-width">
+              <label>
+                <i class="fas fa-credit-card"></i> Método de Pago *
+              </label>
+              <div class="metodos-pago">
+                <div 
+                  *ngFor="let metodo of metodosPago" 
+                  class="metodo-pago-option"
+                  [class.selected]="metodoPago === metodo.value"
+                  (click)="metodoPago = metodo.value; onMetodoPagoChange()"
+                >
+                  <i class="fas" [class]="metodo.icon"></i>
+                  <span>{{ metodo.label }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Campos para Efectivo -->
+            <div *ngIf="metodoPago === 'efectivo'" class="efectivo-fields">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>
+                    <i class="fas fa-money-bill-wave"></i> Monto Recibido *
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input 
+                      type="number" 
+                      class="form-control"
+                      [(ngModel)]="montoRecibido"
+                      [ngModelOptions]="{standalone: true}"
+                      (input)="onMontoRecibidoChange()"
+                      (blur)="formatearMontoRecibido()"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                    >
+                  </div>
+                  <small class="help-text">Ingrese el monto que recibió del cliente</small>
+                </div>
+
+                <div class="form-group">
+                  <label>
+                    <i class="fas fa-exchange-alt"></i> Cambio
+                  </label>
+                  <div class="cambio-display" [class.cambio-positivo]="cambio > 0" [class.cambio-cero]="cambio === 0">
+                    <span class="cambio-icon">
+                      <i class="fas" [class.fa-check-circle]="cambio >= 0" [class.fa-exclamation-circle]="cambio < 0"></i>
+                    </span>
+                    <span class="cambio-amount">{{ formatearMoneda(cambio) }}</span>
+                  </div>
+                  <small class="help-text" *ngIf="cambio < 0" style="color: #dc3545;">
+                    <i class="fas fa-exclamation-triangle"></i> El monto recibido es insuficiente
+                  </small>
+                  <small class="help-text" *ngIf="cambio >= 0" style="color: #28a745;">
+                    <i class="fas fa-check-circle"></i> Cambio calculado correctamente
+                  </small>
+                </div>
+              </div>
+
+              <!-- Resumen de transacción en efectivo -->
+              <div class="resumen-transaccion">
+                <div class="resumen-item">
+                  <span>Total a Pagar:</span>
+                  <span class="total">{{ formatearMoneda(f['total'].value) }}</span>
+                </div>
+                <div class="resumen-item">
+                  <span>Monto Recibido:</span>
+                  <span class="recibido">{{ formatearMoneda(montoRecibido) }}</span>
+                </div>
+                <div class="resumen-item cambio-item" [class.cambio-positive]="cambio > 0">
+                  <span>Cambio a Entregar:</span>
+                  <span class="cambio">{{ formatearMoneda(cambio) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Información para otros métodos de pago -->
+            <div *ngIf="metodoPago !== 'efectivo'" class="otros-metodos">
+              <div class="metodo-info">
+                <i class="fas" [class]="getMetodoPagoIcon()"></i>
+                <div class="info-content">
+                  <h5>Pago con {{ getMetodoPagoLabel() }}</h5>
+                  <p>El monto a cobrar será de <strong>{{ formatearMoneda(f['total'].value) }}</strong></p>
+                  <small class="help-text">
+                    <i class="fas fa-info-circle"></i>
+                    El pago se procesará con el método seleccionado. No se requiere cálculo de cambio.
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botones de acción final -->
+            <div class="pago-actions">
+              <button type="button" class="btn btn-secondary" (click)="regresarAlFormulario()" [disabled]="enviando">
+                <i class="fas fa-arrow-left"></i> Regresar
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-success" 
+                (click)="procesarPago()" 
+                [disabled]="enviando || (metodoPago === 'efectivo' && (montoRecibido <= 0 || cambio < 0))"
+              >
+                <i class="fas" [class.fa-credit-card]="!enviando" [class.fa-spinner]="enviando" [class.fa-spin]="enviando"></i>
+                {{ enviando ? 'Procesando...' : 'Confirmar Pago' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

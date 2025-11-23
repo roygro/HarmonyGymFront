@@ -8,7 +8,7 @@
       <p class="header-subtitle">Administra y consulta las membresías activas de los clientes</p>
     </div>
     <div class="header-actions">
-      <button class="btn btn-primary" (click)="abrirDialogoAsignar()" [disabled]="tipoMembresias.length === 0">
+      <button class="btn btn-primary" (click)="abrirDialogoAsignar()" [disabled]="tipoMembresias.length === 0 || planesPago.length === 0">
         <i class="fas fa-plus-circle"></i> Asignar Membresía
       </button>
       <button class="btn btn-secondary" (click)="cargarMembresiasPorExpirar()">
@@ -176,7 +176,7 @@
           Todas las membresías están filtradas. 
         </p>
         <div class="action-buttons">
-          <button class="btn btn-primary" (click)="abrirDialogoAsignar()" [disabled]="tipoMembresias.length === 0">
+          <button class="btn btn-primary" (click)="abrirDialogoAsignar()" [disabled]="tipoMembresias.length === 0 || planesPago.length === 0">
             <i class="fas fa-plus-circle"></i> Asignar Primera Membresía
           </button>
           <button class="btn btn-secondary" (click)="limpiarFiltro()" *ngIf="filtro">
@@ -241,6 +241,20 @@
                   </span>
                 </div>
               </div>
+
+              <!-- ✅ CORREGIDO: Información del Plan de Pago -->
+              <div class="info-item" *ngIf="membresia.planPago">
+                <i class="fas fa-credit-card"></i>
+                <div class="info-content">
+                  <span class="info-label">Plan de Pago</span>
+                  <span class="info-value">
+                    {{ membresia.planPago.nombre }}
+                    <span *ngIf="membresia.planPago.factorDescuento < 1" class="discount-badge">
+                      ({{ calcularPorcentajeDescuento(membresia.planPago) }}% descuento)
+                    </span>
+                  </span>
+                </div>
+              </div>
             </div>
             
             <div class="info-item descripcion">
@@ -259,8 +273,6 @@
               title="Renovar membresía">
               <i class="fas fa-sync-alt"></i> Renovar
             </button>
-            
-            
             
             <button 
               class="btn btn-sm btn-info"
@@ -333,6 +345,14 @@
                   <i class="fas fa-edit"></i>
                   Actualizado: {{ formatearFecha(item.fecha_actualizacion || item.fechaActualizacion) }}
                 </span>
+                <!-- ✅ CORREGIDO: Información del Plan de Pago en historial -->
+                <span class="historial-meta-item" *ngIf="item.planPago">
+                  <i class="fas fa-credit-card"></i>
+                  Plan: {{ item.planPago.nombre }}
+                  <span *ngIf="item.planPago.factorDescuento < 1">
+                    ({{ calcularPorcentajeDescuento(item.planPago) }}% descuento)
+                  </span>
+                </span>
               </div>
             </div>
           </div>
@@ -360,93 +380,153 @@
     </div>
   </div>
 
-  <!-- Diálogo para asignar membresía -->
-<div *ngIf="showAsignarDialog" class="form-container">
-  <div class="form-card">
-    <div class="form-header">
-      <h3><i class="fas fa-id-card"></i> Asignar Nueva Membresía</h3>
-      <button class="btn-close" (click)="showAsignarDialog = false" title="Cancelar">
-        <span class="close-icon">×</span>
-      </button>
+  <!-- Diálogo para asignar membresía - ✅ COMPLETAMENTE CORREGIDO -->
+  <div *ngIf="showAsignarDialog" class="form-container">
+    <div class="form-card">
+      <div class="form-header">
+        <h3><i class="fas fa-id-card"></i> Asignar Nueva Membresía</h3>
+        <button class="btn-close" (click)="showAsignarDialog = false" title="Cancelar">
+          <span class="close-icon">×</span>
+        </button>
+      </div>
+      
+      <form (ngSubmit)="asignarMembresia()" #asignarForm="ngForm" class="payment-form">
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-user"></i> Cliente *
+          </label>
+          <select 
+            class="form-control"
+            [(ngModel)]="asignarFormData.folioCliente" 
+            name="folioCliente" 
+            required>
+            <option value="" disabled selected>-- Seleccione un cliente --</option>
+            <option *ngFor="let cliente of clientes" [value]="cliente.folioCliente">
+              {{ cliente.nombre }} 
+            </option>
+          </select>
+          <small *ngIf="asignarForm.submitted && !asignarFormData.folioCliente" class="error-text">
+            <i class="fas fa-exclamation-triangle"></i> Debe seleccionar un cliente
+          </small>
+        </div>
+
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-crown"></i> Tipo de Membresía *
+          </label>
+          <select 
+            class="form-control"
+            [(ngModel)]="asignarFormData.idMembresia" 
+            name="idMembresia" 
+            required
+            (change)="onMembresiaChange()">
+            <option value="" disabled selected>-- Selecciona un tipo de membresía --</option>
+            <option *ngFor="let tipo of tipoMembresias" [value]="tipo.value">
+              {{ tipo.label }} - ${{ tipo.precio | number:'1.2-2' }}
+            </option>
+          </select>
+          <small *ngIf="asignarForm.submitted && !asignarFormData.idMembresia" class="error-text">
+            <i class="fas fa-exclamation-triangle"></i> El tipo de membresía es requerido
+          </small>
+          
+          <!-- Mensaje informativo si no hay membresías -->
+          <div *ngIf="tipoMembresias.length === 0" class="form-info warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>No hay tipos de membresía configurados. Contacta al administrador.</span>
+          </div>
+        </div>
+
+        <!-- ✅ CORREGIDO: Selector de Plan de Pago -->
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-credit-card"></i> Plan de Pago *
+          </label>
+          
+          <!-- Loading para planes -->
+          <div *ngIf="loadingPlanes" class="form-loading">
+            <i class="fas fa-spinner fa-spin"></i> Cargando planes de pago...
+          </div>
+          
+          <select 
+            class="form-control"
+            [(ngModel)]="asignarFormData.idPlanPago" 
+            name="idPlanPago" 
+            required
+            [disabled]="loadingPlanes || planesPago.length === 0"
+            (change)="onPlanPagoChange()">
+            <option value="" disabled selected>-- Selecciona un plan de pago --</option>
+            <option *ngFor="let plan of planesPago" [value]="plan.id">
+              {{ formatearInfoPlan(plan) }}
+            </option>
+          </select>
+          
+          <small *ngIf="asignarForm.submitted && !asignarFormData.idPlanPago" class="error-text">
+            <i class="fas fa-exclamation-triangle"></i> El plan de pago es requerido
+          </small>
+          
+          <!-- Mensaje si no hay planes -->
+          <div *ngIf="!loadingPlanes && planesPago.length === 0" class="form-info warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>No hay planes de pago configurados. Contacta al administrador.</span>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label>
+            <i class="fas fa-calendar-alt"></i> Fecha Inicio *
+          </label>
+          <input 
+            type="date" 
+            class="form-control"
+            [(ngModel)]="asignarFormData.fechaInicio" 
+            name="fechaInicio" 
+            required>
+          <small *ngIf="asignarForm.submitted && !asignarFormData.fechaInicio" class="error-text">
+            <i class="fas fa-exclamation-triangle"></i> La fecha de inicio es requerida
+          </small>
+        </div>
+
+   
+        <div *ngIf="asignarFormData.idMembresia && asignarFormData.idPlanPago" class="price-summary">
+  <div class="price-breakdown">
+    <h4><i class="fas fa-receipt"></i> Resumen de Pago</h4>
+    
+  
+    
+    <div class="price-line">
+      <span>Precio base:</span>
+      <span>${{ obtenerPrecioBaseMembresia(asignarFormData.idMembresia) | number:'1.2-2' }}</span>
     </div>
     
-    <form (ngSubmit)="asignarMembresia()" #asignarForm="ngForm" class="payment-form">
-      <div class="form-group full-width">
-        <label>
-          <i class="fas fa-user"></i> Cliente *
-        </label>
-        <select 
-          class="form-control"
-          [(ngModel)]="asignarFormData.folioCliente" 
-          name="folioCliente" 
-          required>
-          <option value="" disabled selected>-- Seleccione un cliente --</option>
-          <option *ngFor="let cliente of clientes" [value]="cliente.folioCliente">
-            {{ cliente.nombre }} - {{ cliente.folioCliente }}
-          </option>
-        </select>
-        <small *ngIf="asignarForm.submitted && !asignarFormData.folioCliente" class="error-text">
-          <i class="fas fa-exclamation-triangle"></i> Debe seleccionar un cliente
-        </small>
-      </div>
-
-      <div class="form-group full-width">
-        <label>
-          <i class="fas fa-crown"></i> Tipo de Membresía *
-        </label>
-        <select 
-          class="form-control"
-          [(ngModel)]="asignarFormData.idMembresia" 
-          name="idMembresia" 
-          required>
-          <option value="" disabled selected>-- Selecciona un tipo de membresía --</option>
-          <option *ngFor="let tipo of tipoMembresias" [value]="tipo.value">
-            {{ tipo.label }}
-          </option>
-        </select>
-        <small *ngIf="asignarForm.submitted && !asignarFormData.idMembresia" class="error-text">
-          <i class="fas fa-exclamation-triangle"></i> El tipo de membresía es requerido
-        </small>
-        
-        <!-- Mensaje informativo si no hay membresías -->
-        <div *ngIf="tipoMembresias.length === 0" class="form-info warning">
-          <i class="fas fa-exclamation-triangle"></i>
-          <span>No hay tipos de membresía configurados. Contacta al administrador.</span>
-        </div>
-      </div>
-
-      <div class="form-group full-width">
-        <label>
-          <i class="fas fa-calendar-alt"></i> Fecha Inicio *
-        </label>
-        <input 
-          type="date" 
-          class="form-control"
-          [(ngModel)]="asignarFormData.fechaInicio" 
-          name="fechaInicio" 
-          required>
-        <small *ngIf="asignarForm.submitted && !asignarFormData.fechaInicio" class="error-text">
-          <i class="fas fa-exclamation-triangle"></i> La fecha de inicio es requerida
-        </small>
-      </div>
-
-      <div class="form-info">
-        <i class="fas fa-info-circle"></i>
-        <span>La membresía se asignará con vigencia según el tipo seleccionado</span>
-      </div>
-
-      <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="showAsignarDialog = false" [disabled]="loading">
-          <i class="fas fa-times"></i> Cancelar
-        </button>
-        <button type="submit" class="btn btn-primary" [disabled]="loading || !asignarForm.form.valid || tipoMembresias.length === 0">
-          <i class="fas" [class.fa-save]="!loading" [class.fa-spinner]="loading" [class.fa-spin]="loading"></i>
-          {{ loading ? 'Asignando...' : 'Asignar Membresía' }}
-        </button>
-      </div>
-    </form>
+    <div class="price-line discount" *ngIf="calcularPorcentajeDescuento(asignarFormData.idPlanPago) > 0">
+      <span>Descuento aplicado:</span>
+      <span>-{{ calcularPorcentajeDescuento(asignarFormData.idPlanPago) }}%</span>
+    </div>
+    
+    <div class="price-line total">
+      <strong>Total a pagar:</strong>
+      <strong>${{ calcularPrecioConDescuento(obtenerPrecioBaseMembresia(asignarFormData.idMembresia), asignarFormData.idPlanPago) | number:'1.2-2' }}</strong>
+    </div>
   </div>
 </div>
+        <div class="form-info">
+          <i class="fas fa-info-circle"></i>
+          <span>La membresía se asignará con vigencia según el plan de pago seleccionado</span>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="showAsignarDialog = false" [disabled]="loading">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" 
+                  [disabled]="loading || !asignarForm.form.valid || tipoMembresias.length === 0 || planesPago.length === 0">
+            <i class="fas" [class.fa-save]="!loading" [class.fa-spinner]="loading" [class.fa-spin]="loading"></i>
+            {{ loading ? 'Asignando...' : 'Asignar Membresía' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Snackbar Mejorado -->
   <div *ngIf="snackbar.show" 
