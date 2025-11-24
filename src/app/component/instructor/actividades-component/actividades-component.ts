@@ -13,6 +13,13 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { HeaderInstructorComponent } from "../header-instructor/header-instructor";
 import { AuthService } from '../../../services/Auth/AuthService';
 
+// imports de bridge
+import { ActividadBridge } from '../../../bridge/actividad-bridge';
+import { Principiante } from '../../../bridge/principiante';
+import { Intermedio } from '../../../bridge/intermedio';
+import { Avanzado } from '../../../bridge/avanzado';
+import { NivelDificultad } from '../../../bridge/nivel-dificultad';
+
 // Definir tipos para los iconos
 type IconType = 'warning' | 'error' | 'success' | 'info' | 'question';
 
@@ -344,6 +351,7 @@ export class AlertDialogComponent {
   templateUrl: './actividades-component.html',
   styleUrls: ['./actividades-component.css']
 })
+
 export class ActividadesComponent implements OnInit {
   actividades: Actividad[] = [];
   actividadesFiltradas: Actividad[] = [];
@@ -691,6 +699,7 @@ export class ActividadesComponent implements OnInit {
       descripcion: [''],
       cupo: [0, [Validators.required, Validators.min(0), Validators.max(50)]],
       lugar: ['', Validators.required],
+      nivelDificultad: ['principiante', Validators.required], // NUEVA LÍNEA - NIVEL POR DEFECTO
       // USAR instructorActual en lugar del valor fijo
       folioInstructor: [this.instructorActual, Validators.required],
       imagenUrl: [this.getRandomDefaultImage()]
@@ -880,6 +889,7 @@ export class ActividadesComponent implements OnInit {
       descripcion: actividad.descripcion || '',
       cupo: actividad.cupo,
       lugar: actividad.lugar,
+      nivelDificultad: actividad.nivelDificultad || 'principiante', // NUEVA LÍNEA - CARGAR NIVEL AL EDITAR
       folioInstructor: actividad.folioInstructor,
       imagenUrl: actividad.imagenUrl || this.getRandomDefaultImage()
     });
@@ -1496,4 +1506,54 @@ export class ActividadesComponent implements OnInit {
 
     return dialogRef.afterClosed().toPromise() || Promise.resolve(false);
   }
+
+
+  // Nuevos metodos BRIDGE
+
+   // Crea un ActividadBridge para una actividad 
+  private crearActividadBridge(actividad: Actividad): ActividadBridge {
+    const nivel = this.obtenerNivel(actividad.nivelDificultad);
+    return new ActividadBridge(actividad, nivel);
+  }
+
+  //Obtiene la implementación de nivel basado en el string
+  private obtenerNivel(nivelString?: string): NivelDificultad {
+    switch(nivelString?.toLowerCase()) {
+      case 'intermedio':
+        return new Intermedio();
+      case 'avanzado':
+        return new Avanzado();
+      case 'principiante':
+      default:
+        return new Principiante(); // Default si no hay nivel
+    }
+  }
+
+  // Método público para usar en el template - CORREGIDO
+getActividadBridge(actividad: Actividad): ActividadBridge {
+  // Usar el nivel de la actividad si existe, sino usar 'principiante' como default
+  const nivelString = actividad.nivelDificultad || 'principiante';
+  const nivel = this.obtenerNivel(nivelString);
+  return new ActividadBridge(actividad, nivel);
+}
+
+  //Mock de usuario actual para demostración (esto lo cambiarás por tu usuario real después)
+get usuarioActual() {
+  const currentUser = this.authService.getCurrentUser();
+  
+  if (!currentUser) {
+    return null; // No hay usuario loggeado
+  }
+  
+  // Adapta esto a la estructura REAL de tu usuario
+  return {
+    id: currentUser.id || currentUser.folioCliente,
+    nombre: currentUser.nombre || currentUser.username,
+    experienciaMeses: currentUser.experienciaMeses || 0,
+    evaluacionAprobada: currentUser.evaluacionAprobada || false,
+    clasesCompletadas: currentUser.clasesCompletadas || 0,
+    tieneMembresiaActiva: currentUser.tieneMembresiaActiva || true,
+    // Agrega más campos según tu modelo real
+  };
+}
 }

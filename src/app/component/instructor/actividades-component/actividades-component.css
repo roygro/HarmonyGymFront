@@ -1284,7 +1284,7 @@ form {
   transition: all 0.3s ease;
   border: 3px solid var(--primary-red);
   animation: fadeInUp 0.5s ease forwards;
-  opacity: 0;
+  opacity: 1;
   transform: translateY(20px);
   position: relative;
 }
@@ -1987,5 +1987,159 @@ form {
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+
+/* ===== ESTILOS PARA NIVELES BRIDGE ===== */
+
+/* Badges de nivel */
+.badge-principiante {
+  background: #4CAF50;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+}
+
+.badge-intermedio {
+  background: #FF9800;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.4);
+}
+
+.badge-avanzado {
+  background: #F44336;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4);
+}
+
+/* Contenedor de información del nivel */
+.nivel-info {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 10px 0;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Barra de intensidad */
+.intensidad-info {
+  margin-bottom: 8px;
+}
+
+.intensidad-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin: 5px 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.intensidad-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 10px currentColor;
+}
+
+/* Información de duración */
+.duracion-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.duracion-info i {
+  color: #E63946;
+}
+
+/* Descripción del nivel */
+.descripcion-nivel {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+/* Validación de usuario */
+.validacion-usuario {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  margin-top: 8px;
+  border-left: 4px solid;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.validacion-usuario:has(small:contains('✅')) {
+  background: rgba(76, 175, 80, 0.1);
+  border-left-color: #4CAF50;
+}
+
+.validacion-usuario:has(small:contains('❌')) {
+  background: rgba(244, 67, 54, 0.1);
+  border-left-color: #F44336;
+}
+
+.validacion-usuario:has(small:contains('⚠️')) {
+  background: rgba(255, 152, 0, 0.1);
+  border-left-color: #FF9800;
+}
+
+/* Mejora para el header de la actividad */
+.actividad-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.actividad-header h4 {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Responsive para niveles */
+@media (max-width: 768px) {
+  .actividad-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .nivel-info {
+    padding: 10px;
+  }
+  
+  .badge-principiante,
+  .badge-intermedio,
+  .badge-avanzado {
+    font-size: 0.7rem;
+    padding: 3px 8px;
   }
 }

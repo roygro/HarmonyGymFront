@@ -15,6 +15,9 @@ export interface Actividad {
   folioInstructor: string; 
   estatus: string;
   fechaCreacion: string;
+  // campo nuevo
+  nivelDificultad?: 'principiante' | 'intermedio' | 'avanzado';
+  
 }
 
 export interface RealizaActividad {
