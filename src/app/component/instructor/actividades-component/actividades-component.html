@@ -247,7 +247,7 @@
               type="text"
               formControlName="nombreActividad"
               class="form-control"
-              placeholder="Yoga Matutino, Spinning Avanzado, etc."
+              placeholder="Yoga, Spinning, kickboxing etc."
             >
             <small *ngIf="isFieldInvalid('nombreActividad')" class="error-text">
               {{ getFieldError('nombreActividad') }}
@@ -331,6 +331,25 @@
             </small>
           </div>
         </div>
+
+
+        <!-- NUEVO: Selector de Nivel -->
+<div class="form-row">
+  <div class="form-group">
+    <label>
+      <i class="fas fa-chart-line"></i> Nivel de Dificultad *
+    </label>
+    <select formControlName="nivelDificultad" class="form-control" required>
+      <option value="">-- Selecciona un nivel --</option>
+      <option value="principiante">Principiante</option>
+      <option value="intermedio">Intermedio</option>
+      <option value="avanzado">Avanzado</option>
+    </select>
+    <small *ngIf="isFieldInvalid('nivel')" class="error-text">
+      {{ getFieldError('nivel') }}
+    </small>
+  </div>
+</div>
 
         <!-- Calendario de Horarios Mejorado -->
 <div *ngIf="showCalendar && selectedDate" class="calendar-container">
@@ -459,7 +478,7 @@
             formControlName="descripcion"
             rows="4"
             class="form-control"
-            placeholder="Describe la actividad, requisitos, nivel de dificultad, etc."
+            placeholder="Explica cómo desarrollarás la clase, ejercicios principales, y recomendaciones para los participantes"
           ></textarea>
         </div>
 
@@ -502,13 +521,59 @@
             <span class="actividad-id"></span>
           </div>
         </div>
-        <div class="actividad-content">
-          <div class="actividad-header">
-            <h4>{{ actividad.nombreActividad }}</h4>
-            <span [class]="'estatus-badge ' + getEstatusBadgeClass(actividad.estatus)">
-              <i class="fas fa-circle"></i> {{ actividad.estatus }}
-            </span>
-          </div>
+<div class="actividad-header">
+  <h4>{{ actividad.nombreActividad }}</h4>
+  <div class="header-badges">
+    <!-- Badge de estatus (existente) -->
+    <span [class]="'estatus-badge ' + getEstatusBadgeClass(actividad.estatus)">
+      <i class="fas fa-circle"></i> {{ actividad.estatus }}
+    </span>
+    
+    <!-- NUEVO: Badge del nivel (Bridge) -->
+    <span *ngIf="getActividadBridge(actividad).getInfoNivel() as infoNivel" 
+          [class]="infoNivel.badgeClass">
+      {{ infoNivel.nombre | titlecase }}
+    </span>
+  </div>
+</div>
+
+<!-- NUEVA SECCIÓN: Información del nivel Bridge -->
+<div *ngIf="getActividadBridge(actividad).getInfoNivel() as infoNivel" 
+     class="nivel-info">
+  
+  <!-- Barra de intensidad visual -->
+  <div class="intensidad-info">
+    <small>Intensidad: {{ infoNivel.intensidad }}/10</small>
+    <div class="intensidad-bar">
+      <div class="intensidad-fill" 
+           [style.background]="infoNivel.color"
+           [style.width]="infoNivel.intensidad * 10 + '%'">
+      </div>
+    </div>
+  </div>
+
+  <!-- Duración recomendada -->
+  <div class="duracion-info">
+    <i class="fas fa-clock"></i>
+    <small>Duración recomendada: {{ infoNivel.duracionRecomendada }} mins</small>
+  </div>
+
+  <!-- Descripción del nivel -->
+  <div class="descripcion-nivel">
+    <small>{{ infoNivel.descripcion }}</small>
+  </div>
+
+<!-- Validación para usuario actual -->
+<div *ngIf="usuarioActual" class="validacion-usuario">
+  <small>
+    {{ getActividadBridge(actividad).getRecomendacionUsuario(usuarioActual) }}
+  </small>
+</div>
+
+<!-- Mensaje cuando no hay usuario loggeado -->
+<div *ngIf="!usuarioActual" class="validacion-usuario">
+  <small>⚠️ Inicia sesión para ver si puedes unirte a esta actividad</small>
+</div>
           
           <div class="actividad-info">
             <div class="info-grid">
