@@ -187,7 +187,7 @@ export class LoginComponent implements OnInit {
     // Mapeo de tipos de usuario a rutas
     const routeMap: { [key: string]: string } = {
       'Administrador': '/membresias',
-      'Recepcionista': '/recepcionista', 
+      'Recepcionista': '/pagos', 
       'Instructor': '/actividades',
       'Cliente': '/cliente/dashboard'
     };
